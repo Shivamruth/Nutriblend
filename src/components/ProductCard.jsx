@@ -78,7 +78,7 @@ export default function ProductCard({ item, onView }) {
   return (
     <div className="card">
       <div className="card-image-wrap">
-        <img src={item.image} alt={item.name} className="product-img" />
+       <img src="/products/10gShake.png" alt="test" className="product-img" />
         <div className="card-badge">{item.protein}</div>
         <div className="card-overlay"></div>
       </div>
