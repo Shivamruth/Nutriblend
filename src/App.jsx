@@ -16,7 +16,8 @@ import AdminLogin from "./pages/AdminLogin";
 import ProductDetails from "./pages/ProductDetails";// ✅ FIXED
 import { useNotification } from "./context/NotificationContext";
 import NotificationBell from "./components/NotificationBell";
-
+import Navbar from "./components/Navbar";
+import products from "./products";
 import "./App.css";
 
 export default function App() {
