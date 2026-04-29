@@ -51,18 +51,26 @@ export default function Admin({ setPage }) {
   const fetchOrders = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: true });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const res = await fetch("/api/admin/orders", {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
 
-    if (error) {
-      console.error(error);
-    } else {
-      setOrders(data || []);
+      const json = await res.json();
+      if (json.success) {
+        setOrders(json.data || []);
+      } else {
+        console.error(json.message);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   // 🔐 LOGOUT

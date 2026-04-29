@@ -13,19 +13,27 @@ export default function Orders() {
   const fetchOrders = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const res = await fetch("/api/my-orders", {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
 
-    if (error) {
-      console.error(error);
-      alert("Failed to load orders ❌");
-    } else {
-      setOrders(data);
+      const json = await res.json();
+      if (json.success) {
+        setOrders(json.data);
+      } else {
+        alert(json.message || "Failed to load orders ❌");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong ❌");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const downloadInvoice = (order) => {

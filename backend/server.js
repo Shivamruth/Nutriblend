@@ -1,54 +1,26 @@
-import express from "express";
-import Razorpay from "razorpay";
-import cors from "cors";
-import dotenv from "dotenv";
+import app from './src/app.js';
+import { env } from './src/config/env.js';
+import logger from './src/utils/logger.js';
 
-dotenv.config();
+const PORT = env.PORT || 5000;
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+const server = app.listen(PORT, () => {
+  logger.info(`🚀 Server running in ${env.NODE_ENV} mode on port ${PORT}`);
 });
 
-// ✅ CREATE ORDER
-app.post("/create-order", async (req, res) => {
-  try {
-    const { amount } = req.body;
-
-    const order = await razorpay.orders.create({
-      amount: amount * 100,
-      currency: "INR",
-      receipt: "receipt_" + Date.now(),
-    });
-
-    res.json(order);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error creating order");
-  }
+// Handle unhandled rejections
+process.on('unhandledRejection', (err) => {
+  logger.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  logger.error(err.name, err.message);
+  server.close(() => {
+    process.exit(1);
+  });
 });
 
-// ✅ IN-MEMORY STORAGE (TEMP)
-let orders = [];
-
-// ✅ SAVE ORDER
-app.post("/save-order", (req, res) => {
-  const order = {
-    id: Date.now(),
-    ...req.body,
-  };
-
-  orders.push(order);
-  res.json(order);
+// Handle SIGTERM
+process.on('SIGTERM', () => {
+  logger.info('👋 SIGTERM RECEIVED. Shutting down gracefully');
+  server.close(() => {
+    logger.info('💥 Process terminated!');
+  });
 });
-
-// ✅ GET ORDERS
-app.get("/orders", (req, res) => {
-  res.json(orders);
-});
-
-app.listen(5000, () => console.log("Server running on port 5000"));

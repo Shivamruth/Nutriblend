@@ -23,64 +23,45 @@ export default function Payment({ setPage, setPayment }) {
     );
   };
 
-  const saveOrder = async (paymentType) => {
-    const cart = getCart();
-
-    if (!cart.length) {
-      notify("Cart is empty ❌", "error");
-      return false;
-    }
-
-    if (!address) {
-      notify("Select address first ❌", "error");
-      return false;
-    }
-
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user) {
-      notify("Please login again ❌", "error");
-      return false;
-    }
-
-    const total = getTotal(cart);
-
-    const { error } = await supabase.from("orders").insert([
-      {
-        user_id: userData.user.id,
-        items: cart,
-        address,
-        payment_method: paymentType,
-        payment_status: paymentType === "Online" ? "paid" : "pending",
-        total,
-        status: "placed",
-      },
-    ]);
-
-    if (error) {
-      console.error("ORDER SAVE ERROR:", error);
-      notify(error.message || "Order save failed ❌", "error");
-      return false;
-    }
-
-    localStorage.removeItem("cart");
-    window.dispatchEvent(new Event("storage"));
-
-    return true;
-  };
 
   const handleCOD = async () => {
     setLoading(true);
 
-    const success = await saveOrder("COD");
+    try {
+      const cart = getCart();
+      const total = getTotal(cart);
+      const { data: userData } = await supabase.auth.getUser();
 
-    if (success) {
-      setPayment("COD");
-      notify("Order placed with COD ✅", "success");
-      setPage("success");
+      const res = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          amount: total,
+          items: cart,
+          address,
+          userId: userData.user.id,
+          paymentMethod: "COD"
+        }),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        localStorage.removeItem("cart");
+        window.dispatchEvent(new Event("storage"));
+        
+        setPayment("COD");
+        notify("Order placed with COD ✅", "success");
+        setPage("success");
+      } else {
+        notify(json.message || "Order failed ❌", "error");
+      }
+    } catch (err) {
+      console.error("COD ERROR:", err);
+      notify("Something went wrong ❌", "error");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleRazorpay = async () => {
@@ -101,15 +82,24 @@ export default function Payment({ setPage, setPayment }) {
 
       const total = getTotal(cart);
 
-      const res = await fetch("http://localhost:5000/create-order", {
+      const { data: userData } = await supabase.auth.getUser();
+
+      const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total }),
+        body: JSON.stringify({ 
+          amount: total,
+          items: cart,
+          address,
+          userId: userData.user.id,
+          paymentMethod: "Online"
+        }),
       });
 
-      const data = await res.json();
+      const json = await res.json();
+      const data = json.data;
 
-      if (!data.id) {
+      if (!data || !data.id) {
         notify("Unable to create payment order ❌", "error");
         return;
       }
@@ -128,13 +118,14 @@ export default function Payment({ setPage, setPayment }) {
         description: "Healthy Order",
 
         handler: async function () {
-          const success = await saveOrder("Online");
-
-          if (success) {
-            setPayment("Online");
-            notify("Payment successful ✅", "success");
-            setPage("success");
-          }
+          // Note: The backend webhook will handle updating the order status securely.
+          // We just clear the cart and show the success page here.
+          localStorage.removeItem("cart");
+          window.dispatchEvent(new Event("storage"));
+          
+          setPayment("Online");
+          notify("Payment successful ✅", "success");
+          setPage("success");
         },
 
         prefill: {
