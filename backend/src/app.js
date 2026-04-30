@@ -22,7 +22,11 @@ app.use(cors({
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
 // Body Parsers
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Rate Limiting

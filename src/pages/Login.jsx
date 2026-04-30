@@ -4,6 +4,7 @@ import { FcGoogle } from "react-icons/fc";
 
 export default function Login() {
   const [isSignup, setIsSignup] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -18,6 +19,8 @@ export default function Login() {
       alert("Enter email & password");
       return;
     }
+
+    setLoading(true);
 
     if (isSignup) {
       const { error } = await supabase.auth.signUp({
@@ -35,6 +38,8 @@ export default function Login() {
 
       if (error) alert(error.message);
     }
+
+    setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
@@ -44,100 +49,94 @@ export default function Login() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>
-          {isSignup ? "Create Account" : "Welcome Back 💪"}
-        </h2>
+    <div className="login-wrapper">
+      <div className="login-container">
+        {/* Decorative floating orbs */}
+        <div className="login-orb login-orb-1" />
+        <div className="login-orb login-orb-2" />
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          onChange={handleChange}
-          style={styles.input}
-        />
+        <div className="login-card">
+          {/* Brand */}
+          <div className="login-brand">
+            <span className="login-brand-icon">🥤</span>
+            <h1 className="login-brand-title">NUTRIBLEND</h1>
+            <p className="login-brand-tagline">Fuel Your Fitness Journey</p>
+          </div>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-          style={styles.input}
-        />
+          {/* Title */}
+          <h2 className="login-title">
+            {isSignup ? "Create Account" : "Welcome Back"} 💪
+          </h2>
+          <p className="login-subtitle">
+            {isSignup
+              ? "Start your protein-powered journey today"
+              : "Sign in to continue your fitness goals"}
+          </p>
 
-        <button style={styles.mainBtn} onClick={handleEmailAuth}>
-          {isSignup ? "Sign Up" : "Login"}
-        </button>
+          {/* Form */}
+          <div className="login-form">
+            <div className="login-input-group">
+              <label className="login-label" htmlFor="login-email">Email</label>
+              <input
+                id="login-email"
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                onChange={handleChange}
+                value={form.email}
+              />
+            </div>
 
-        <div style={{ margin: "15px 0", color: "#aaa" }}>OR</div>
+            <div className="login-input-group">
+              <label className="login-label" htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                onChange={handleChange}
+                value={form.password}
+              />
+            </div>
 
-        <button style={styles.socialBtn} onClick={handleGoogleLogin}>
-          <FcGoogle size={20} /> Continue with Google
-        </button>
+            <button
+              className="login-primary-btn"
+              onClick={handleEmailAuth}
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="login-spinner" />
+              ) : isSignup ? (
+                "Create Account"
+              ) : (
+                "Sign In"
+              )}
+            </button>
 
-        <p style={styles.switchText}>
-          {isSignup ? "Already have an account?" : "New user?"}{" "}
-          <span onClick={() => setIsSignup(!isSignup)} style={styles.link}>
-            {isSignup ? "Login" : "Sign Up"}
-          </span>
-        </p>
+            {/* Divider */}
+            <div className="login-divider">
+              <span>or continue with</span>
+            </div>
+
+            {/* Google */}
+            <button className="login-social-btn" onClick={handleGoogleLogin}>
+              <FcGoogle size={22} />
+              <span>Google</span>
+            </button>
+          </div>
+
+          {/* Switch */}
+          <p className="login-switch">
+            {isSignup ? "Already have an account?" : "New to NutriBlend?"}{" "}
+            <span
+              className="login-switch-link"
+              onClick={() => setIsSignup(!isSignup)}
+            >
+              {isSignup ? "Sign In" : "Create Account"}
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#0f172a",
-  },
-  card: {
-    background: "#020617",
-    padding: "40px",
-    borderRadius: "15px",
-    width: "320px",
-    textAlign: "center",
-  },
-  title: {
-    color: "#fff",
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    margin: "10px 0",
-    borderRadius: "8px",
-    border: "none",
-    background: "#1e293b",
-    color: "#fff",
-  },
-  mainBtn: {
-    width: "100%",
-    padding: "12px",
-    background: "#84cc16",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-  socialBtn: {
-    width: "100%",
-    padding: "10px",
-    marginTop: "10px",
-    background: "#1e293b",
-    border: "none",
-    borderRadius: "8px",
-    color: "#fff",
-    cursor: "pointer",
-  },
-  switchText: {
-    marginTop: "15px",
-    color: "#aaa",
-  },
-  link: {
-    color: "#84cc16",
-    cursor: "pointer",
-  },
-};

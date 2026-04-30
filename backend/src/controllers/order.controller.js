@@ -26,6 +26,7 @@ export const createOrder = async (req, res, next) => {
       payment_status: 'pending',
     };
 
+    // For Online payments, create Razorpay order first
     if (paymentMethod === 'Online') {
       const receipt = `receipt_${Date.now()}`;
       rzpOrder = await createRazorpayOrder(amount, receipt);
@@ -34,15 +35,29 @@ export const createOrder = async (req, res, next) => {
       orderData.status = 'placed'; // COD is placed immediately
     }
 
-    const dbOrder = await saveOrderToDb(orderData);
+    // Try saving to DB, but don't let DB failure block Razorpay payments
+    let dbOrder = null;
+    try {
+      dbOrder = await saveOrderToDb(orderData);
+      logger.info(`Order saved to DB: ${dbOrder.id} for user ${userId} via ${paymentMethod}`);
+    } catch (dbError) {
+      logger.warn(`DB save failed (order will be saved client-side): ${dbError.message}`);
+      // For COD without DB, we still need to return success so frontend can save client-side
+      if (paymentMethod === 'COD') {
+        return res.status(201).json({
+          success: true,
+          data: { db_saved: false },
+          message: 'Order created but DB save deferred to client',
+        });
+      }
+    }
 
-    logger.info(`Order created: ${dbOrder.id} for user ${userId} via ${paymentMethod}`);
-    
     res.status(201).json({
       success: true,
       data: {
         ...rzpOrder,
-        db_order_id: dbOrder.id
+        db_order_id: dbOrder?.id || null,
+        db_saved: !!dbOrder,
       },
     });
   } catch (error) {

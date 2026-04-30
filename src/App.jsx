@@ -13,11 +13,9 @@ import Payment from "./pages/Payment";
 import ReviewOrder from "./pages/ReviewOrder";
 import Success from "./pages/Success";
 import AdminLogin from "./pages/AdminLogin";
-import ProductDetails from "./pages/ProductDetails";// ✅ FIXED
+import ProductDetails from "./pages/ProductDetails";
 import { useNotification } from "./context/NotificationContext";
-import NotificationBell from "./components/NotificationBell";
 import Navbar from "./components/Navbar";
-
 
 import "./App.css";
 
@@ -31,6 +29,7 @@ export default function App() {
   const [address, setAddress] = useState(null);
   const [payment, setPayment] = useState("");
   const [cart, setCart] = useState([]);
+  const [search, setSearch] = useState("");
 
   // ✅ AUTH CHECK
   useEffect(() => {
@@ -87,46 +86,42 @@ export default function App() {
     setUser(null);
   };
 
-  if (loading) return <h2 style={{ color: "white" }}>Loading...</h2>;
+  // Loading screen
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="app-loading-content">
+          <div className="app-loading-logo">🥤</div>
+          <h2>NUTRIBLEND</h2>
+          <div className="app-loading-bar">
+            <div className="app-loading-bar-fill" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <Login />;
   if (!hasProfile) return <CompleteProfile />;
 
+  const cartItemCount = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+
   return (
-    <div>
+    <div className="app">
       {/* NAVBAR */}
-      <nav className="navbar">
-  <div className="logo" onClick={() => setPage("home")}>
-    NUTRIBLEND 🥤
-  </div>
-
-  <div className="nav-links">
-    <button onClick={() => setPage("home")}>Home</button>
-
-    <button id="cart-icon" onClick={() => setPage("cart")}>
-      🛒 Cart
-    </button>
-
-    <button onClick={() => setPage("orders")}>Orders</button>
-    <button onClick={() => setPage("admin-login")}>Admin</button>
-  </div>
-
-  <div className="right-section">
-    <NotificationBell />
-
-    <div className="profile-icon" onClick={() => setPage("profile")}>
-      👤
-    </div>
-
-    <button className="logout-btn" onClick={logout}>
-      Logout
-    </button>
-  </div>
-</nav>
+      <Navbar
+        page={page}
+        setPage={setPage}
+        cartItemCount={cartItemCount}
+        logout={logout}
+        search={search}
+        setSearch={setSearch}
+      />
 
       {/* PAGES */}
-      <div className="page-container">
+      <div className="page-container" key={page}>
         {page === "home" && (
-          <Home setPage={setPage} setSelectedProduct={setSelectedProduct} />
+          <Home search={search} setPage={setPage} setSelectedProduct={setSelectedProduct} />
         )}
 
         {page === "cart" && <Cart setPage={setPage} />}

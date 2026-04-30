@@ -2,84 +2,69 @@ import { useState } from "react";
 
 export default function ProductDetails({ product, setPage }) {
   const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
 
   if (!product) {
     return (
-      <div style={{ padding: "40px", color: "white" }}>
-        <h2>Product not found</h2>
-        <button onClick={() => setPage("home")}>Go Back</button>
+      <div className="product-details-page">
+        <div className="product-not-found">
+          <span className="home-empty-icon">🔍</span>
+          <h2>Product not found</h2>
+          <button className="buy-btn" onClick={() => setPage("home")}>← Back to Store</button>
+        </div>
       </div>
     );
   }
 
   const addToCart = () => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
     const existing = cart.find((item) => item.id === product.id);
-
-    if (existing) {
-      existing.qty += qty;
-    } else {
-      cart.push({ ...product, qty });
-    }
-
+    if (existing) { existing.qty += qty; }
+    else { cart.push({ ...product, qty }); }
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("storage"));
-
-    alert("Added to cart ✅");
-    setPage("cart");
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+    const cartIcon = document.getElementById("cart-icon");
+    if (cartIcon) { cartIcon.classList.add("bump"); setTimeout(() => cartIcon.classList.remove("bump"), 400); }
   };
 
   return (
     <div className="product-details-page">
       <div className="product-details-card">
-
-        {/* LEFT IMAGE */}
         <div className="product-image-section">
-          <img src={product.image} alt={product.name} />
+          <img src={product.image} alt={product.name} onError={(e) => (e.target.src = "https://via.placeholder.com/400x300/0c1a30/7cff6b?text=NutriBlend")} />
+          {product.tag && <div className="product-detail-tag">{product.tag}</div>}
         </div>
 
-        {/* RIGHT CONTENT */}
         <div className="product-info-section">
-
+          <span className="category">{product.category}</span>
           <h2>{product.name}</h2>
-
-          <p className="category">{product.category}</p>
-
-          <p className="price">₹{product.price}</p>
-
-          <p className="protein">💪 {product.protein}g Protein</p>
-
-          <p className="desc">
-            {product.description ||
-              "High-quality supplement designed to boost your performance and recovery."}
+          <p className="product-detail-protein">💪 {product.protein}g Protein per serving</p>
+          <p className="product-detail-desc">
+            {product.description || "High-quality supplement designed to boost your performance and recovery. Made with premium ingredients for maximum results."}
           </p>
 
-          {/* QTY SELECTOR */}
+          <div className="product-detail-price">₹{product.price}</div>
+
           <div className="qty-box">
-            <button onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+            <button onClick={() => setQty(Math.max(1, qty - 1))}>−</button>
             <span>{qty}</span>
             <button onClick={() => setQty(qty + 1)}>+</button>
           </div>
 
-          {/* ACTION BUTTONS */}
-          <div className="actions">
-            <button className="add-btn" onClick={addToCart}>
-              Add to Cart
+          <div className="product-detail-actions">
+            <button className={`product-add-btn ${added ? "added" : ""}`} onClick={addToCart}>
+              {added ? "✔ Added to Cart" : "Add to Cart"}
             </button>
-
-            <button className="buy-btn" onClick={() => setPage("address")}>
+            <button className="buy-btn" onClick={() => { addToCart(); setPage("address"); }}>
               Buy Now ⚡
             </button>
           </div>
 
-          <button
-            className="back-btn"
-            onClick={() => setPage("home")}
-          >
+          <button className="product-back-btn" onClick={() => setPage("home")}>
             ← Back to Products
           </button>
-
         </div>
       </div>
     </div>

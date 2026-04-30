@@ -67,37 +67,111 @@ export default function Orders() {
     doc.save(`invoice_${order.id}.pdf`);
   };
 
-  if (loading) return <p style={{ color: "white" }}>Loading orders...</p>;
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "delivered": return "status-delivered";
+      case "shipped": return "status-shipped";
+      case "packed": return "status-packed";
+      case "placed": return "status-placed";
+      default: return "status-placed";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "delivered": return "✅";
+      case "shipped": return "🚚";
+      case "packed": return "📦";
+      case "placed": return "🕐";
+      default: return "📋";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="orders-page">
+        <h2>Your Orders</h2>
+        <div className="orders-loading">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="order-card order-skeleton">
+              <div className="home-skeleton-text loading" />
+              <div className="home-skeleton-text-sm loading" />
+              <div className="home-skeleton-text-sm loading" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="orders-page">
-      <h2>Your Orders</h2>
+      <div className="orders-header">
+        <div>
+          <p className="orders-eyebrow">Order History</p>
+          <h2>Your Orders</h2>
+        </div>
+        <span className="orders-count">{orders.length} order{orders.length !== 1 ? "s" : ""}</span>
+      </div>
 
       {orders.length === 0 ? (
-        <p>No orders yet</p>
+        <div className="orders-empty">
+          <span className="orders-empty-icon">📦</span>
+          <h3>No orders yet</h3>
+          <p>When you place your first order, it will appear here.</p>
+        </div>
       ) : (
-        orders.map((order) => (
-          <div key={order.id} className="order-card">
+        <div className="orders-list">
+          {orders.map((order, index) => (
+            <div
+              key={order.id}
+              className="order-card"
+              style={{ animationDelay: `${index * 0.08}s` }}
+            >
+              <div className="order-card-header">
+                <div className="order-id">
+                  <span className="order-id-label">Order</span>
+                  <span className="order-id-value">#{String(order.id).slice(-8)}</span>
+                </div>
+                <span className={`order-status ${getStatusColor(order.status)}`}>
+                  {getStatusIcon(order.status)} {order.status}
+                </span>
+              </div>
 
-            <p>🆔 Order ID: {order.id}</p>
+              <div className="order-card-body">
+                <div className="order-detail-row">
+                  <span className="order-detail-label">💰 Total</span>
+                  <span className="order-detail-value order-total">₹{order.total}</span>
+                </div>
 
-            <p>💰 Total: ₹{order.total}</p>
+                <div className="order-detail-row">
+                  <span className="order-detail-label">📍 Location</span>
+                  <span className="order-detail-value">{order.address?.city || "N/A"}</span>
+                </div>
 
-            <p>📍 {order.address?.city}</p>
+                <div className="order-detail-row">
+                  <span className="order-detail-label">💳 Payment</span>
+                  <span className="order-detail-value">{order.payment_method}</span>
+                </div>
 
-            <p>💳 Payment: {order.payment_method}</p>
+                <div className="order-detail-row">
+                  <span className="order-detail-label">📅 Date</span>
+                  <span className="order-detail-value">
+                    {new Date(order.created_at).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+              </div>
 
-            <p>📦 Status: {order.status}</p>
-
-            <p>
-              📅 {new Date(order.created_at).toLocaleString()}
-            </p>
-
-            <button onClick={() => downloadInvoice(order)}>
-              Download Invoice
-            </button>
-          </div>
-        ))
+              <button onClick={() => downloadInvoice(order)}>
+                📄 Download Invoice
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

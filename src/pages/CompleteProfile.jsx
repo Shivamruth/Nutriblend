@@ -3,6 +3,7 @@ import { supabase } from "../supabase/Client";
 
 export default function CompleteProfile() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -27,6 +28,8 @@ export default function CompleteProfile() {
       return;
     }
 
+    setLoading(true);
+
     const { error } = await supabase.from("profiles").insert([
       {
         id: user.id,
@@ -38,73 +41,76 @@ export default function CompleteProfile() {
 
     if (error) {
       alert(error.message);
+      setLoading(false);
     } else {
       window.location.reload(); // 🔥 go to Home via App.jsx logic
     }
   };
 
-  if (!user) return <p style={{ color: "white" }}>Loading...</p>;
+  if (!user) {
+    return (
+      <div className="login-wrapper">
+        <div className="login-container">
+          <div className="login-card">
+            <div className="login-spinner" style={{ margin: "40px auto" }} />
+            <p style={{ textAlign: "center", color: "var(--muted)" }}>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Complete Your Profile</h2>
+    <div className="login-wrapper">
+      <div className="login-container">
+        <div className="login-orb login-orb-1" />
+        <div className="login-orb login-orb-2" />
 
-        <input
-          name="full_name"
-          placeholder="Full Name"
-          onChange={handleChange}
-          style={styles.input}
-        />
+        <div className="login-card">
+          {/* Brand */}
+          <div className="login-brand">
+            <span className="login-brand-icon">🥤</span>
+            <h1 className="login-brand-title">NUTRIBLEND</h1>
+          </div>
 
-        <input
-          name="phone"
-          placeholder="Phone"
-          onChange={handleChange}
-          style={styles.input}
-        />
+          <h2 className="login-title">Complete Your Profile</h2>
+          <p className="login-subtitle">
+            Just a few more details to get you started
+          </p>
 
-        <button style={styles.btn} onClick={handleSubmit}>
-          Save & Continue
-        </button>
+          <div className="login-form">
+            <div className="login-input-group">
+              <label className="login-label" htmlFor="profile-name">Full Name</label>
+              <input
+                id="profile-name"
+                name="full_name"
+                placeholder="John Doe"
+                onChange={handleChange}
+                value={form.full_name}
+              />
+            </div>
+
+            <div className="login-input-group">
+              <label className="login-label" htmlFor="profile-phone">Phone Number</label>
+              <input
+                id="profile-phone"
+                name="phone"
+                placeholder="9876543210"
+                onChange={handleChange}
+                value={form.phone}
+              />
+            </div>
+
+            <button
+              className="login-primary-btn"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? <span className="login-spinner" /> : "Save & Continue →"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#0f172a",
-  },
-  card: {
-    background: "#020617",
-    padding: "40px",
-    borderRadius: "15px",
-    width: "320px",
-    textAlign: "center",
-  },
-  title: {
-    color: "#fff",
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    margin: "10px 0",
-    borderRadius: "8px",
-    border: "none",
-    background: "#1e293b",
-    color: "#fff",
-  },
-  btn: {
-    width: "100%",
-    padding: "12px",
-    background: "#84cc16",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-};
