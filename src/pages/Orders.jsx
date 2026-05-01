@@ -1,40 +1,54 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { jsPDF } from "jspdf";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    fetchOrders();
+  const fetchOrdersFromSupabase = useCallback(async (userId) => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
+    setErrorMessage("");
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const res = await fetch("/api/my-orders", {
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      const json = await res.json();
-      if (json.success) {
-        setOrders(json.data);
-      } else {
-        alert(json.message || "Failed to load orders ❌");
+      if (sessionError || !session?.user) {
+        await supabase.auth.signOut();
+        setOrders([]);
+        setErrorMessage("Your login session expired. Please log in again.");
+        return;
       }
+
+      const userOrders = await fetchOrdersFromSupabase(session.user.id);
+      setOrders(userOrders);
     } catch (err) {
       console.error(err);
-      alert("Something went wrong ❌");
+      setOrders([]);
+      setErrorMessage(err.message || "Something went wrong while loading orders.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchOrdersFromSupabase]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const downloadInvoice = (order) => {
     const doc = new jsPDF();
@@ -44,46 +58,28 @@ export default function Orders() {
 
     doc.setFontSize(12);
     doc.text(`Order ID: ${order.id}`, 20, 40);
-    doc.text(
-      `Date: ${new Date(order.created_at).toLocaleString()}`,
-      20,
-      50
-    );
-
-    doc.text(`Name: ${order.address?.name}`, 20, 70);
-    doc.text(`Phone: ${order.address?.phone}`, 20, 80);
-    doc.text(
-      `Address: ${order.address?.street}, ${order.address?.city}`,
-      20,
-      90
-    );
-
-    doc.text(`Payment: ${order.payment_method}`, 20, 110);
-    doc.text(`Status: ${order.status}`, 20, 120);
-
-    doc.setFontSize(14);
-    doc.text(`Total: ₹${order.total}`, 20, 140);
+    doc.text(`Date: ${new Date(order.created_at).toLocaleString()}`, 20, 50);
+    doc.text(`Name: ${order.address?.name || "N/A"}`, 20, 70);
+    doc.text(`Phone: ${order.address?.phone || "N/A"}`, 20, 80);
+    doc.text(`Address: ${order.address?.street || ""}, ${order.address?.city || ""}`, 20, 90);
+    doc.text(`Payment: ${order.payment_method || "N/A"}`, 20, 110);
+    doc.text(`Status: ${order.status || "placed"}`, 20, 120);
+    doc.text(`Total: Rs. ${order.total || 0}`, 20, 140);
 
     doc.save(`invoice_${order.id}.pdf`);
   };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case "delivered": return "status-delivered";
-      case "shipped": return "status-shipped";
-      case "packed": return "status-packed";
-      case "placed": return "status-placed";
-      default: return "status-placed";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "delivered": return "✅";
-      case "shipped": return "🚚";
-      case "packed": return "📦";
-      case "placed": return "🕐";
-      default: return "📋";
+      case "delivered":
+        return "status-delivered";
+      case "shipped":
+        return "status-shipped";
+      case "packed":
+        return "status-packed";
+      case "placed":
+      default:
+        return "status-placed";
     }
   };
 
@@ -111,14 +107,21 @@ export default function Orders() {
           <p className="orders-eyebrow">Order History</p>
           <h2>Your Orders</h2>
         </div>
-        <span className="orders-count">{orders.length} order{orders.length !== 1 ? "s" : ""}</span>
+        <span className="orders-count">
+          {orders.length} order{orders.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
       {orders.length === 0 ? (
         <div className="orders-empty">
-          <span className="orders-empty-icon">📦</span>
-          <h3>No orders yet</h3>
-          <p>When you place your first order, it will appear here.</p>
+          <span className="orders-empty-icon">Box</span>
+          <h3>{errorMessage ? "Unable to load orders" : "No orders yet"}</h3>
+          <p>{errorMessage || "When you place your first order, it will appear here."}</p>
+          {errorMessage && (
+            <button onClick={fetchOrders}>
+              Try Again
+            </button>
+          )}
         </div>
       ) : (
         <div className="orders-list">
@@ -134,28 +137,28 @@ export default function Orders() {
                   <span className="order-id-value">#{String(order.id).slice(-8)}</span>
                 </div>
                 <span className={`order-status ${getStatusColor(order.status)}`}>
-                  {getStatusIcon(order.status)} {order.status}
+                  {order.status || "placed"}
                 </span>
               </div>
 
               <div className="order-card-body">
                 <div className="order-detail-row">
-                  <span className="order-detail-label">💰 Total</span>
-                  <span className="order-detail-value order-total">₹{order.total}</span>
+                  <span className="order-detail-label">Total</span>
+                  <span className="order-detail-value order-total">Rs. {order.total}</span>
                 </div>
 
                 <div className="order-detail-row">
-                  <span className="order-detail-label">📍 Location</span>
+                  <span className="order-detail-label">Location</span>
                   <span className="order-detail-value">{order.address?.city || "N/A"}</span>
                 </div>
 
                 <div className="order-detail-row">
-                  <span className="order-detail-label">💳 Payment</span>
-                  <span className="order-detail-value">{order.payment_method}</span>
+                  <span className="order-detail-label">Payment</span>
+                  <span className="order-detail-value">{order.payment_method || "N/A"}</span>
                 </div>
 
                 <div className="order-detail-row">
-                  <span className="order-detail-label">📅 Date</span>
+                  <span className="order-detail-label">Date</span>
                   <span className="order-detail-value">
                     {new Date(order.created_at).toLocaleDateString("en-IN", {
                       day: "numeric",
@@ -167,7 +170,7 @@ export default function Orders() {
               </div>
 
               <button onClick={() => downloadInvoice(order)}>
-                📄 Download Invoice
+                Download Invoice
               </button>
             </div>
           ))}

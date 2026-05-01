@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+const fallbackProductImage =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' fill='%230c1a30'/%3E%3Ctext x='30' y='37' text-anchor='middle' fill='%237cff6b' font-family='Arial,sans-serif' font-size='24' font-weight='700'%3EN%3C/text%3E%3C/svg%3E";
+
 export default function Cart({ setPage }) {
   const [cart, setCart] = useState([]);
 
@@ -95,8 +98,7 @@ export default function Cart({ setPage }) {
                   alt={item.name}
                   className="cart-item-img"
                   onError={(e) =>
-                    (e.target.src =
-                      "https://via.placeholder.com/60x60/0c1a30/7cff6b?text=N")
+                    (e.currentTarget.src = fallbackProductImage)
                   }
                 />
               )}

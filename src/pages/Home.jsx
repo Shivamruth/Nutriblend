@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 
+const fallbackProductImage =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%230c1a30'/%3E%3Ctext x='150' y='104' text-anchor='middle' fill='%237cff6b' font-family='Arial,sans-serif' font-size='22' font-weight='700'%3ENutriBlend%3C/text%3E%3C/svg%3E";
+
 export default function Home({ search, setPage, setSelectedProduct }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -233,8 +236,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
                 className="product-img"
                 alt={p.name}
                 onError={(e) =>
-                  (e.target.src =
-                    "https://via.placeholder.com/300x200/0c1a30/7cff6b?text=NutriBlend")
+                  (e.currentTarget.src = fallbackProductImage)
                 }
               />
 

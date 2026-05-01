@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase/Client";
 
 import Login from "./pages/Login";
@@ -14,7 +14,6 @@ import ReviewOrder from "./pages/ReviewOrder";
 import Success from "./pages/Success";
 import AdminLogin from "./pages/AdminLogin";
 import ProductDetails from "./pages/ProductDetails";
-import { useNotification } from "./context/NotificationContext";
 import Navbar from "./components/Navbar";
 
 import "./App.css";
@@ -25,45 +24,24 @@ export default function App() {
   const [hasProfile, setHasProfile] = useState(false);
   const [page, setPage] = useState("home");
   const [selectedProduct, setSelectedProduct] = useState(null);
-
-  const [address, setAddress] = useState(null);
+  const [, setAddress] = useState(null);
   const [payment, setPayment] = useState("");
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState("");
 
-  // ✅ AUTH CHECK
-  useEffect(() => {
-    checkUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      checkUser();
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  // ✅ CART SYNC (CRITICAL FIX)
-  useEffect(() => {
-    loadCart();
-
-    window.addEventListener("storage", loadCart);
-
-    return () => {
-      window.removeEventListener("storage", loadCart);
-    };
-  }, []);
-
-  const loadCart = () => {
+  const loadCart = useCallback(() => {
     const data = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(data);
-  };
+  }, []);
 
-  const checkUser = async () => {
-    const { data } = await supabase.auth.getUser();
+  const checkUser = useCallback(async () => {
+    const { data, error } = await supabase.auth.getUser();
 
-    if (!data.user) {
+    if (error || !data.user) {
+      if (error) {
+        await supabase.auth.signOut();
+      }
+
       setUser(null);
       setLoading(false);
       return;
@@ -79,19 +57,40 @@ export default function App() {
 
     setHasProfile(!!profile);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    checkUser();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      checkUser();
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, [checkUser]);
+
+  useEffect(() => {
+    loadCart();
+
+    window.addEventListener("storage", loadCart);
+
+    return () => {
+      window.removeEventListener("storage", loadCart);
+    };
+  }, [loadCart]);
 
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
   };
 
-  // Loading screen
   if (loading) {
     return (
       <div className="app-loading">
         <div className="app-loading-content">
-          <div className="app-loading-logo">🥤</div>
+          <div className="app-loading-logo">NB</div>
           <h2>NUTRIBLEND</h2>
           <div className="app-loading-bar">
             <div className="app-loading-bar-fill" />
@@ -108,7 +107,6 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* NAVBAR */}
       <Navbar
         page={page}
         setPage={setPage}
@@ -118,7 +116,6 @@ export default function App() {
         setSearch={setSearch}
       />
 
-      {/* PAGES */}
       <div className="page-container" key={page}>
         {page === "home" && (
           <Home search={search} setPage={setPage} setSelectedProduct={setSelectedProduct} />
