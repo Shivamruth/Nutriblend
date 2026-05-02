@@ -75,7 +75,14 @@ RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
 ```
 
-The current frontend Supabase client is configured in `src/supabase/Client.js`. For production, prefer moving public Supabase values to Vite environment variables.
+The frontend Supabase client uses Vite variables, which must be available during the frontend build:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_or_publishable_key
+```
+
+`VITE_SUPABASE_KEY` is also supported for compatibility with older local `.env` files.
 
 ## Installation
 
@@ -175,18 +182,17 @@ npm run preview
 
 ## Deployment
 
-The repository includes `vercel.json`, so the frontend can be deployed to Vercel. The Express backend can be deployed separately or adapted to the existing backend API entry points. Make sure all required backend environment variables are configured in the deployment platform.
+The repository includes `vercel.json`, so the frontend can be deployed to Vercel. Add the frontend variables above in Vercel project settings for Production, Preview, and Development as needed, then redeploy so Vite can bake them into the built assets. The Express backend can be deployed separately or adapted to the existing backend API entry points. Make sure all required backend environment variables are configured in the deployment platform.
 
 ## Security Notes
 
-- Do not expose Supabase service role keys in frontend code.
+- Do not expose Supabase service role keys in frontend code. Only use the Supabase anon or publishable key for `VITE_SUPABASE_ANON_KEY`.
 - Keep Razorpay secrets only on the backend.
 - Use Supabase Row Level Security policies for profiles, products, and orders.
 - Restrict admin routes with authenticated sessions and role checks.
 
 ## Future Improvements
 
-- Move frontend Supabase URL and anon key to Vite environment variables.
 - Add automated tests for cart, checkout, and admin authorization.
 - Replace hardcoded Razorpay public key in the payment page with an environment value.
 - Add product management screens for admin users.
