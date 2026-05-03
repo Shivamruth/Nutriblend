@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
-dotenv.config();
+// dotenv.config() is a no-op on Vercel (no .env file deployed),
+// but works locally for development.
+try { dotenv.config(); } catch { /* ignore */ }
 
 const envSchema = z.object({
   PORT: z.string().default('5000'),
@@ -18,7 +20,8 @@ const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
   console.error('❌ Invalid environment variables:', parsedEnv.error.format());
-  process.exit(1);
+  // Throw instead of process.exit() so Vercel can report the error
+  throw new Error('Missing required environment variables. Check Vercel dashboard → Settings → Environment Variables.');
 }
 
 export const env = parsedEnv.data;

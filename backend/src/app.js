@@ -12,8 +12,23 @@ const app = express();
 
 // Security Middlewares
 app.use(helmet());
+
+// Allow CORS from the configured frontend URL and any Vercel preview URLs
+const allowedOrigins = [env.FRONTEND_URL];
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, cb) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return cb(null, true);
+    // Allow configured origins and any *.vercel.app preview URLs
+    if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      return cb(null, true);
+    }
+    cb(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
