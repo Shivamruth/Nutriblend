@@ -5,78 +5,111 @@ import { FcGoogle } from "react-icons/fc";
 export default function Login() {
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleEmailAuth = async () => {
-    if (!form.email || !form.password) {
-      alert("Enter email & password");
+    if (!form.email.trim() || !form.password.trim()) {
+      alert("Enter email and password");
       return;
     }
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    if (isSignup) {
-      const { error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-      });
+      if (isSignup) {
+        const { error } = await supabase.auth.signUp({
+          email: form.email.trim(),
+          password: form.password,
+        });
 
-      if (error) alert(error.message);
-      else alert("Signup successful! Now login.");
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
-      });
+        if (error) {
+          alert(error.message);
+          return;
+        }
 
-      if (error) alert(error.message);
+        alert("Signup successful! Please login now.");
+        setIsSignup(false);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: form.email.trim(),
+          password: form.password,
+        });
+
+        if (error) {
+          alert(error.message);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
+    try {
+      setLoading(true);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        alert(error.message);
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      alert("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-wrapper">
       <div className="login-container">
-        {/* Decorative floating orbs */}
         <div className="login-orb login-orb-1" />
         <div className="login-orb login-orb-2" />
 
         <div className="login-card">
-          {/* Brand */}
           <div className="login-brand">
             <span className="login-brand-icon">🥤</span>
             <h1 className="login-brand-title">NUTRIBLEND</h1>
             <p className="login-brand-tagline">Fuel Your Fitness Journey</p>
           </div>
 
-          {/* Title */}
           <h2 className="login-title">
             {isSignup ? "Create Account" : "Welcome Back"} 💪
           </h2>
+
           <p className="login-subtitle">
             {isSignup
               ? "Start your protein-powered journey today"
               : "Sign in to continue your fitness goals"}
           </p>
 
-          {/* Form */}
           <div className="login-form">
             <div className="login-input-group">
-              <label className="login-label" htmlFor="login-email">Email</label>
+              <label className="login-label" htmlFor="login-email">
+                Email
+              </label>
+
               <input
                 id="login-email"
                 type="email"
@@ -84,11 +117,15 @@ export default function Login() {
                 placeholder="you@example.com"
                 onChange={handleChange}
                 value={form.email}
+                autoComplete="email"
               />
             </div>
 
             <div className="login-input-group">
-              <label className="login-label" htmlFor="login-password">Password</label>
+              <label className="login-label" htmlFor="login-password">
+                Password
+              </label>
+
               <input
                 id="login-password"
                 type="password"
@@ -96,10 +133,12 @@ export default function Login() {
                 placeholder="••••••••"
                 onChange={handleChange}
                 value={form.password}
+                autoComplete={isSignup ? "new-password" : "current-password"}
               />
             </div>
 
             <button
+              type="button"
               className="login-primary-btn"
               onClick={handleEmailAuth}
               disabled={loading}
@@ -113,24 +152,26 @@ export default function Login() {
               )}
             </button>
 
-            {/* Divider */}
             <div className="login-divider">
               <span>or continue with</span>
             </div>
 
-            {/* Google */}
-            <button className="login-social-btn" onClick={handleGoogleLogin}>
+            <button
+              type="button"
+              className="login-social-btn"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+            >
               <FcGoogle size={22} />
               <span>Google</span>
             </button>
           </div>
 
-          {/* Switch */}
           <p className="login-switch">
             {isSignup ? "Already have an account?" : "New to NutriBlend?"}{" "}
             <span
               className="login-switch-link"
-              onClick={() => setIsSignup(!isSignup)}
+              onClick={() => setIsSignup((prev) => !prev)}
             >
               {isSignup ? "Sign In" : "Create Account"}
             </span>

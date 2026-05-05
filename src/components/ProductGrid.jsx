@@ -7,14 +7,17 @@ export default function ProductGrid({ products = [] }) {
   const getImage = (item) => {
     const name = item.name?.toLowerCase() || "";
 
-    if (name.includes("10g") && name.includes("nutri")) return "/products/10gNutriShake.png";
-    if (name.includes("10g")) return "/products/10gShake.png";
-    if (name.includes("20g")) return "/products/20gNutriShake.png";
-    if (name.includes("40g") || name.includes("pro")) return "/products/40gProShake.png";
+    if (name.includes("10g") && name.includes("natural")) return "/products/10gNatural.png";
+    if (name.includes("10g") && name.includes("Whey")) return "/products/WheyShake.png";
+    if (name.includes("20g") && name.includes("natural")) return "/products/20gNaturalShake.png";
+    if (name.includes("20g") && name.includes("whey")) return "/products/20gWhey.png";
+    if (name.includes("30g") && name.includes("natural")) return "/products/30gNatural.png";
+    if (name.includes("30g") && name.includes("whey")) return "/products/30gWhey.png";
+    if (name.includes("40g") || name.includes("protein")) return "/products/40gProShake.png";
+    if (name.includes("50g") || name.includes("protein")) return "/products/50gPro.png";
     if (name.includes("basic")) return "/products/BasicPre.png";
     if (name.includes("standard")) return "/products/StandardPre.png";
     if (name.includes("premium")) return "/products/PremiumWork.png";
-    if (name.includes("whey")) return "/products/WheyShake.png";
 
     return item.image;
   };

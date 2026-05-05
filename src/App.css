@@ -1053,3 +1053,33 @@
     flex-direction: column;
   }
 }
+
+.product-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+  border-radius: 18px;
+}
+
+.card-image-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.bump {
+  animation: bumpCart 0.4s ease;
+}
+
+@keyframes bumpCart {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

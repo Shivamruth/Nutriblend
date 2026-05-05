@@ -30,60 +30,86 @@ export default function App() {
   const [search, setSearch] = useState("");
 
   const loadCart = useCallback(() => {
-    const data = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(data);
+    try {
+      const data = JSON.parse(localStorage.getItem("cart")) || [];
+      setCart(data);
+    } catch (error) {
+      console.error("Cart load error:", error);
+      setCart([]);
+    }
   }, []);
 
   const checkUser = useCallback(async () => {
-    const { data, error } = await supabase.auth.getUser();
+    try {
+      setLoading(true);
 
-    if (error || !data.user) {
-      if (error) {
-        await supabase.auth.signOut();
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error || !data?.user) {
+        console.error("Auth user error:", error?.message);
+        setUser(null);
+        setHasProfile(false);
+        return;
       }
 
+      setUser(data.user);
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Profile fetch error:", profileError.message);
+        setHasProfile(false);
+        return;
+      }
+
+      setHasProfile(!!profile);
+    } catch (err) {
+      console.error("checkUser failed:", err);
       setUser(null);
+      setHasProfile(false);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setUser(data.user);
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", data.user.id)
-      .single();
-
-    setHasProfile(!!profile);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     checkUser();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
       checkUser();
     });
 
     return () => {
-      listener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [checkUser]);
 
   useEffect(() => {
     loadCart();
 
-    window.addEventListener("storage", loadCart);
+    window.addEventListener("cartUpdated", loadCart);
 
     return () => {
-      window.removeEventListener("storage", loadCart);
+      window.removeEventListener("cartUpdated", loadCart);
     };
   }, [loadCart]);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      setHasProfile(false);
+      setPage("home");
+    }
   };
 
   if (loading) {
@@ -118,7 +144,11 @@ export default function App() {
 
       <div className="page-container" key={page}>
         {page === "home" && (
-          <Home search={search} setPage={setPage} setSelectedProduct={setSelectedProduct} />
+          <Home
+            search={search}
+            setPage={setPage}
+            setSelectedProduct={setSelectedProduct}
+          />
         )}
 
         {page === "cart" && <Cart setPage={setPage} />}
@@ -128,10 +158,7 @@ export default function App() {
         {page === "admin" && <Admin setPage={setPage} />}
 
         {page === "product" && (
-          <ProductDetails
-            product={selectedProduct}
-            setPage={setPage}
-          />
+          <ProductDetails product={selectedProduct} setPage={setPage} />
         )}
 
         {page === "address" && (
@@ -139,10 +166,7 @@ export default function App() {
         )}
 
         {page === "payment" && (
-          <Payment
-            setPage={setPage}
-            setPayment={setPayment}
-          />
+          <Payment setPage={setPage} setPayment={setPayment} />
         )}
 
         {page === "review" && (
