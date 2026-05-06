@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-
-const fallbackProductImage =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%230c1a30'/%3E%3Ctext x='150' y='104' text-anchor='middle' fill='%237cff6b' font-family='Arial,sans-serif' font-size='22' font-weight='700'%3ENutriBlend%3C/text%3E%3C/svg%3E";
+import { fallbackProductImage, withProductImage } from "../utils/productImages";
 
 export default function Home({ search, setPage, setSelectedProduct }) {
   const [products, setProducts] = useState([]);
@@ -14,13 +12,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
   const [sort, setSort] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   async function fetchProducts() {
-    setLoading(true);
-
     const { data, error } = await supabase
       .from("products")
       .select("*");
@@ -28,11 +20,16 @@ export default function Home({ search, setPage, setSelectedProduct }) {
     if (error) {
       console.log("ERROR:", error);
     } else {
-      setProducts(data || []);
+      setProducts((data || []).map(withProductImage));
     }
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProducts();
+  }, []);
 
   // 🛒 ADD TO CART
   function addToCart(e, product) {

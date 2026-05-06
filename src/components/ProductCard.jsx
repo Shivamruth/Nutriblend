@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
+import { fallbackProductImage } from "../utils/productImages";
 
 export default function ProductCard({ item, onView }) {
   const { addToCart } = useCart();
@@ -80,9 +81,12 @@ export default function ProductCard({ item, onView }) {
     <div className="card">
       <div className="card-image-wrap">
         <img
-          src={item.image || "/products/defaultShake.png"}
+          src={item.image || fallbackProductImage}
           alt={item.name}
           className="product-img"
+          onError={(e) => {
+            e.currentTarget.src = fallbackProductImage;
+          }}
         />
 
         <div className="card-badge">{item.protein}</div>

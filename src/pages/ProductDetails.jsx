@@ -1,7 +1,5 @@
 import { useState } from "react";
-
-const fallbackProductImage =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230c1a30'/%3E%3Ctext x='200' y='154' text-anchor='middle' fill='%237cff6b' font-family='Arial,sans-serif' font-size='28' font-weight='700'%3ENutriBlend%3C/text%3E%3C/svg%3E";
+import { fallbackProductImage, getProductImage } from "../utils/productImages";
 
 export default function ProductDetails({ product, setPage }) {
   const [qty, setQty] = useState(1);
@@ -36,7 +34,7 @@ export default function ProductDetails({ product, setPage }) {
     <div className="product-details-page">
       <div className="product-details-card">
         <div className="product-image-section">
-          <img src={product.image} alt={product.name} onError={(e) => (e.currentTarget.src = fallbackProductImage)} />
+          <img src={getProductImage(product)} alt={product.name} onError={(e) => (e.currentTarget.src = fallbackProductImage)} />
           {product.tag && <div className="product-detail-tag">{product.tag}</div>}
         </div>
 
