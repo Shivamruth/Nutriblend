@@ -2,8 +2,6 @@ import { Search } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import "../styles/navbar.css";
 
-const isAdmin = profile?.role === "admin";
-
 export default function Navbar({
   page,
   setPage,
@@ -13,6 +11,8 @@ export default function Navbar({
   setSearch,
   profile,
 }) {
+  const isAdmin = profile?.role === "admin";
+  
   return (
     <nav className="navbar">
       <div className="logo" onClick={() => setPage("home")}>
