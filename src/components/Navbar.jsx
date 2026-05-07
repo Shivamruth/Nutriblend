@@ -1,7 +1,18 @@
 import { Search } from "lucide-react";
 import NotificationBell from "./NotificationBell";
+import "../styles/navbar.css";
 
-export default function Navbar({ page, setPage, cartItemCount, logout, search, setSearch }) {
+const isAdmin = profile?.role === "admin";
+
+export default function Navbar({
+  page,
+  setPage,
+  cartItemCount,
+  logout,
+  search,
+  setSearch,
+  profile,
+}) {
   return (
     <nav className="navbar">
       <div className="logo" onClick={() => setPage("home")}>
@@ -38,12 +49,14 @@ export default function Navbar({ page, setPage, cartItemCount, logout, search, s
           📋 Orders
         </button>
 
-        <button
-          className={page === "admin-login" || page === "admin" ? "nav-active" : ""}
-          onClick={() => setPage("admin-login")}
-        >
-          🛡️ Admin
-        </button>
+        {isAdmin && (
+  <button
+    className={page === "admin-login" || page === "admin" ? "nav-active" : ""}
+    onClick={() => setPage("admin-login")}
+  >
+    🛡️ Admin
+  </button>
+)}
       </div>
 
       <div className="right-section">

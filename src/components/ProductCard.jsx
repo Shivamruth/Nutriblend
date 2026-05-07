@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { fallbackProductImage } from "../utils/productImages";
+import "../styles/product-card.css";
 
 export default function ProductCard({ item, onView }) {
   const { addToCart } = useCart();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import "../styles/review-order.css";
 
 export default function ReviewOrder({ cart, address, payment, setPage }) {
   const [loading, setLoading] = useState(false);

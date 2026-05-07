@@ -15,13 +15,17 @@ import Success from "./pages/Success";
 import AdminLogin from "./pages/AdminLogin";
 import ProductDetails from "./pages/ProductDetails";
 import Navbar from "./components/Navbar";
+import Plans from "./pages/Plans";
 
-import "./App.css";
+import "./styles/app.css";
+import "./styles/cart-feedback.css";
 
 export default function App() {
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
+  const [profile, setProfile] = useState(null);
+
   const [page, setPage] = useState("home");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [, setAddress] = useState(null);
@@ -49,12 +53,13 @@ export default function App() {
         console.error("Auth user error:", error?.message);
         setUser(null);
         setHasProfile(false);
+        setProfile(null);
         return;
       }
 
       setUser(data.user);
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", data.user.id)
@@ -63,14 +68,17 @@ export default function App() {
       if (profileError) {
         console.error("Profile fetch error:", profileError.message);
         setHasProfile(false);
+        setProfile(null);
         return;
       }
 
-      setHasProfile(!!profile);
+      setHasProfile(!!profileData);
+      setProfile(profileData || null);
     } catch (err) {
       console.error("checkUser failed:", err);
       setUser(null);
       setHasProfile(false);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
@@ -94,9 +102,11 @@ export default function App() {
     loadCart();
 
     window.addEventListener("cartUpdated", loadCart);
+    window.addEventListener("storage", loadCart);
 
     return () => {
       window.removeEventListener("cartUpdated", loadCart);
+      window.removeEventListener("storage", loadCart);
     };
   }, [loadCart]);
 
@@ -108,6 +118,7 @@ export default function App() {
     } finally {
       setUser(null);
       setHasProfile(false);
+      setProfile(null);
       setPage("home");
     }
   };
@@ -129,7 +140,10 @@ export default function App() {
   if (!user) return <Login />;
   if (!hasProfile) return <CompleteProfile />;
 
-  const cartItemCount = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+  const cartItemCount = cart.reduce(
+    (sum, item) => sum + Number(item.qty || 1),
+    0
+  );
 
   return (
     <div className="app">
@@ -140,6 +154,7 @@ export default function App() {
         logout={logout}
         search={search}
         setSearch={setSearch}
+        profile={profile}
       />
 
       <div className="page-container" key={page}>
@@ -154,6 +169,8 @@ export default function App() {
         {page === "cart" && <Cart setPage={setPage} />}
         {page === "orders" && <Orders />}
         {page === "profile" && <Profile />}
+        {page === "plans" && <Plans setPage={setPage} />}
+
         {page === "admin-login" && <AdminLogin setPage={setPage} />}
         {page === "admin" && <Admin setPage={setPage} />}
 

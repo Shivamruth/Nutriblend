@@ -1,0 +1,23 @@
+#cart-icon {
+  transition: transform 0.3s ease;
+}
+
+#cart-icon.bump,
+.bump {
+  animation: cart-bump 0.4s ease;
+}
+
+.fly-img {
+  position: fixed !important;
+  z-index: 9999999 !important;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+@keyframes cart-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
