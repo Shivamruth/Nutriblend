@@ -167,7 +167,7 @@ export default function App() {
         )}
 
         {page === "cart" && <Cart setPage={setPage} />}
-        {page === "orders" && <Orders />}
+        {page === "orders" && <Orders setPage={setPage} />}
         {page === "profile" && <Profile />}
         {page === "plans" && <Plans setPage={setPage} />}
 

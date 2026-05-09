@@ -94,3 +94,86 @@ export const getAllOrdersAdmin = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateOrderStatusAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const allowedStatuses = [
+      'Placed',
+      'Preparing',
+      'Out for Delivery',
+      'Delivered',
+      'Cancelled',
+    ];
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID is required',
+      });
+    }
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status is required',
+      });
+    }
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order status',
+        allowedStatuses,
+      });
+    }
+
+    const orderId = Number(id);
+
+    if (Number.isNaN(orderId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID',
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .select('*');
+
+    if (error) {
+      console.error('Supabase status update error:', error);
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update order status',
+        error: error.message,
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: data[0],
+    });
+  } catch (err) {
+    console.error('Server error while updating order status:', err);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message,
+    });
+  }
+};

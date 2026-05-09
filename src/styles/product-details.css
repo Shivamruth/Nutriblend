@@ -369,3 +369,11 @@
 .product-price-row.single-price {
   grid-template-columns: 1fr;
 }
+
+.product-price-row.single-price {
+  grid-template-columns: 1fr;
+}
+
+.ingredients-section > .product-detail-desc {
+  margin: 0;
+}

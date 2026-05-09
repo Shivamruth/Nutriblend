@@ -1,11 +1,64 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { fallbackProductImage, getProductImage } from "../utils/productImages";
-import { getProductExtraDetails } from "../data/productDetailsData";
 import "../styles/product-details.css";
+
+const splitTextList = (value) => {
+  if (!value) return [];
+
+  return String(value)
+    .split(/,|\n|•/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const parseIngredients = (value) => {
+  if (!value) return [];
+
+  return String(value)
+    .split(/,|\n/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const proteinMatch = item.match(/(\d+\s?g)\s*$/i);
+      const protein = proteinMatch ? proteinMatch[1] : "N/A";
+
+      const withoutProtein = proteinMatch
+        ? item.replace(proteinMatch[1], "").trim()
+        : item;
+
+      const quantityMatch = withoutProtein.match(
+        /(\d+(\.\d+)?\s?(ml|g|kg|tbsp|tsp|scoop|scoops|pcs|piece|pieces)|¼\s?scoop|½\s?scoop|¾\s?scoop|1\/2\s?scoop|1\/4\s?scoop|1\.5\s?scoop)/i
+      );
+
+      const quantity = quantityMatch ? quantityMatch[0] : "As required";
+
+      const name = quantityMatch
+        ? withoutProtein.replace(quantityMatch[0], "").trim()
+        : withoutProtein;
+
+      return {
+        name: name || item,
+        quantity,
+        protein,
+      };
+    });
+};
 
 export default function ProductDetails({ product, setPage }) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+
+  const isPlan = product?.isPlan;
+
+  const ingredients = useMemo(() => {
+    if (isPlan) return [];
+    return parseIngredients(product?.ingredients);
+  }, [product, isPlan]);
+
+  const benefits = useMemo(() => {
+    if (isPlan) return product?.includes || [];
+    return splitTextList(product?.benefits);
+  }, [product, isPlan]);
 
   if (!product) {
     return (
@@ -13,6 +66,7 @@ export default function ProductDetails({ product, setPage }) {
         <div className="product-not-found">
           <span className="home-empty-icon">🔍</span>
           <h2>Product not found</h2>
+
           <button className="buy-btn" onClick={() => setPage("home")}>
             ← Back to Store
           </button>
@@ -20,9 +74,6 @@ export default function ProductDetails({ product, setPage }) {
       </div>
     );
   }
-
-  const isPlan = product.isPlan;
-  const extra = getProductExtraDetails(product);
 
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -51,13 +102,15 @@ export default function ProductDetails({ product, setPage }) {
     }
 
     localStorage.setItem("cart", JSON.stringify(updatedCart));
+
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("cartUpdated"));
 
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(() => setAdded(false), 1800);
 
     const cartIcon = document.getElementById("cart-icon");
+
     if (cartIcon) {
       cartIcon.classList.add("bump");
       setTimeout(() => cartIcon.classList.remove("bump"), 400);
@@ -69,11 +122,18 @@ export default function ProductDetails({ product, setPage }) {
     setPage("address");
   };
 
-  const displayProtein = extra?.totalProtein || `${product.protein || 0}g`;
+  const displayProtein = product.protein || (isPlan ? "Plan" : "N/A");
+  const displayQuantity = product.quantity || product.duration || "Serving";
+  const displayCalories = product.calories || "";
+  const bestFor = product.bestFor || product.best_for || "";
 
   return (
     <div className="product-details-page">
-      <div className={`product-details-card ${isPlan ? "plan-details-card" : ""}`}>
+      <div
+        className={`product-details-card ${
+          isPlan ? "plan-details-card" : ""
+        }`}
+      >
         <div className="product-image-section">
           {isPlan ? (
             <div className="product-plan-visual">
@@ -90,53 +150,57 @@ export default function ProductDetails({ product, setPage }) {
             />
           )}
 
-          {product.tag && <div className="product-detail-tag">{product.tag}</div>}
+          {product.tag && (
+            <div className="product-detail-tag">{product.tag}</div>
+          )}
         </div>
 
         <div className="product-info-section">
           <span className="category">
-            {isPlan ? "Subscription Plan" : product.category}
+            {isPlan ? "Subscription Plan" : product.category || "Product"}
           </span>
 
           <h2>{product.name}</h2>
 
           <div className="product-badges-row">
             <span>💪 {displayProtein}</span>
-            {isPlan && <span>📅 {product.duration}</span>}
-            {extra?.calories && <span>🔥 {extra.calories}</span>}
+            <span>🥤 {displayQuantity}</span>
+            {displayCalories && <span>🔥 {displayCalories}</span>}
+            {isPlan && product.duration && <span>📅 {product.duration}</span>}
           </div>
 
           <p className="product-detail-desc">
             {product.description ||
-              "High-quality shake designed to support your protein intake, performance, and recovery."}
+              "High-quality NutriBlend item designed to support your daily nutrition, protein intake, and fitness goals."}
           </p>
 
-          <div className="product-price-row">
+          <div className="product-price-row single-price">
             <div>
               <span>Price</span>
               <h3>₹{product.price}</h3>
             </div>
           </div>
 
-          {extra?.bestFor && (
+          {bestFor && (
             <div className="product-best-box">
               <strong>Best For</strong>
-              <p>{extra.bestFor}</p>
+              <p>{bestFor}</p>
             </div>
           )}
 
-          {isPlan && (
+          {isPlan && benefits.length > 0 && (
             <div className="product-plan-box">
               <h3>Plan Includes</h3>
+
               <div className="product-benefits-list">
-                {product.includes?.map((item) => (
+                {benefits.map((item) => (
                   <span key={item}>✓ {item}</span>
                 ))}
               </div>
             </div>
           )}
 
-          {extra?.ingredients?.length > 0 && (
+          {!isPlan && ingredients.length > 0 && (
             <div className="ingredients-section">
               <h3>Ingredients & Protein Breakdown</h3>
 
@@ -147,8 +211,8 @@ export default function ProductDetails({ product, setPage }) {
                   <span>Protein</span>
                 </div>
 
-                {extra.ingredients.map((item) => (
-                  <div className="ingredients-row" key={item.name}>
+                {ingredients.map((item, index) => (
+                  <div className="ingredients-row" key={`${item.name}-${index}`}>
                     <span>{item.name}</span>
                     <span>{item.quantity}</span>
                     <span>{item.protein}</span>
@@ -158,17 +222,24 @@ export default function ProductDetails({ product, setPage }) {
             </div>
           )}
 
-          {extra?.benefits?.length > 0 && (
+          {!isPlan && product.ingredients && ingredients.length === 0 && (
+            <div className="ingredients-section">
+              <h3>Ingredients</h3>
+              <p className="product-detail-desc">{product.ingredients}</p>
+            </div>
+          )}
+
+          {!isPlan && benefits.length > 0 && (
             <div className="product-benefits-section">
               <h3>Benefits</h3>
+
               <div className="product-benefits-list">
-                {extra.benefits.map((benefit) => (
+                {benefits.map((benefit) => (
                   <span key={benefit}>✓ {benefit}</span>
                 ))}
               </div>
             </div>
           )}
-
 
           <div className="qty-box">
             <button onClick={() => setQty(Math.max(1, qty - 1))}>−</button>

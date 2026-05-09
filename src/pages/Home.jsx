@@ -128,7 +128,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { notify } = useNotification();
-
+  const [plans, setPlans] = useState([]);
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -148,8 +148,42 @@ export default function Home({ search, setPage, setSelectedProduct }) {
     setLoading(false);
   }
 
+  async function fetchPlans() {
+  const { data, error } = await supabase
+    .from("plans")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.log("PLANS ERROR:", error);
+    return;
+  }
+
+  const formattedPlans = (data || []).map((plan) => ({
+    id: plan.id,
+    name: plan.name,
+    category: "Plans",
+    price: plan.price,
+    protein: plan.protein,
+    duration: plan.duration,
+    tag: plan.tag,
+    image: plan.image || "📅",
+    description: plan.description,
+    bestFor: plan.best_for,
+    includes: String(plan.includes || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    isPlan: true,
+  }));
+
+  setPlans(formattedPlans);
+}
+
   useEffect(() => {
     fetchProducts();
+    fetchPlans();
   }, []);
 
   const addToCart = (e, item) => {
@@ -203,8 +237,8 @@ export default function Home({ search, setPage, setSelectedProduct }) {
   const normalize = (value) => String(value || "").toLowerCase();
 
   const allItems = useMemo(() => {
-    return [...products, ...subscriptionPlans];
-  }, [products]);
+    return [...products, ...plans];
+  }, [products, plans]);
 
   const filteredItems = useMemo(() => {
     let result = allItems.filter((item) => {
