@@ -3,22 +3,32 @@ import { useCart } from "../context/CartContext";
 import { fallbackProductImage } from "../utils/productImages";
 import "../styles/product-card.css";
 
+const normalizeStockStatus = (status) => {
+  const value = String(status || "In Stock")
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .trim();
+
+  if (value === "out of stock") return "Out of Stock";
+  if (value === "limited stock") return "Limited Stock";
+  return "In Stock";
+};
+
+const getStockClass = (status) =>
+  normalizeStockStatus(status).toLowerCase().replaceAll(" ", "-");
+
 export default function ProductCard({ item, onView }) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
 
+  const stockStatus = normalizeStockStatus(item.stock_status);
+  const isOutOfStock = stockStatus === "Out of Stock";
+
   const flyToCart = (imgElement) => {
     const cart = document.getElementById("cart-icon");
 
-    if (!cart) {
-      alert("Cart icon not found. Add id='cart-icon' in Navbar cart button.");
-      return;
-    }
-
-    if (!imgElement) {
-      alert("Product image not found.");
-      return;
-    }
+    if (!cart || !imgElement) return;
 
     const imgRect = imgElement.getBoundingClientRect();
     const cartRect = cart.getBoundingClientRect();
@@ -62,9 +72,12 @@ export default function ProductCard({ item, onView }) {
   };
 
   const handleAdd = (e) => {
-    const img = e.currentTarget
-      .closest(".card")
-      .querySelector(".product-img");
+    if (isOutOfStock) {
+      alert("This product is currently out of stock.");
+      return;
+    }
+
+    const img = e.currentTarget.closest(".card")?.querySelector(".product-img");
 
     flyToCart(img);
     addToCart(item);
@@ -74,12 +87,10 @@ export default function ProductCard({ item, onView }) {
     setTimeout(() => {
       setAdded(false);
     }, 1500);
-
-    console.log("CLICKED");
   };
 
   return (
-    <div className="card">
+    <div className={`card ${isOutOfStock ? "out-of-stock-card" : ""}`}>
       <div className="card-image-wrap">
         <img
           src={item.image || fallbackProductImage}
@@ -91,6 +102,17 @@ export default function ProductCard({ item, onView }) {
         />
 
         <div className="card-badge">{item.protein}</div>
+
+        <div className={`stock-badge ${getStockClass(stockStatus)}`}>
+          {stockStatus}
+        </div>
+
+        {isOutOfStock && (
+          <div className="out-of-stock-overlay">
+            <span>Currently Unavailable</span>
+          </div>
+        )}
+
         <div className="card-overlay"></div>
       </div>
 
@@ -106,8 +128,10 @@ export default function ProductCard({ item, onView }) {
             <button
               className={`cart-btn ${added ? "added" : ""}`}
               onClick={handleAdd}
+              disabled={isOutOfStock}
+              title={isOutOfStock ? "This product is currently out of stock" : ""}
             >
-              {added ? "✔ Added" : "+ Cart"}
+              {isOutOfStock ? "Out of Stock" : added ? "✔ Added" : "+ Cart"}
             </button>
 
             <button onClick={() => onView(item)}>View</button>

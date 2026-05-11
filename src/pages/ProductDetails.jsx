@@ -49,6 +49,9 @@ export default function ProductDetails({ product, setPage }) {
   const [added, setAdded] = useState(false);
 
   const isPlan = product?.isPlan;
+  const stockStatus = product?.stock_status || "In Stock";
+const normalizedStock = stockStatus.toLowerCase().replaceAll("_", " ");
+const isOutOfStock = !isPlan && normalizedStock === "out of stock";
 
   const ingredients = useMemo(() => {
     if (isPlan) return [];
@@ -76,6 +79,11 @@ export default function ProductDetails({ product, setPage }) {
   }
 
   const addToCart = () => {
+    if (isOutOfStock) {
+      alert("This product is currently out of stock.");
+      return;
+    }
+
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const existing = cart.find((item) => item.id === product.id);
 
@@ -118,6 +126,11 @@ export default function ProductDetails({ product, setPage }) {
   };
 
   const buyNow = () => {
+    if (isOutOfStock) {
+      alert("This product is currently out of stock.");
+      return;
+    }
+
     addToCart();
     setPage("address");
   };
@@ -132,7 +145,7 @@ export default function ProductDetails({ product, setPage }) {
       <div
         className={`product-details-card ${
           isPlan ? "plan-details-card" : ""
-        }`}
+        } ${isOutOfStock ? "out-of-stock-details" : ""}`}
       >
         <div className="product-image-section">
           {isPlan ? (
@@ -168,6 +181,16 @@ export default function ProductDetails({ product, setPage }) {
             {displayCalories && <span>🔥 {displayCalories}</span>}
             {isPlan && product.duration && <span>📅 {product.duration}</span>}
           </div>
+
+          {!isPlan && stockStatus !== "In Stock" && (
+  <div
+    className={`product-stock-status ${stockStatus
+      .toLowerCase()
+      .replaceAll(" ", "-")}`}
+  >
+    {stockStatus}
+  </div>
+)}
 
           <p className="product-detail-desc">
             {product.description ||
@@ -242,21 +265,35 @@ export default function ProductDetails({ product, setPage }) {
           )}
 
           <div className="qty-box">
-            <button onClick={() => setQty(Math.max(1, qty - 1))}>−</button>
+            <button
+              onClick={() => setQty(Math.max(1, qty - 1))}
+              disabled={isOutOfStock}
+            >
+              −
+            </button>
             <span>{qty}</span>
-            <button onClick={() => setQty(qty + 1)}>+</button>
+            <button onClick={() => setQty(qty + 1)} disabled={isOutOfStock}>
+              +
+            </button>
           </div>
 
           <div className="product-detail-actions">
             <button
               className={`product-add-btn ${added ? "added" : ""}`}
               onClick={addToCart}
+              disabled={isOutOfStock}
             >
-              {added ? "✔ Added to Cart" : isPlan ? "Add Plan" : "Add to Cart"}
+              {isOutOfStock
+                ? "Out of Stock"
+                : added
+                ? "✔ Added to Cart"
+                : isPlan
+                ? "Add Plan"
+                : "Add to Cart"}
             </button>
 
-            <button className="buy-btn" onClick={buyNow}>
-              {isPlan ? "Buy Plan ⚡" : "Buy Now ⚡"}
+            <button className="buy-btn" onClick={buyNow} disabled={isOutOfStock}>
+              {isOutOfStock ? "Unavailable" : isPlan ? "Buy Plan ⚡" : "Buy Now ⚡"}
             </button>
           </div>
 

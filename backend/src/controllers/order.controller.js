@@ -1,64 +1,186 @@
-import { createRazorpayOrder } from '../services/razorpay.service.js';
-import { saveOrderToDb, getUserOrders, supabase } from '../services/supabase.service.js';
-import { ApiError } from '../middleware/error.middleware.js';
-import logger from '../utils/logger.js';
+import { createRazorpayOrder } from "../services/razorpay.service.js";
+import {
+  saveOrderToDb,
+  getUserOrders,
+  supabase,
+} from "../services/supabase.service.js";
+import { ApiError } from "../middleware/error.middleware.js";
+import logger from "../utils/logger.js";
+
+const ALLOWED_PAYMENT_METHODS = ["Online", "COD"];
+
+const ORDER_STATUSES = [
+  "Placed",
+  "Preparing",
+  "Out for Delivery",
+  "Delivered",
+  "Cancelled",
+];
+
+const normalizeItems = (items = []) => {
+  if (!Array.isArray(items)) return [];
+
+  return items.map((item) => ({
+    id: item.id || null,
+    name: item.name || item.product_name || "NutriBlend Item",
+    product_name: item.product_name || item.name || "NutriBlend Item",
+    price: Number(item.price || 0),
+    qty: Number(item.qty || 1),
+    protein: item.protein || "",
+    category: item.category || "",
+    image: item.image || "",
+    isPlan: Boolean(item.isPlan),
+    duration: item.duration || item.plan_duration || "",
+  }));
+};
+
+const normalizeAddress = (address = {}) => {
+  if (!address || typeof address !== "object") {
+    return {};
+  }
+
+  return {
+    id: address.id || null,
+    name: address.name || "",
+    phone: address.phone || "",
+    street: address.street || "",
+    landmark: address.landmark || "",
+    city: address.city || "",
+    state: address.state || "",
+    pincode: address.pincode || "",
+    type: address.type || "Address",
+    delivery_instruction: address.delivery_instruction || "",
+  };
+};
+
+const getFirstProductName = (items) => {
+  if (!items.length) return "NutriBlend Order";
+
+  if (items.length === 1) {
+    return items[0].name || items[0].product_name || "NutriBlend Order";
+  }
+
+  return `${items.length} items order`;
+};
 
 export const createOrder = async (req, res, next) => {
   try {
-    const { amount, items, address, userId, paymentMethod } = req.body;
+    const {
+      amount,
+      subtotal,
+      deliveryFee,
+      deliveryOption,
+      items,
+      address,
+      userId,
+      paymentMethod,
+    } = req.body;
 
-    if (!amount || amount <= 0) {
-      throw new ApiError(400, 'Invalid amount');
+    const finalAmount = Number(amount || 0);
+    const finalSubtotal = Number(subtotal || amount || 0);
+    const finalDeliveryFee = Number(deliveryFee || 0);
+    const normalizedItems = normalizeItems(items);
+    const normalizedAddress = normalizeAddress(address);
+
+    if (!finalAmount || finalAmount <= 0) {
+      throw new ApiError(400, "Invalid amount");
     }
 
-    if (!paymentMethod || !['Online', 'COD'].includes(paymentMethod)) {
-      throw new ApiError(400, 'Invalid payment method');
+    if (!userId) {
+      throw new ApiError(400, "User ID is required");
+    }
+
+    if (!ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
+      throw new ApiError(400, "Invalid payment method");
+    }
+
+    if (!normalizedItems.length) {
+      throw new ApiError(400, "Order items are required");
+    }
+
+    if (!normalizedAddress.name || !normalizedAddress.phone) {
+      throw new ApiError(400, "Delivery address is required");
     }
 
     let rzpOrder = null;
-    let orderData = {
+
+    const firstItem = normalizedItems[0];
+    const totalQty = normalizedItems.reduce(
+      (sum, item) => sum + Number(item.qty || 1),
+      0
+    );
+
+    const orderData = {
       user_id: userId,
-      items,
-      address,
+      email: req.user?.email || req.body.email || null,
+
+      product_name: getFirstProductName(normalizedItems),
+      price: Number(firstItem?.price || 0),
+      qty: totalQty,
+      total: finalAmount,
+
+      subtotal: finalSubtotal,
+      delivery_fee: finalDeliveryFee,
+      delivery_option: deliveryOption || "Standard Delivery",
+
+      items: normalizedItems,
+      address: normalizedAddress,
+
       payment_method: paymentMethod,
-      total: amount,
-      status: 'pending',
-      payment_status: 'pending',
+      payment_status: paymentMethod === "COD" ? "Pending" : "Pending",
+      status: "Placed",
     };
 
-    // For Online payments, create Razorpay order first
-    if (paymentMethod === 'Online') {
+    if (paymentMethod === "Online") {
       const receipt = `receipt_${Date.now()}`;
-      rzpOrder = await createRazorpayOrder(amount, receipt);
+      rzpOrder = await createRazorpayOrder(finalAmount, receipt);
       orderData.razorpay_order_id = rzpOrder.id;
-    } else {
-      orderData.status = 'placed'; // COD is placed immediately
+      orderData.status = "Placed";
     }
 
-    // Try saving to DB, but don't let DB failure block Razorpay payments
     let dbOrder = null;
+
     try {
       dbOrder = await saveOrderToDb(orderData);
-      logger.info(`Order saved to DB: ${dbOrder.id} for user ${userId} via ${paymentMethod}`);
+
+      logger.info(
+        `Order saved to DB: ${dbOrder.id} for user ${userId} via ${paymentMethod}`
+      );
     } catch (dbError) {
-      logger.warn(`DB save failed (order will be saved client-side): ${dbError.message}`);
-      // For COD without DB, we still need to return success so frontend can save client-side
-      if (paymentMethod === 'COD') {
-        return res.status(201).json({
-          success: true,
-          data: { db_saved: false },
-          message: 'Order created but DB save deferred to client',
+      logger.warn(`DB save failed: ${dbError.message}`);
+
+      if (paymentMethod === "COD") {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save COD order",
+          error: dbError.message,
         });
       }
+
+      return res.status(201).json({
+        success: true,
+        orderId: null,
+        data: {
+          ...rzpOrder,
+          db_saved: false,
+          db_order_id: null,
+        },
+        message:
+          "Razorpay order created, but database save failed. Client can retry saving.",
+      });
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
+      orderId: dbOrder?.id || null,
+      order_id: dbOrder?.id || null,
       data: {
         ...rzpOrder,
+        db_saved: true,
         db_order_id: dbOrder?.id || null,
-        db_saved: !!dbOrder,
+        order: dbOrder,
       },
+      message: "Order created successfully",
     });
   } catch (error) {
     next(error);
@@ -68,6 +190,7 @@ export const createOrder = async (req, res, next) => {
 export const getMyOrders = async (req, res, next) => {
   try {
     const orders = await getUserOrders(req.user.id);
+
     res.status(200).json({
       success: true,
       data: orders,
@@ -80,9 +203,9 @@ export const getMyOrders = async (req, res, next) => {
 export const getAllOrdersAdmin = async (req, res, next) => {
   try {
     const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
 
@@ -100,33 +223,25 @@ export const updateOrderStatusAdmin = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const allowedStatuses = [
-      'Placed',
-      'Preparing',
-      'Out for Delivery',
-      'Delivered',
-      'Cancelled',
-    ];
-
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID is required',
+        message: "Order ID is required",
       });
     }
 
     if (!status) {
       return res.status(400).json({
         success: false,
-        message: 'Status is required',
+        message: "Status is required",
       });
     }
 
-    if (!allowedStatuses.includes(status)) {
+    if (!ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid order status',
-        allowedStatuses,
+        message: "Invalid order status",
+        allowedStatuses: ORDER_STATUSES,
       });
     }
 
@@ -135,44 +250,45 @@ export const updateOrderStatusAdmin = async (req, res) => {
     if (Number.isNaN(orderId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid order ID',
+        message: "Invalid order ID",
       });
     }
 
     const { data, error } = await supabase
-      .from('orders')
+      .from("orders")
       .update({ status })
-      .eq('id', orderId)
-      .select('*');
+      .eq("id", orderId)
+      .select("*")
+      .single();
 
     if (error) {
-      console.error('Supabase status update error:', error);
+      console.error("Supabase status update error:", error);
 
       return res.status(500).json({
         success: false,
-        message: 'Failed to update order status',
+        message: "Failed to update order status",
         error: error.message,
       });
     }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found',
+        message: "Order not found",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Order status updated successfully',
-      data: data[0],
+      message: "Order status updated successfully",
+      data,
     });
   } catch (err) {
-    console.error('Server error while updating order status:', err);
+    console.error("Server error while updating order status:", err);
 
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: err.message,
     });
   }

@@ -377,3 +377,37 @@
 .ingredients-section > .product-detail-desc {
   margin: 0;
 }
+
+.product-stock-status {
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 1px solid transparent;
+}
+
+.product-stock-status.in-stock {
+  background: rgba(124, 255, 107, 0.14);
+  color: #dfffd9;
+  border-color: rgba(124, 255, 107, 0.25);
+}
+
+.product-stock-status.limited-stock {
+  background: rgba(250, 204, 21, 0.14);
+  color: #fff3b0;
+  border-color: rgba(250, 204, 21, 0.25);
+}
+
+.product-stock-status.out-of-stock {
+  background: rgba(255, 77, 77, 0.14);
+  color: #ffd6d6;
+  border-color: rgba(255, 77, 77, 0.25);
+}
+
+.product-add-btn:disabled,
+.buy-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}

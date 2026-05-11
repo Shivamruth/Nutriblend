@@ -12,17 +12,18 @@ const emptyForm = {
   calories: "",
   quantity: "",
   benefits: "",
+  is_active: true,
+  stock_status: "In Stock",
 };
 
 const categories = ["All", "Natural", "Whey", "Preworkout", "Premium"];
+const statusFilters = ["All", "Active", "Inactive"];
+const stockStatuses = ["In Stock", "Limited Stock", "Out of Stock"];
 
 const getImagePreview = (image) => {
   if (!image) return "";
-
   if (image.startsWith("http")) return image;
-
   if (image.startsWith("/")) return image;
-
   return `/${image}`;
 };
 
@@ -34,6 +35,8 @@ export default function AdminProducts({ notify }) {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [stockFilter, setStockFilter] = useState("All");
 
   const isEditing = Boolean(editingId);
   const previewImage = getImagePreview(form.image);
@@ -64,36 +67,50 @@ export default function AdminProducts({ notify }) {
     const query = searchTerm.trim().toLowerCase();
 
     return products.filter((product) => {
+      const isActive = product.is_active !== false;
+      const stockStatus = product.stock_status || "In Stock";
+
       const matchesCategory =
         categoryFilter === "All" || product.category === categoryFilter;
+
+      const matchesStatus =
+        statusFilter === "All" ||
+        (statusFilter === "Active" && isActive) ||
+        (statusFilter === "Inactive" && !isActive);
+
+      const matchesStock =
+        stockFilter === "All" || stockStatus === stockFilter;
 
       const matchesSearch =
         !query ||
         String(product.name || "").toLowerCase().includes(query) ||
         String(product.category || "").toLowerCase().includes(query) ||
         String(product.protein || "").toLowerCase().includes(query) ||
-        String(product.description || "").toLowerCase().includes(query);
+        String(product.description || "").toLowerCase().includes(query) ||
+        String(product.benefits || "").toLowerCase().includes(query) ||
+        String(stockStatus).toLowerCase().includes(query);
 
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesStatus && matchesStock && matchesSearch;
     });
-  }, [products, searchTerm, categoryFilter]);
+  }, [products, searchTerm, categoryFilter, statusFilter, stockFilter]);
 
   const productStats = useMemo(() => {
     return {
       total: products.length,
-      natural: products.filter((p) => p.category === "Natural").length,
-      whey: products.filter((p) => p.category === "Whey").length,
-      preworkout: products.filter((p) => p.category === "Preworkout").length,
-      premium: products.filter((p) => p.category === "Premium").length,
+      active: products.filter((p) => p.is_active !== false).length,
+      inactive: products.filter((p) => p.is_active === false).length,
+      inStock: products.filter((p) => (p.stock_status || "In Stock") === "In Stock").length,
+      limited: products.filter((p) => p.stock_status === "Limited Stock").length,
+      outOfStock: products.filter((p) => p.stock_status === "Out of Stock").length,
     };
   }, [products]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -121,20 +138,20 @@ export default function AdminProducts({ notify }) {
     return true;
   };
 
-  const buildPayload = () => {
-    return {
-      name: form.name.trim(),
-      protein: form.protein.trim(),
-      price: Number(form.price),
-      category: form.category,
-      ingredients: form.ingredients.trim(),
-      description: form.description.trim(),
-      image: form.image.trim(),
-      calories: form.calories.trim(),
-      quantity: form.quantity.trim(),
-      benefits: form.benefits.trim(),
-    };
-  };
+  const buildPayload = () => ({
+    name: form.name.trim(),
+    protein: form.protein.trim(),
+    price: Number(form.price),
+    category: form.category,
+    ingredients: form.ingredients.trim(),
+    description: form.description.trim(),
+    image: form.image.trim(),
+    calories: form.calories.trim(),
+    quantity: form.quantity.trim(),
+    benefits: form.benefits.trim(),
+    is_active: form.is_active,
+    stock_status: form.stock_status || "In Stock",
+  });
 
   const saveProduct = async (e) => {
     e.preventDefault();
@@ -187,6 +204,8 @@ export default function AdminProducts({ notify }) {
       calories: product.calories || "",
       quantity: product.quantity || "",
       benefits: product.benefits || "",
+      is_active: product.is_active !== false,
+      stock_status: product.stock_status || "In Stock",
     });
 
     document
@@ -194,9 +213,60 @@ export default function AdminProducts({ notify }) {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const toggleProductStatus = async (product) => {
+    const nextStatus = product.is_active === false;
+
+    setLoading(true);
+
+    const { error } = await supabase
+      .from("products")
+      .update({ is_active: nextStatus })
+      .eq("id", product.id);
+
+    if (error) {
+      console.error("Toggle product status error:", error);
+      notify?.("Failed to update product status", "error");
+    } else {
+      notify?.(
+        nextStatus ? "Product activated ✅" : "Product hidden from store ✅",
+        "success"
+      );
+      await fetchProducts();
+
+      if (editingId === product.id) {
+        setForm((prev) => ({ ...prev, is_active: nextStatus }));
+      }
+    }
+
+    setLoading(false);
+  };
+
+  const updateStockStatus = async (product, stockStatus) => {
+    setLoading(true);
+
+    const { error } = await supabase
+      .from("products")
+      .update({ stock_status: stockStatus })
+      .eq("id", product.id);
+
+    if (error) {
+      console.error("Stock status update error:", error);
+      notify?.("Failed to update stock status", "error");
+    } else {
+      notify?.("Stock status updated ✅", "success");
+      await fetchProducts();
+
+      if (editingId === product.id) {
+        setForm((prev) => ({ ...prev, stock_status: stockStatus }));
+      }
+    }
+
+    setLoading(false);
+  };
+
   const deleteProduct = async (product) => {
     const confirmDelete = window.confirm(
-      `Delete "${product.name}"?\n\nThis product will be removed from the store.`
+      `Delete "${product.name}" permanently?\n\nRecommended: use Hide instead of Delete.`
     );
 
     if (!confirmDelete) return;
@@ -215,9 +285,7 @@ export default function AdminProducts({ notify }) {
       notify?.("Product deleted ✅", "success");
       await fetchProducts();
 
-      if (editingId === product.id) {
-        resetForm();
-      }
+      if (editingId === product.id) resetForm();
     }
 
     setLoading(false);
@@ -226,6 +294,8 @@ export default function AdminProducts({ notify }) {
   const clearFilters = () => {
     setSearchTerm("");
     setCategoryFilter("All");
+    setStatusFilter("All");
+    setStockFilter("All");
   };
 
   return (
@@ -235,7 +305,7 @@ export default function AdminProducts({ notify }) {
           <p className="admin-eyebrow">Product Control</p>
           <h3>Manage Products</h3>
           <p className="admin-products-subtitle">
-            Add, edit, search, filter, and remove NutriBlend products.
+            Add, edit, search, filter, hide, activate, and control stock status.
           </p>
         </div>
 
@@ -246,10 +316,10 @@ export default function AdminProducts({ notify }) {
 
       <div className="admin-product-stats">
         <ProductStat icon="📦" label="Total" value={productStats.total} />
-        <ProductStat icon="🌿" label="Natural" value={productStats.natural} />
-        <ProductStat icon="💪" label="Whey" value={productStats.whey} />
-        <ProductStat icon="⚡" label="Preworkout" value={productStats.preworkout} />
-        <ProductStat icon="👑" label="Premium" value={productStats.premium} />
+        <ProductStat icon="✅" label="Active" value={productStats.active} />
+        <ProductStat icon="🙈" label="Hidden" value={productStats.inactive} />
+        <ProductStat icon="🟢" label="In Stock" value={productStats.inStock} />
+        <ProductStat icon="🔴" label="Out" value={productStats.outOfStock} />
       </div>
 
       <form className="admin-product-form" onSubmit={saveProduct}>
@@ -263,7 +333,23 @@ export default function AdminProducts({ notify }) {
             </p>
           </div>
 
-          {isEditing && <span className="admin-edit-mode-badge">Edit Mode</span>}
+          <div className="admin-form-badges">
+            {isEditing && <span className="admin-edit-mode-badge">Edit Mode</span>}
+            <span
+              className={`admin-active-status-badge ${
+                form.is_active ? "active" : "inactive"
+              }`}
+            >
+              {form.is_active ? "Active" : "Hidden"}
+            </span>
+            <span
+              className={`admin-stock-chip ${form.stock_status
+                .toLowerCase()
+                .replaceAll(" ", "-")}`}
+            >
+              {form.stock_status}
+            </span>
+          </div>
         </div>
 
         <div className="admin-product-form-layout">
@@ -302,6 +388,18 @@ export default function AdminProducts({ notify }) {
                 ))}
             </select>
 
+            <select
+              name="stock_status"
+              value={form.stock_status}
+              onChange={handleChange}
+            >
+              {stockStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+
             <input
               name="calories"
               placeholder="Calories e.g. 300 kcal"
@@ -336,7 +434,7 @@ export default function AdminProducts({ notify }) {
             <textarea
               className="admin-form-wide"
               name="ingredients"
-              placeholder="Ingredients. Example: Milk 250ml, Whey 1 scoop, Oats 20g"
+              placeholder="Ingredients. Example: Milk 250ml 8g, Whey 1 scoop 24g"
               value={form.ingredients}
               onChange={handleChange}
               rows="3"
@@ -350,6 +448,16 @@ export default function AdminProducts({ notify }) {
               onChange={handleChange}
               rows="3"
             />
+
+            <label className="admin-active-toggle admin-form-wide">
+              <input
+                type="checkbox"
+                name="is_active"
+                checked={form.is_active}
+                onChange={handleChange}
+              />
+              <span>Show this product on Home page</span>
+            </label>
           </div>
 
           <div className="admin-image-preview-card">
@@ -403,7 +511,7 @@ export default function AdminProducts({ notify }) {
       <div className="admin-product-tools">
         <input
           type="text"
-          placeholder="Search products by name, category, protein..."
+          placeholder="Search products by name, category, protein, stock..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -419,9 +527,33 @@ export default function AdminProducts({ notify }) {
           ))}
         </select>
 
-        {(searchTerm || categoryFilter !== "All") && (
-          <button onClick={clearFilters}>Clear</button>
-        )}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          {statusFilters.map((status) => (
+            <option key={status} value={status}>
+              {status === "All" ? "All Products" : status}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={stockFilter}
+          onChange={(e) => setStockFilter(e.target.value)}
+        >
+          <option value="All">All Stock</option>
+          {stockStatuses.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+
+        {(searchTerm ||
+          categoryFilter !== "All" ||
+          statusFilter !== "All" ||
+          stockFilter !== "All") && <button onClick={clearFilters}>Clear</button>}
 
         <span>
           Showing {filteredProducts.length} / {products.length}
@@ -443,6 +575,8 @@ export default function AdminProducts({ notify }) {
               <tr>
                 <th>Product</th>
                 <th>Category</th>
+                <th>Status</th>
+                <th>Stock</th>
                 <th>Protein</th>
                 <th>Price</th>
                 <th>Quantity</th>
@@ -451,44 +585,86 @@ export default function AdminProducts({ notify }) {
             </thead>
 
             <tbody>
-              {filteredProducts.map((product) => (
-                <tr key={product.id}>
-                  <td>
-                    <div className="admin-product-name">
-                      <strong>{product.name}</strong>
-                      <span>{product.description || "No description"}</span>
-                    </div>
-                  </td>
+              {filteredProducts.map((product) => {
+                const isActive = product.is_active !== false;
+                const stockStatus = product.stock_status || "In Stock";
 
-                  <td>
-                    <span className="admin-product-category-chip">
-                      {product.category || "N/A"}
-                    </span>
-                  </td>
+                return (
+                  <tr
+                    key={product.id}
+                    className={!isActive ? "product-hidden-row" : ""}
+                  >
+                    <td>
+                      <div className="admin-product-name">
+                        <strong>{product.name}</strong>
+                        <span>{product.description || "No description"}</span>
+                      </div>
+                    </td>
 
-                  <td>{product.protein || "N/A"}</td>
+                    <td>
+                      <span className="admin-product-category-chip">
+                        {product.category || "N/A"}
+                      </span>
+                    </td>
 
-                  <td>
-                    <strong>
-                      ₹{Number(product.price || 0).toLocaleString("en-IN")}
-                    </strong>
-                  </td>
-
-                  <td>{product.quantity || "N/A"}</td>
-
-                  <td>
-                    <div className="admin-product-row-actions">
-                      <button onClick={() => editProduct(product)}>Edit</button>
-                      <button
-                        className="danger"
-                        onClick={() => deleteProduct(product)}
+                    <td>
+                      <span
+                        className={`admin-product-status-chip ${
+                          isActive ? "active" : "inactive"
+                        }`}
                       >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {isActive ? "Active" : "Hidden"}
+                      </span>
+                    </td>
+
+                    <td>
+                      <select
+                        className="admin-stock-select"
+                        value={stockStatus}
+                        onChange={(e) =>
+                          updateStockStatus(product, e.target.value)
+                        }
+                      >
+                        {stockStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    <td>{product.protein || "N/A"}</td>
+
+                    <td>
+                      <strong>
+                        ₹{Number(product.price || 0).toLocaleString("en-IN")}
+                      </strong>
+                    </td>
+
+                    <td>{product.quantity || "N/A"}</td>
+
+                    <td>
+                      <div className="admin-product-row-actions">
+                        <button onClick={() => editProduct(product)}>Edit</button>
+
+                        <button
+                          className={isActive ? "warning" : "success"}
+                          onClick={() => toggleProductStatus(product)}
+                        >
+                          {isActive ? "Hide" : "Activate"}
+                        </button>
+
+                        <button
+                          className="danger"
+                          onClick={() => deleteProduct(product)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

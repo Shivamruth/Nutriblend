@@ -1,31 +1,37 @@
-import express from 'express';
+import express from "express";
 import {
   createOrder,
   getMyOrders,
   getAllOrdersAdmin,
   updateOrderStatusAdmin,
-} from '../controllers/order.controller.js';
+} from "../controllers/order.controller.js";
 
-import { handleRazorpayWebhook } from '../controllers/webhook.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
-import { adminMiddleware } from '../middleware/admin.middleware.js';
+import { handleRazorpayWebhook } from "../controllers/webhook.controller.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
+import { adminMiddleware } from "../middleware/admin.middleware.js";
 
 const router = express.Router();
 
-// Order creation
-router.post('/create-order', authMiddleware, createOrder);
+// Create order / Razorpay order
+router.post("/create-order", authMiddleware, createOrder);
 
 // Razorpay webhook
-router.post('/webhook', handleRazorpayWebhook);
+router.post("/webhook", handleRazorpayWebhook);
 
-// Customer protected routes
-router.get('/my-orders', authMiddleware, getMyOrders);
+// Customer orders
+router.get("/my-orders", authMiddleware, getMyOrders);
 
-// Admin protected routes
-router.get('/admin/orders', authMiddleware, adminMiddleware, getAllOrdersAdmin);
+// Admin orders
+router.get(
+  "/admin/orders",
+  authMiddleware,
+  adminMiddleware,
+  getAllOrdersAdmin
+);
 
+// Admin update order status
 router.patch(
-  '/admin/orders/:id/status',
+  "/admin/orders/:id/status",
   authMiddleware,
   adminMiddleware,
   updateOrderStatusAdmin

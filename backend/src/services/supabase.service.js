@@ -1,39 +1,59 @@
-import { createClient } from '@supabase/supabase-js';
-import { env } from '../config/env.js';
+import { createClient } from "@supabase/supabase-js";
+import { env } from "../config/env.js";
 
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+export const supabase = createClient(
+  env.SUPABASE_URL,
+  env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export const saveOrderToDb = async (orderData) => {
   const { data, error } = await supabase
-    .from('orders')
+    .from("orders")
     .insert([orderData])
-    .select()
+    .select("*")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
+
   return data;
 };
 
-export const updateOrderStatus = async (razorpayOrderId, status, paymentStatus) => {
+export const updateOrderStatus = async (
+  razorpayOrderId,
+  status,
+  paymentStatus,
+  extraFields = {}
+) => {
   const { data, error } = await supabase
-    .from('orders')
-    .update({ 
-      status, 
-      payment_status: paymentStatus 
+    .from("orders")
+    .update({
+      status,
+      payment_status: paymentStatus,
+      ...extraFields,
     })
-    .eq('razorpay_order_id', razorpayOrderId);
+    .eq("razorpay_order_id", razorpayOrderId)
+    .select("*")
+    .single();
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
+
   return data;
 };
 
 export const getUserOrders = async (userId) => {
   const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .from("orders")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
 };

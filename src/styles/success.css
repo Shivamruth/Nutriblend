@@ -1,7 +1,7 @@
 /* Success page: src/pages/Success.jsx */
 
 .success-container {
-  max-width: 860px;
+  max-width: 900px;
   min-height: calc(100vh - 180px);
   display: flex;
   align-items: center;
@@ -11,9 +11,11 @@
 }
 
 .success-box {
-  width: min(100%, 620px);
+  position: relative;
+  width: min(100%, 660px);
   padding: 42px 32px;
   text-align: center;
+  overflow: hidden;
   background:
     radial-gradient(circle at top left, rgba(124, 255, 107, 0.14), transparent 36%),
     radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.1), transparent 36%),
@@ -22,6 +24,18 @@
   border: 1px solid var(--line);
   border-radius: 30px;
   box-shadow: var(--shadow-md);
+}
+
+.success-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  width: 260px;
+  height: 260px;
+  transform: translateX(-50%);
+  background: rgba(124, 255, 107, 0.12);
+  filter: blur(55px);
+  pointer-events: none;
 }
 
 .success-eyebrow {
@@ -41,7 +55,7 @@
 }
 
 .success-main-text {
-  max-width: 450px;
+  max-width: 470px;
   margin: 14px auto 0 !important;
   color: var(--muted);
   line-height: 1.7;
@@ -97,8 +111,57 @@
 }
 
 .success-info-card strong {
+  display: block;
   color: #ffffff;
   font-size: 1rem;
+  line-height: 1.35;
+}
+
+/* ===== ESTIMATE CARD ===== */
+
+.success-estimate-card {
+  display: flex;
+  gap: 13px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(96, 165, 250, 0.09);
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  text-align: left;
+}
+
+.success-estimate-card > span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 15px;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  font-size: 1.35rem;
+}
+
+.success-estimate-card h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.success-estimate-card p {
+  margin: 6px 0 0 !important;
+  color: #d1d5db !important;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.success-estimate-card small {
+  display: block;
+  margin-top: 8px;
+  color: #93c5fd;
+  font-weight: 800;
+  line-height: 1.45;
 }
 
 /* ===== ADDRESS CARD ===== */
@@ -198,12 +261,45 @@
   font-weight: 950;
 }
 
+.success-step-active span {
+  background: var(--primary);
+  color: #04111d;
+  box-shadow: 0 0 25px rgba(124, 255, 107, 0.24);
+}
+
 .success-steps p {
   margin: 0 !important;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 750;
   line-height: 1.35;
+}
+
+/* ===== HELP BOX ===== */
+
+.success-help-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.16);
+  text-align: left;
+}
+
+.success-help-box > span {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+}
+
+.success-help-box p {
+  margin: 0 !important;
+  color: #fff3b0 !important;
+  line-height: 1.55;
+  font-size: 0.88rem;
+  font-weight: 750;
 }
 
 /* ===== ACTIONS ===== */
@@ -239,7 +335,24 @@
   box-shadow: none !important;
 }
 
+.success-secondary-link {
+  margin-top: 13px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.success-secondary-link:hover {
+  color: #ffffff;
+}
+
 @media (max-width: 720px) {
+  .success-container {
+    min-height: auto;
+  }
+
   .success-box {
     padding: 24px 18px;
     border-radius: 22px;
@@ -247,6 +360,10 @@
 
   .success-info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .success-estimate-card {
+    flex-direction: column;
   }
 
   .success-steps {

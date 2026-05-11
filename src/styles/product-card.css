@@ -45,3 +45,112 @@
   display: block;
   border-radius: 18px;
 }
+
+.stock-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  backdrop-filter: blur(10px);
+  border: 1px solid transparent;
+}
+
+.stock-badge.in-stock {
+  background: rgba(124, 255, 107, 0.16);
+  color: #dfffd9;
+  border-color: rgba(124, 255, 107, 0.25);
+}
+
+.stock-badge.limited-stock {
+  background: rgb(244, 196, 6);
+  color: #ffd900;
+  border-color: rgb(250, 204, 21);
+}
+
+.stock-badge.out-of-stock {
+  background: rgba(255, 77, 77, 0.16);
+  color: #ffd6d6;
+  border-color: rgba(255, 77, 77, 0.25);
+}
+
+.cart-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* =========================
+   PRODUCT STOCK BADGE
+========================= */
+
+.stock-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 950;
+  backdrop-filter: blur(10px);
+  border: 1px solid transparent;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+.stock-badge.in-stock {
+  background: rgba(124, 255, 107, 0.18);
+  color: #dfffd9;
+  border-color: rgba(124, 255, 107, 0.3);
+}
+
+.stock-badge.limited-stock {
+  background: rgb(255, 225, 0);
+  color: #fff3b0;
+  border-color: rgb(250, 204, 21);
+}
+
+.stock-badge.out-of-stock {
+  background: rgba(255, 77, 77, 0.22);
+  color: #ffd6d6;
+  border-color: rgba(255, 77, 77, 0.4);
+}
+
+.out-of-stock-card {
+  opacity: 0.9;
+}
+
+.out-of-stock-card .product-img {
+  filter: grayscale(0.75);
+  opacity: 0.72;
+}
+
+.out-of-stock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(1px);
+}
+
+.out-of-stock-overlay span {
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 77, 77, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(255, 77, 77, 0.35);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.cart-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}

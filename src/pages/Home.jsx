@@ -4,93 +4,6 @@ import { useNotification } from "../context/NotificationContext";
 import { fallbackProductImage, withProductImage } from "../utils/productImages";
 import "../styles/home.css";
 
-const subscriptionPlans = [
-  {
-    id: "weekly-natural-plan",
-    name: "Weekly Natural Plan",
-    category: "Plans",
-    price: 499,
-    protein: "10g - 15g",
-    duration: "6 Days",
-    tag: "Student Friendly",
-    image: "🥤",
-    description: "Budget natural shake plan for students and hostelers.",
-    bestFor: "Students, hostelers, beginners",
-    includes: ["6 shakes", "Natural ingredients", "Daily energy", "Budget friendly"],
-    isPlan: true,
-  },
-  {
-    id: "weekly-whey-plan",
-    name: "Weekly Whey Plan",
-    category: "Plans",
-    price: 699,
-    protein: "20g",
-    duration: "6 Days",
-    tag: "Most Popular",
-    image: "💪",
-    description: "Daily whey shake plan for gym beginners.",
-    bestFor: "Gym beginners and busy students",
-    includes: ["6 whey shakes", "20g protein", "Post-workout support", "Easy protein intake"],
-    isPlan: true,
-  },
-  {
-    id: "monthly-natural-plan",
-    name: "Monthly Natural Plan",
-    category: "Plans",
-    price: 1899,
-    protein: "10g - 15g",
-    duration: "26 Days",
-    tag: "Budget Plan",
-    image: "🌿",
-    description: "Affordable monthly plan for daily nutrition.",
-    bestFor: "Regular nutrition and light fitness",
-    includes: ["26 shakes", "Natural base", "Daily consistency", "Affordable monthly pack"],
-    isPlan: true,
-  },
-  {
-    id: "monthly-whey-plan",
-    name: "Monthly Whey Plan",
-    category: "Plans",
-    price: 2499,
-    protein: "20g",
-    duration: "26 Days",
-    tag: "Best Value",
-    image: "🏋️",
-    description: "Monthly whey shake plan for fitness users.",
-    bestFor: "Gym users and protein intake",
-    includes: ["26 whey shakes", "20g protein", "Muscle recovery", "Best value plan"],
-    isPlan: true,
-  },
-  {
-    id: "preworkout-combo-plan",
-    name: "Pre-Workout Combo",
-    category: "Plans",
-    price: 899,
-    protein: "Energy",
-    duration: "12 Servings",
-    tag: "Energy Boost",
-    image: "⚡",
-    description: "Energy combo for workout performance.",
-    bestFor: "Workout energy and gym pump",
-    includes: ["12 servings", "Coffee energy", "Pump support", "Before workout"],
-    isPlan: true,
-  },
-  {
-    id: "premium-gym-plan",
-    name: "Premium Gym Plan",
-    category: "Plans",
-    price: 3499,
-    protein: "30g - 50g",
-    duration: "26 Days",
-    tag: "Premium",
-    image: "🔥",
-    description: "High-protein premium plan for serious gym users.",
-    bestFor: "Bulking and serious gym users",
-    includes: ["26 premium shakes", "30g - 50g protein", "Premium ingredients", "Bulking support"],
-    isPlan: true,
-  },
-];
-
 const categories = [
   {
     key: "All",
@@ -124,62 +37,93 @@ const categories = [
   },
 ];
 
+const normalizeStockStatus = (status) => {
+  const value = String(status || "In Stock")
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .trim();
+
+  if (value === "out of stock") return "Out of Stock";
+  if (value === "limited stock") return "Limited Stock";
+
+  return "In Stock";
+};
+
+const getStockClass = (status) =>
+  normalizeStockStatus(status).toLowerCase().replaceAll(" ", "-");
+
 export default function Home({ search, setPage, setSelectedProduct }) {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { notify } = useNotification();
   const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
+  const { notify } = useNotification();
+
   async function fetchProducts() {
     setLoading(true);
 
-    const { data, error } = await supabase.from("products").select("*");
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
 
     if (error) {
-      console.log("ERROR:", error);
+      console.log("PRODUCTS ERROR:", error);
       notify("Failed to load products", "error");
     } else {
-      setProducts((data || []).map(withProductImage));
+      const formattedProducts = (data || []).map((product) =>
+        withProductImage({
+          ...product,
+          is_active: product.is_active !== false,
+          stock_status: normalizeStockStatus(product.stock_status),
+        })
+      );
+
+      setProducts(formattedProducts);
     }
 
     setLoading(false);
   }
 
   async function fetchPlans() {
-  const { data, error } = await supabase
-    .from("plans")
-    .select("*")
-    .eq("is_active", true)
-    .order("created_at", { ascending: true });
+    const { data, error } = await supabase
+      .from("plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
 
-  if (error) {
-    console.log("PLANS ERROR:", error);
-    return;
+    if (error) {
+      console.log("PLANS ERROR:", error);
+      return;
+    }
+
+    const formattedPlans = (data || []).map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      category: "Plans",
+      price: plan.price,
+      protein: plan.protein,
+      duration: plan.duration,
+      tag: plan.tag,
+      image: plan.image || "📅",
+      description: plan.description,
+      bestFor: plan.best_for,
+      includes: String(plan.includes || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      isPlan: true,
+      stock_status: "In Stock",
+    }));
+
+    setPlans(formattedPlans);
   }
-
-  const formattedPlans = (data || []).map((plan) => ({
-    id: plan.id,
-    name: plan.name,
-    category: "Plans",
-    price: plan.price,
-    protein: plan.protein,
-    duration: plan.duration,
-    tag: plan.tag,
-    image: plan.image || "📅",
-    description: plan.description,
-    bestFor: plan.best_for,
-    includes: String(plan.includes || "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    isPlan: true,
-  }));
-
-  setPlans(formattedPlans);
-}
 
   useEffect(() => {
     fetchProducts();
@@ -188,6 +132,15 @@ export default function Home({ search, setPage, setSelectedProduct }) {
 
   const addToCart = (e, item) => {
     e.stopPropagation();
+
+    const isPlan = item.isPlan;
+    const stockStatus = normalizeStockStatus(item.stock_status);
+    const isOutOfStock = !isPlan && stockStatus === "Out of Stock";
+
+    if (isOutOfStock) {
+      notify("This product is currently out of stock", "error");
+      return;
+    }
 
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const existing = cart.find((cartItem) => cartItem.id === item.id);
@@ -243,14 +196,14 @@ export default function Home({ search, setPage, setSelectedProduct }) {
   const filteredItems = useMemo(() => {
     let result = allItems.filter((item) => {
       const matchCategory = filter === "All" || item.category === filter;
-
       const query = normalize(search);
 
       const matchSearch =
         normalize(item.name).includes(query) ||
         normalize(item.category).includes(query) ||
         normalize(item.description).includes(query) ||
-        normalize(item.protein).includes(query);
+        normalize(item.protein).includes(query) ||
+        normalize(item.stock_status).includes(query);
 
       return matchCategory && matchSearch;
     });
@@ -285,11 +238,15 @@ export default function Home({ search, setPage, setSelectedProduct }) {
 
   const renderCard = (item, index) => {
     const isPlan = item.isPlan;
+    const stockStatus = normalizeStockStatus(item.stock_status);
+    const isOutOfStock = !isPlan && stockStatus === "Out of Stock";
 
     return (
       <div
         key={item.id}
-        className={`card horizontal-card ${isPlan ? "plan-home-card" : ""}`}
+        className={`card horizontal-card ${isPlan ? "plan-home-card" : ""} ${
+          isOutOfStock ? "home-out-of-stock-card" : ""
+        }`}
         style={{ animationDelay: `${index * 0.04}s` }}
         onClick={() => handleProductClick(item)}
       >
@@ -301,39 +258,53 @@ export default function Home({ search, setPage, setSelectedProduct }) {
             <div className="plan-duration-pill">{item.duration}</div>
           </div>
         ) : (
-          <img
-            src={item.image || fallbackProductImage}
-            className="product-img"
-            alt={item.name}
-            onError={(e) => {
-              e.currentTarget.src = fallbackProductImage;
-            }}
-          />
+          <div className="home-product-image-wrap">
+            <img
+              src={item.image || fallbackProductImage}
+              className="product-img"
+              alt={item.name}
+              onError={(e) => {
+                e.currentTarget.src = fallbackProductImage;
+              }}
+            />
+
+            {stockStatus !== "In Stock" && (
+  <div className={`home-stock-badge ${getStockClass(stockStatus)}`}>
+    {stockStatus}
+  </div>
+)}
+
+            {isOutOfStock && (
+              <div className="home-out-of-stock-overlay">
+                <span>Currently Unavailable</span>
+              </div>
+            )}
+          </div>
         )}
 
         <div className="card-body">
           <h3>{item.name}</h3>
 
           <p className="home-card-desc">{item.description}</p>
+
           {isPlan && (
-             <>
+            <>
               <p className="plan-best-for">
                 Best for: <span>{item.bestFor}</span>
               </p>
 
               <div className="plan-mini-list">
                 {item.includes?.slice(0, 4).map((point) => (
-                <span key={point}>✓ {point}</span>
-             ))}
+                  <span key={point}>✓ {point}</span>
+                ))}
               </div>
-             </>
+            </>
           )}
 
           <div className="card-meta">
             <span className="protein">
               💪 {item.protein}
-              {!String(item.protein).toLowerCase().includes("g") &&
-              !isPlan
+              {!String(item.protein).toLowerCase().includes("g") && !isPlan
                 ? "g"
                 : ""}
             </span>
@@ -346,8 +317,16 @@ export default function Home({ search, setPage, setSelectedProduct }) {
           <div className="card-footer">
             <span className="card-price">₹{item.price}</span>
 
-            <button onClick={(e) => addToCart(e, item)}>
-              {isPlan ? "Add Plan" : "Add to Cart"}
+            <button
+              onClick={(e) => addToCart(e, item)}
+              disabled={isOutOfStock}
+              className={isOutOfStock ? "home-stock-disabled-btn" : ""}
+            >
+              {isOutOfStock
+                ? "Out of Stock"
+                : isPlan
+                ? "Add Plan"
+                : "Add to Cart"}
             </button>
           </div>
         </div>
@@ -361,8 +340,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
         <div className="home-hero-content">
           <p className="home-hero-eyebrow">Premium Nutrition</p>
           <h1>
-            Fuel Your{" "}
-            <span className="home-hero-accent">Fitness</span> Journey
+            Fuel Your <span className="home-hero-accent">Fitness</span> Journey
           </h1>
           <p className="home-hero-desc">
             Explore shakes, pre-workout combos, premium protein options, and

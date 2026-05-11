@@ -5,6 +5,24 @@ import "../styles/orders.css";
 
 const ORDER_STEPS = ["Placed", "Preparing", "Out for Delivery", "Delivered"];
 
+const ORDER_STATUSES = [
+  "All",
+  "Placed",
+  "Preparing",
+  "Out for Delivery",
+  "Delivered",
+  "Cancelled",
+];
+
+const PAYMENT_FILTERS = ["All", "COD", "Online"];
+
+const DATE_FILTERS = [
+  { value: "all", label: "All Time" },
+  { value: "today", label: "Today" },
+  { value: "week", label: "This Week" },
+  { value: "month", label: "This Month" },
+];
+
 const CANCEL_REASONS = [
   "Ordered by mistake",
   "Need to change address",
@@ -14,12 +32,156 @@ const CANCEL_REASONS = [
   "Other reason",
 ];
 
+const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+
+const formatOrderId = (id) => {
+  if (!id) return "NB-000000";
+
+  const value = String(id);
+
+  if (/^\d+$/.test(value)) {
+    return `NB-${value.padStart(6, "0")}`;
+  }
+
+  return `NB-${value.slice(-8).toUpperCase()}`;
+};
+
+const formatStatus = (status) => {
+  const value = String(status || "Placed").toLowerCase();
+
+  if (value === "placed") return "Placed";
+  if (value === "preparing") return "Preparing";
+  if (value === "out for delivery") return "Out for Delivery";
+  if (value === "out_for_delivery") return "Out for Delivery";
+  if (value === "delivered") return "Delivered";
+  if (value === "cancelled") return "Cancelled";
+  if (value === "canceled") return "Cancelled";
+
+  return "Placed";
+};
+
+const formatDate = (dateValue) => {
+  if (!dateValue) return "N/A";
+
+  return new Date(dateValue).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (dateValue) => {
+  if (!dateValue) return "N/A";
+
+  return new Date(dateValue).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const isSameDay = (dateA, dateB) =>
+  dateA.getFullYear() === dateB.getFullYear() &&
+  dateA.getMonth() === dateB.getMonth() &&
+  dateA.getDate() === dateB.getDate();
+
+const isThisWeek = (date) => {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+  return date >= startOfWeek && date < endOfWeek;
+};
+
+const isThisMonth = (date) => {
+  const now = new Date();
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
+};
+
+const filterByDateRange = (orders, range) => {
+  if (range === "all") return orders;
+
+  const now = new Date();
+
+  return orders.filter((order) => {
+    if (!order.created_at) return false;
+
+    const orderDate = new Date(order.created_at);
+
+    if (Number.isNaN(orderDate.getTime())) return false;
+
+    if (range === "today") return isSameDay(orderDate, now);
+    if (range === "week") return isThisWeek(orderDate);
+    if (range === "month") return isThisMonth(orderDate);
+
+    return true;
+  });
+};
+
+const getPaymentMethod = (order) => order.payment_method || "COD";
+const getPaymentStatus = (order) => order.payment_status || "Pending";
+
+const getOrderItems = (order) => {
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    return order.items;
+  }
+
+  return [
+    {
+      id: order.id,
+      name: order.product_name || "NutriBlend Order",
+      price: order.price || order.total || 0,
+      qty: order.qty || 1,
+      isPlan: false,
+    },
+  ];
+};
+
+const getItemName = (item) =>
+  item.name || item.product_name || "NutriBlend Item";
+
+const getItemSubtotal = (item) =>
+  Number(item.price || 0) * Number(item.qty || 1);
+
+const getOrderTotal = (order) => Number(order.total || order.price || 0);
+
+const getStatusClass = (status) =>
+  `order-status-badge status-${String(status || "Placed")
+    .toLowerCase()
+    .replaceAll(" ", "-")}`;
+
+const getPaymentClass = (paymentMethod) =>
+  `orders-payment-badge payment-${String(paymentMethod || "COD")
+    .toLowerCase()
+    .replaceAll(" ", "-")}`;
+
+const getPaymentStatusClass = (paymentStatus) =>
+  `orders-payment-status payment-status-${String(paymentStatus || "Pending")
+    .toLowerCase()
+    .replaceAll(" ", "-")}`;
+
 export default function Orders({ setPage }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [paymentFilter, setPaymentFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("all");
+
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [customCancelReason, setCustomCancelReason] = useState("");
@@ -70,101 +232,71 @@ export default function Orders({ setPage }) {
     fetchOrders();
   }, [fetchOrders]);
 
-  const formatStatus = (status) => {
-  const value = String(status || "Placed").toLowerCase();
+  const filteredOrders = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    const dateFiltered = filterByDateRange(orders, dateFilter);
 
-  if (value === "placed") return "Placed";
-  if (value === "preparing") return "Preparing";
-  if (value === "out for delivery") return "Out for Delivery";
-  if (value === "out_for_delivery") return "Out for Delivery";
-  if (value === "delivered") return "Delivered";
-  if (value === "cancelled") return "Cancelled";
-  if (value === "canceled") return "Cancelled";
+    return dateFiltered.filter((order) => {
+      const status = formatStatus(order.status);
+      const paymentMethod = getPaymentMethod(order);
+      const paymentStatus = getPaymentStatus(order);
+      const formattedId = formatOrderId(order.id).toLowerCase();
 
-  return "Placed";
-};
+      const itemsText = getOrderItems(order)
+        .map((item) => getItemName(item))
+        .join(" ")
+        .toLowerCase();
 
-  const formatDate = (dateValue) => {
-    if (!dateValue) return "N/A";
+      const addressText = [
+        order.address?.name,
+        order.address?.phone,
+        order.address?.street,
+        order.address?.city,
+        order.address?.state,
+        order.address?.pincode,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-    return new Date(dateValue).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+      const matchesStatus = statusFilter === "All" || status === statusFilter;
+
+      const matchesPayment =
+        paymentFilter === "All" ||
+        paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase());
+
+      const matchesSearch =
+        !query ||
+        formattedId.includes(query) ||
+        String(order.id || "").toLowerCase().includes(query) ||
+        String(order.email || "").toLowerCase().includes(query) ||
+        String(order.product_name || "").toLowerCase().includes(query) ||
+        String(order.cancel_reason || "").toLowerCase().includes(query) ||
+        String(paymentMethod || "").toLowerCase().includes(query) ||
+        String(paymentStatus || "").toLowerCase().includes(query) ||
+        itemsText.includes(query) ||
+        addressText.includes(query);
+
+      return matchesStatus && matchesPayment && matchesSearch;
     });
+  }, [orders, searchTerm, statusFilter, paymentFilter, dateFilter]);
+
+  const filtersActive =
+    searchTerm || statusFilter !== "All" || paymentFilter !== "All" || dateFilter !== "all";
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("All");
+    setPaymentFilter("All");
+    setDateFilter("all");
   };
-
-  const formatDateTime = (dateValue) => {
-    if (!dateValue) return "N/A";
-
-    return new Date(dateValue).toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getOrderItems = (order) => {
-    if (Array.isArray(order.items) && order.items.length > 0) {
-      return order.items;
-    }
-
-    return [
-      {
-        id: order.id,
-        name: order.product_name || "NutriBlend Order",
-        price: order.price || order.total || 0,
-        qty: order.qty || 1,
-        isPlan: false,
-      },
-    ];
-  };
-
-  const getItemName = (item) => {
-    return item.name || item.product_name || "NutriBlend Item";
-  };
-
-  const getItemSubtotal = (item) => {
-    return Number(item.price || 0) * Number(item.qty || 1);
-  };
-
-  const getOrderTotal = (order) => {
-    return Number(order.total || order.price || 0);
-  };
-
-  const orderSummary = useMemo(() => {
-    return {
-      total: orders.length,
-      active: orders.filter((order) =>
-        ["Placed", "Preparing", "Out for Delivery"].includes(
-          formatStatus(order.status)
-        )
-      ).length,
-      delivered: orders.filter(
-        (order) => formatStatus(order.status) === "Delivered"
-      ).length,
-      cancelled: orders.filter(
-        (order) => formatStatus(order.status) === "Cancelled"
-      ).length,
-    };
-  }, [orders]);
 
   const getStatusStep = (status) => {
     const currentStatus = formatStatus(status);
     return ORDER_STEPS.indexOf(currentStatus);
   };
 
-  const getStatusClass = (status) => {
-    return `order-status-badge status-${String(status || "Placed")
-      .toLowerCase()
-      .replaceAll(" ", "-")}`;
-  };
-
-  const canCancelOrder = (order) => {
-    return formatStatus(order.status) === "Placed";
-  };
+  const canCancelOrder = (order) => formatStatus(order.status) === "Placed";
 
   const getDeliveryMessage = (status) => {
     const currentStatus = formatStatus(status);
@@ -313,26 +445,28 @@ export default function Orders({ setPage }) {
   const downloadInvoice = (order) => {
     const doc = new jsPDF();
     const items = getOrderItems(order);
+    const orderId = formatOrderId(order.id);
 
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.text("NUTRIBLEND INVOICE", 20, 20);
 
-    doc.setFontSize(12);
-    doc.text(`Order ID: ${order.id}`, 20, 40);
-    doc.text(`Date: ${formatDateTime(order.created_at)}`, 20, 50);
-    doc.text(`Name: ${order.address?.name || "N/A"}`, 20, 70);
-    doc.text(`Phone: ${order.address?.phone || "N/A"}`, 20, 80);
+    doc.setFontSize(11);
+    doc.text(`Order ID: ${orderId}`, 20, 38);
+    doc.text(`Date: ${formatDateTime(order.created_at)}`, 20, 48);
+    doc.text(`Name: ${order.address?.name || "N/A"}`, 20, 63);
+    doc.text(`Phone: ${order.address?.phone || "N/A"}`, 20, 73);
 
     const addressLine = `${order.address?.street || ""}, ${
       order.address?.city || ""
     }, ${order.address?.state || ""} - ${order.address?.pincode || ""}`;
 
-    doc.text(`Address: ${addressLine}`, 20, 90, { maxWidth: 170 });
+    doc.text(`Address: ${addressLine}`, 20, 83, { maxWidth: 170 });
 
-    doc.text(`Payment: ${order.payment_method || "N/A"}`, 20, 110);
-    doc.text(`Status: ${formatStatus(order.status)}`, 20, 120);
+    doc.text(`Payment: ${getPaymentMethod(order)}`, 20, 103);
+    doc.text(`Payment Status: ${getPaymentStatus(order)}`, 20, 113);
+    doc.text(`Order Status: ${formatStatus(order.status)}`, 20, 123);
 
-    let y = 135;
+    let y = 138;
 
     if (formatStatus(order.status) === "Cancelled") {
       doc.text(`Cancel Reason: ${order.cancel_reason || "N/A"}`, 20, y, {
@@ -342,10 +476,10 @@ export default function Orders({ setPage }) {
     }
 
     doc.setFontSize(14);
-    doc.text("Items:", 20, y);
+    doc.text("Items", 20, y);
     y += 12;
 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
 
     items.forEach((item, index) => {
       const name = getItemName(item);
@@ -353,9 +487,9 @@ export default function Orders({ setPage }) {
       const price = item.price || 0;
       const subtotal = getItemSubtotal(item);
 
-      doc.text(`${index + 1}. ${name}`, 20, y, { maxWidth: 120 });
-      doc.text(`Qty: ${qty}`, 145, y);
-      doc.text(`Rs. ${subtotal}`, 170, y);
+      doc.text(`${index + 1}. ${name}`, 20, y, { maxWidth: 115 });
+      doc.text(`Qty: ${qty}`, 140, y);
+      doc.text(`Rs. ${subtotal}`, 165, y);
 
       y += 8;
 
@@ -382,14 +516,21 @@ export default function Orders({ setPage }) {
 
     doc.setFontSize(14);
     doc.text(`Total: Rs. ${getOrderTotal(order)}`, 20, y + 10);
+    doc.setFontSize(10);
+    doc.text("Thank you for choosing NutriBlend.", 20, y + 24);
 
-    doc.save(`invoice_${order.id}.pdf`);
+    doc.save(`invoice_${orderId}.pdf`);
   };
 
   if (loading) {
     return (
       <div className="orders-page">
-        <h2>Your Orders</h2>
+        <div className="orders-header">
+          <div>
+            <p className="orders-eyebrow">Order History</p>
+            <h2>Your Orders</h2>
+          </div>
+        </div>
 
         <div className="orders-loading">
           {[1, 2, 3].map((i) => (
@@ -424,19 +565,52 @@ export default function Orders({ setPage }) {
       </div>
 
       {orders.length > 0 && (
-        <div className="orders-summary-grid">
-          <SummaryCard icon="📦" label="Total" value={orderSummary.total} />
-          <SummaryCard icon="⏳" label="Active" value={orderSummary.active} />
-          <SummaryCard
-            icon="✅"
-            label="Delivered"
-            value={orderSummary.delivered}
+        <div className="orders-controls">
+          <input
+            type="text"
+            placeholder="Search NB-000055, product, phone, address, payment..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <SummaryCard
-            icon="❌"
-            label="Cancelled"
-            value={orderSummary.cancelled}
-          />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            {ORDER_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status === "All" ? "All Status" : status}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+          >
+            {PAYMENT_FILTERS.map((payment) => (
+              <option key={payment} value={payment}>
+                {payment === "All" ? "All Payments" : payment}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          >
+            {DATE_FILTERS.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+
+          {filtersActive && (
+            <button className="orders-clear-btn" onClick={resetFilters}>
+              Clear
+            </button>
+          )}
         </div>
       )}
 
@@ -451,34 +625,58 @@ export default function Orders({ setPage }) {
               "When you place your first order, it will appear here."}
           </p>
 
-          {errorMessage && <button onClick={fetchOrders}>Try Again</button>}
+          {errorMessage ? (
+            <button onClick={fetchOrders}>Try Again</button>
+          ) : (
+            <button onClick={() => setPage?.("home")}>Start Shopping</button>
+          )}
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="orders-empty">
+          <span className="orders-empty-icon">🔎</span>
+          <h3>No matching orders found</h3>
+          <p>Try clearing filters or changing your search.</p>
+          <button onClick={resetFilters}>Clear Filters</button>
         </div>
       ) : (
         <div className="orders-list">
-          {orders.map((order, index) => {
+          {filteredOrders.map((order, index) => {
             const currentStatus = formatStatus(order.status);
             const currentStep = getStatusStep(currentStatus);
             const orderItems = getOrderItems(order);
             const isCancelled = currentStatus === "Cancelled";
             const isActionLoading = actionLoadingId === order.id;
+            const isExpanded = expandedOrderId === order.id;
+            const paymentMethod = getPaymentMethod(order);
+            const paymentStatus = getPaymentStatus(order);
 
             return (
               <div
                 key={order.id}
-                className="order-card"
-                style={{ animationDelay: `${index * 0.08}s` }}
+                className={`order-card ${
+                  isCancelled ? "order-card-cancelled" : ""
+                }`}
+                style={{ animationDelay: `${index * 0.06}s` }}
               >
                 <div className="order-card-header">
                   <div className="order-id">
                     <span className="order-id-label">Order</span>
                     <span className="order-id-value">
-                      #{String(order.id).slice(-8)}
+                      {formatOrderId(order.id)}
                     </span>
                   </div>
 
-                  <span className={getStatusClass(currentStatus)}>
-                    {currentStatus}
-                  </span>
+                  <div className="order-card-badges">
+                    <span className={getPaymentClass(paymentMethod)}>
+                      {paymentMethod}
+                    </span>
+                    <span className={getPaymentStatusClass(paymentStatus)}>
+                      {paymentStatus}
+                    </span>
+                    <span className={getStatusClass(currentStatus)}>
+                      {currentStatus}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="order-delivery-message">
@@ -493,33 +691,10 @@ export default function Orders({ setPage }) {
                 </div>
 
                 <div className="order-card-body">
-                  <div className="order-detail-row">
-                    <span className="order-detail-label">Total</span>
-                    <span className="order-detail-value order-total">
-                      ₹{getOrderTotal(order)}
-                    </span>
-                  </div>
-
-                  <div className="order-detail-row">
-                    <span className="order-detail-label">Location</span>
-                    <span className="order-detail-value">
-                      {order.address?.city || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className="order-detail-row">
-                    <span className="order-detail-label">Payment</span>
-                    <span className="order-detail-value">
-                      {order.payment_method || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className="order-detail-row">
-                    <span className="order-detail-label">Date</span>
-                    <span className="order-detail-value">
-                      {formatDate(order.created_at)}
-                    </span>
-                  </div>
+                  <InfoRow label="Total" value={money(getOrderTotal(order))} strong />
+                  <InfoRow label="Location" value={order.address?.city || "N/A"} />
+                  <InfoRow label="Payment" value={paymentMethod} />
+                  <InfoRow label="Placed At" value={formatDate(order.created_at)} />
                 </div>
 
                 <div className="order-items-box">
@@ -555,7 +730,7 @@ export default function Orders({ setPage }) {
                             </div>
 
                             <p>
-                              Qty: {item.qty || 1} • ₹{item.price || 0}
+                              Qty: {item.qty || 1} • {money(item.price || 0)}
                             </p>
 
                             {item.isPlan && (
@@ -570,7 +745,7 @@ export default function Orders({ setPage }) {
                         </div>
 
                         <span className="order-item-price">
-                          ₹{getItemSubtotal(item)}
+                          {money(getItemSubtotal(item))}
                         </span>
                       </div>
                     ))}
@@ -605,6 +780,43 @@ export default function Orders({ setPage }) {
                   </div>
                 )}
 
+                {isExpanded && (
+                  <div className="order-extra-details">
+                    <h3>Delivery Details</h3>
+
+                    <div className="order-address-card">
+                      <p>
+                        <strong>{order.address?.name || "Customer"}</strong>
+                      </p>
+                      <p>{order.address?.phone || "No phone"}</p>
+                      <p>
+                        {order.address?.street || "No street"},{" "}
+                        {order.address?.city || "No city"},{" "}
+                        {order.address?.state || ""} -{" "}
+                        {order.address?.pincode || "N/A"}
+                      </p>
+                    </div>
+
+                    <div className="order-extra-grid">
+                      <InfoRow label="Order ID" value={formatOrderId(order.id)} />
+                      <InfoRow
+                        label="Full Date"
+                        value={formatDateTime(order.created_at)}
+                      />
+                      <InfoRow label="Payment Status" value={paymentStatus} />
+                      <InfoRow label="Order Status" value={currentStatus} />
+                    </div>
+
+                    <div className="order-help-box">
+                      <span>💬</span>
+                      <p>
+                        Need help with this order? Keep your order ID{" "}
+                        <strong>{formatOrderId(order.id)}</strong> ready.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="order-actions">
                   {canCancelOrder(order) && (
                     <button
@@ -617,6 +829,15 @@ export default function Orders({ setPage }) {
                   )}
 
                   <button
+                    className="details-btn"
+                    onClick={() =>
+                      setExpandedOrderId(isExpanded ? null : order.id)
+                    }
+                  >
+                    {isExpanded ? "Hide Details" : "View Details"}
+                  </button>
+
+                  <button
                     className="reorder-btn"
                     onClick={() => reorderItems(order)}
                   >
@@ -627,7 +848,7 @@ export default function Orders({ setPage }) {
                     className="invoice-btn"
                     onClick={() => downloadInvoice(order)}
                   >
-                    Download Invoice
+                    Invoice
                   </button>
                 </div>
 
@@ -648,7 +869,7 @@ export default function Orders({ setPage }) {
             <div className="cancel-modal-header">
               <div>
                 <p className="orders-eyebrow">Cancel Order</p>
-                <h3>Order #{String(cancelTarget.id).slice(-8)}</h3>
+                <h3>{formatOrderId(cancelTarget.id)}</h3>
               </div>
 
               <button onClick={closeCancelModal}>✕</button>
@@ -708,15 +929,17 @@ export default function Orders({ setPage }) {
   );
 }
 
-function SummaryCard({ icon, label, value }) {
+function InfoRow({ label, value, strong = false }) {
   return (
-    <div className="orders-summary-card">
-      <span>{icon}</span>
-
-      <div>
-        <strong>{value}</strong>
-        <p>{label}</p>
-      </div>
+    <div className="order-detail-row">
+      <span className="order-detail-label">{label}</span>
+      <span
+        className={`order-detail-value ${
+          strong ? "order-total" : ""
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }

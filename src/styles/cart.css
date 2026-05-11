@@ -658,3 +658,172 @@
     justify-content: space-between;
   }
 }
+
+/* =========================
+   CART STOCK VALIDATION
+========================= */
+
+.cart-stock-warning,
+.cart-limited-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  line-height: 1.5;
+}
+
+.cart-stock-warning {
+  background: rgba(255, 77, 77, 0.12);
+  border: 1px solid rgba(255, 77, 77, 0.3);
+  color: #ffd6d6;
+}
+
+.cart-stock-warning strong {
+  display: block;
+  color: #ff6b6b;
+  font-weight: 950;
+  margin-bottom: 4px;
+}
+
+.cart-stock-warning p {
+  margin: 0;
+  color: #ffd6d6;
+  font-size: 0.9rem;
+}
+
+.cart-stock-warning button {
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: rgba(255, 77, 77, 0.18);
+  color: #ffffff;
+  border: 1px solid rgba(255, 77, 77, 0.35);
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cart-limited-warning {
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  color: #fff3b0;
+  font-weight: 750;
+}
+
+.cart-out-of-stock-card {
+  opacity: 0.82;
+  border-color: rgba(255, 77, 77, 0.3) !important;
+}
+
+.cart-out-of-stock-card .cart-item-img {
+  filter: grayscale(0.75);
+  opacity: 0.75;
+}
+
+.cart-stock-badge {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 950;
+  border: 1px solid transparent;
+}
+
+.cart-stock-badge.limited-stock {
+  background: rgba(250, 204, 21, 0.14);
+  color: #fff3b0;
+  border-color: rgba(250, 204, 21, 0.28);
+}
+
+.cart-stock-badge.out-of-stock {
+  background: rgba(255, 77, 77, 0.14);
+  color: #ffd6d6;
+  border-color: rgba(255, 77, 77, 0.28);
+}
+
+.cart-stock-message {
+  margin: 8px 0 0;
+  color: #ffb4b4;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.cart-limited-message {
+  margin: 8px 0 0;
+  color: #fff3b0;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.cart-unavailable-row {
+  color: #ff6b6b !important;
+  font-weight: 900;
+}
+
+.cart-checkout-error {
+  margin: 12px 0 0;
+  color: #ffb4b4;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.buy-btn:disabled,
+.qty-controls button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 720px) {
+  .cart-stock-warning,
+  .cart-limited-warning {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cart-stock-warning button {
+    width: 100%;
+  }
+}
+
+/* =========================
+   CART LIVE PRICE SYNC
+========================= */
+
+.cart-sync-text {
+  margin-top: 6px;
+  color: #93c5fd;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.cart-price-warning {
+  margin-bottom: 18px;
+  padding: 15px 16px;
+  border-radius: 18px;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  color: #dbeafe;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.cart-price-warning strong {
+  color: #93c5fd;
+}
+
+.cart-price-change-message {
+  margin: 8px 0 0;
+  color: #93c5fd;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.cart-price-update-row {
+  color: #93c5fd !important;
+  font-weight: 900;
+}
