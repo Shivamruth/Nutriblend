@@ -6,22 +6,15 @@ import {
   updateOrderStatusAdmin,
 } from "../controllers/order.controller.js";
 
-import { handleRazorpayWebhook } from "../controllers/webhook.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { adminMiddleware } from "../middleware/admin.middleware.js";
 
 const router = express.Router();
 
-// Create order / Razorpay order
 router.post("/create-order", authMiddleware, createOrder);
 
-// Razorpay webhook
-router.post("/webhook", handleRazorpayWebhook);
-
-// Customer orders
 router.get("/my-orders", authMiddleware, getMyOrders);
 
-// Admin orders
 router.get(
   "/admin/orders",
   authMiddleware,
@@ -29,12 +22,19 @@ router.get(
   getAllOrdersAdmin
 );
 
-// Admin update order status
 router.patch(
   "/admin/orders/:id/status",
   authMiddleware,
   adminMiddleware,
   updateOrderStatusAdmin
 );
+
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "API working",
+    time: new Date().toISOString(),
+  });
+});
 
 export default router;
