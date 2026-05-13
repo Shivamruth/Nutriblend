@@ -615,7 +615,7 @@
 
 .order-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -885,5 +885,63 @@
 
   .cancel-modal-actions {
     flex-direction: column;
+  }
+}
+/* =========================
+   ORDERS RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+  .orders-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .order-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .orders-header,
+  .order-card-header {
+    flex-direction: column;
+  }
+
+  .orders-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .orders-controls,
+  .order-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .order-card-badges {
+    justify-content: flex-start;
+  }
+
+  .order-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-item-price {
+    align-self: flex-end;
+  }
+
+  .order-tracking {
+    flex-direction: column;
+  }
+
+  .tracking-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .tracking-step:not(:last-child)::after {
+    display: none;
   }
 }

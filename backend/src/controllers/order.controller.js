@@ -1,4 +1,7 @@
-import { createRazorpayOrder } from "../services/razorpay.service.js";
+import {
+  createRazorpayOrder,
+  verifyRazorpaySignature,
+} from "../services/razorpay.service.js";
 import {
   saveOrderToDb,
   getUserOrders,
@@ -133,7 +136,10 @@ export const createOrder = async (req, res, next) => {
 
     if (paymentMethod === "Online") {
       const receipt = `receipt_${Date.now()}`;
-      rzpOrder = await createRazorpayOrder(finalAmount, receipt);
+      rzpOrder = await createRazorpayOrder({
+        amount: finalAmount,
+        receipt,
+      });
       orderData.razorpay_order_id = rzpOrder.id;
       orderData.status = "Placed";
     }

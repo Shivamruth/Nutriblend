@@ -1,7 +1,7 @@
 /* Success page: src/pages/Success.jsx */
 
 .success-container {
-  max-width: 900px;
+  width: min(100%, 900px);
   min-height: calc(100vh - 180px);
   display: flex;
   align-items: center;
@@ -240,7 +240,7 @@
 
 .success-steps {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
 }
 

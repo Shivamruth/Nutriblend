@@ -87,3 +87,96 @@ button {
 button:hover { transform: translateY(-2px); }
 button:active { transform: translateY(0); }
 button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* =========================
+   GLOBAL RESPONSIVE FIXES
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+.page,
+.home,
+.cart-page,
+.orders-page,
+.profile-page,
+.address-page,
+.payment-page,
+.admin-page {
+  width: min(100%, 1200px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile spacing */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .page,
+  .home,
+  .cart-page,
+  .orders-page,
+  .profile-page,
+  .address-page,
+  .payment-page {
+    width: 100%;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  h2 {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+
+  button {
+    min-height: 44px;
+  }
+}
+
+/* Very small mobiles */
+@media (max-width: 420px) {
+  .page,
+  .home,
+  .cart-page,
+  .orders-page,
+  .profile-page,
+  .address-page,
+  .payment-page {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}

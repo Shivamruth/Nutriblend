@@ -478,3 +478,63 @@
     height: 58px;
   }
 }
+
+/* =========================
+   PAYMENT RESPONSIVE
+========================= */
+
+@media (max-width: 1000px) {
+  .payment-page {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .payment-sidebar {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 650px) {
+  .payment-page {
+    padding: 0 12px;
+  }
+
+  .checkout-block,
+  .checkout-alert,
+  .checkout-place-bottom,
+  .payment-sidebar {
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .checkout-block-head,
+  .checkout-place-bottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-method-row,
+  .delivery-option {
+    padding: 13px;
+  }
+
+  .payment-item {
+    grid-template-columns: 58px minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .payment-item-price {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .payment-item-thumb {
+    width: 58px;
+    height: 58px;
+  }
+
+  .place-order-btn {
+    width: 100%;
+  }
+}

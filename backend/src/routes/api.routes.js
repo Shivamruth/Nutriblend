@@ -4,6 +4,7 @@ import {
   getMyOrders,
   getAllOrdersAdmin,
   updateOrderStatusAdmin,
+  verifyPayment,
 } from "../controllers/order.controller.js";
 
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -12,6 +13,8 @@ import { adminMiddleware } from "../middleware/admin.middleware.js";
 const router = express.Router();
 
 router.post("/create-order", authMiddleware, createOrder);
+
+router.post("/verify-payment", authMiddleware, verifyPayment);
 
 router.get("/my-orders", authMiddleware, getMyOrders);
 
@@ -28,13 +31,5 @@ router.patch(
   adminMiddleware,
   updateOrderStatusAdmin
 );
-
-router.get("/test", (req, res) => {
-  res.json({
-    success: true,
-    message: "API working",
-    time: new Date().toISOString(),
-  });
-});
 
 export default router;

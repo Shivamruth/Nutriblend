@@ -611,3 +611,53 @@
     justify-content: flex-start;
   }
 }
+/* =========================
+   ADDRESS RESPONSIVE
+========================= */
+
+@media (max-width: 980px) {
+  .address-list {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-address-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 720px) {
+  .address-heading,
+  .address-card-head,
+  .address-book-head,
+  .address-bottom-bar,
+  .address-item-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .address-form-grid,
+  .address-type-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .address-actions,
+  .address-form-actions {
+    flex-direction: column;
+  }
+
+  .address-search-wrap,
+  .address-add-top-btn,
+  .selected-address-panel button,
+  .address-continue-btn {
+    width: 100%;
+  }
+
+  .address-bottom-bar {
+    position: static;
+  }
+
+  .address-chip-group {
+    justify-content: flex-start;
+  }
+}
