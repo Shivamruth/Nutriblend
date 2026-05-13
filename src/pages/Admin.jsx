@@ -162,17 +162,6 @@ const getStatusClass = (status) =>
     .toLowerCase()
     .replaceAll(" ", "-")}`;
 
-const parseJSONResponse = async (res) => {
-  const text = await res.text();
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    console.error("Non-JSON API response:", text);
-    throw new Error(text || "Server returned non-JSON response");
-  }
-};
-
 const csvEscape = (value) => {
   if (value === null || value === undefined) return "";
   return `"${String(value).replaceAll('"', '""')}"`;
@@ -205,30 +194,19 @@ export default function Admin({ setPage }) {
     setLoading(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      const res = await fetch("/api/admin/orders", {
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
-
-      const json = await parseJSONResponse(res);
-
-      if (!res.ok || !json.success) {
-        throw new Error(json.message || "Failed to fetch orders");
+      if (error) {
+        throw error;
       }
 
-      const sortedOrders = [...(json.data || [])].sort(
-        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
-      );
-
-      setOrders(sortedOrders);
+      setOrders(data || []);
     } catch (err) {
       console.error("Fetch orders error:", err);
-      notify("Failed to load orders", "error");
+      notify(err.message || "Failed to load orders", "error");
     } finally {
       setLoading(false);
     }
@@ -270,39 +248,31 @@ export default function Admin({ setPage }) {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data, error } = await supabase
+        .from("orders")
+        .update({ status: newStatus })
+        .eq("id", orderId)
+        .select("*")
+        .single();
 
-      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to update status");
+      if (error) {
+        throw error;
       }
 
       setOrders((prev) =>
         prev.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
+          order.id === orderId ? { ...order, status: data.status } : order
         )
       );
 
       setSelectedOrder((prev) =>
-        prev?.id === orderId ? { ...prev, status: newStatus } : prev
+        prev?.id === orderId ? { ...prev, status: data.status } : prev
       );
 
       notify("Order status updated ✅", "success");
     } catch (error) {
       console.error("Status update error:", error);
-      notify("Failed to update order status", "error");
+      notify(error.message || "Failed to update order status", "error");
     }
   };
 
