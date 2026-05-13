@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabase/Client";
+import { useNotification } from "../context/NotificationContext";
+import ConfirmModal from "../components/ConfirmModal";
 import "../styles/address.css";
 
 const ADDRESS_TYPES = [
@@ -69,15 +71,15 @@ export default function Addresses({ setPage, setAddress }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const [form, setForm] = useState(EMPTY_FORM);
 
   const formRef = useRef(null);
+  const { notify } = useNotification();
 
-  useEffect(() => {
-    fetchAddresses();
-  }, []);
-
-  const fetchAddresses = async () => {
+  const fetchAddresses = useCallback(async () => {
     setLoading(true);
     setFormError("");
 
@@ -110,8 +112,10 @@ export default function Addresses({ setPage, setAddress }) {
       const selectedFromStorage = normalized.find(
         (addr) => String(addr.id) === String(savedSelectedId)
       );
+
       const defaultAddress =
         normalized.find((addr) => addr.isDefault) || normalized[0] || null;
+
       const finalSelected = selectedFromStorage || defaultAddress;
 
       setSelectedAddress(finalSelected);
@@ -130,7 +134,11 @@ export default function Addresses({ setPage, setAddress }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setAddress]);
+
+  useEffect(() => {
+    fetchAddresses();
+  }, [fetchAddresses]);
 
   const selectedAddressId = selectedAddress?.id;
 
@@ -180,6 +188,7 @@ export default function Addresses({ setPage, setAddress }) {
       ...EMPTY_FORM,
       isDefault: addresses.length === 0,
     });
+
     setEditingId(null);
     setShowForm(true);
 
@@ -193,9 +202,11 @@ export default function Addresses({ setPage, setAddress }) {
     const pincodeRegex = /^\d{6}$/;
 
     if (!cleanText(form.name)) return "Full name is required.";
+
     if (!phoneRegex.test(form.phone)) {
       return "Enter a valid 10-digit Indian phone number.";
     }
+
     if (!cleanText(form.street)) return "Flat / building / street is required.";
     if (!cleanText(form.city)) return "City is required.";
     if (!cleanText(form.state)) return "State is required.";
@@ -209,6 +220,7 @@ export default function Addresses({ setPage, setAddress }) {
     setAddress?.(addr);
     localStorage.setItem("selectedAddressId", addr.id);
     localStorage.setItem("selectedAddress", JSON.stringify(addr));
+    notify("Delivery address selected ✅", "success");
   };
 
   const saveAddress = async (e) => {
@@ -216,6 +228,7 @@ export default function Addresses({ setPage, setAddress }) {
 
     if (!user) {
       setFormError("Please login to save address.");
+      notify("Please login to save address ❌", "error");
       return;
     }
 
@@ -223,6 +236,7 @@ export default function Addresses({ setPage, setAddress }) {
 
     if (error) {
       setFormError(error);
+      notify(error, "error");
       return;
     }
 
@@ -260,7 +274,7 @@ export default function Addresses({ setPage, setAddress }) {
         if (updateError) throw updateError;
 
         savedAddress = normalizeDbAddress(data);
-        alert("Address updated ✅");
+        notify("Address updated ✅", "success");
       } else {
         const { data, error: insertError } = await supabase
           .from("addresses")
@@ -271,26 +285,37 @@ export default function Addresses({ setPage, setAddress }) {
         if (insertError) throw insertError;
 
         savedAddress = normalizeDbAddress(data);
-        alert("Address added ✅");
+        notify("Address added ✅", "success");
       }
 
       await fetchAddresses();
 
-      if (shouldBeDefault || selectedAddress?.id === savedAddress.id || addresses.length === 0) {
-        selectAddress(savedAddress);
+      if (
+        shouldBeDefault ||
+        selectedAddress?.id === savedAddress.id ||
+        addresses.length === 0
+      ) {
+        setSelectedAddress(savedAddress);
+        setAddress?.(savedAddress);
+        localStorage.setItem("selectedAddressId", savedAddress.id);
+        localStorage.setItem("selectedAddress", JSON.stringify(savedAddress));
       }
 
       resetForm();
     } catch (error) {
       console.error("Save address error:", error);
       setFormError(error.message || "Failed to save address.");
+      notify(error.message || "Failed to save address ❌", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const setDefaultAddress = async (addr) => {
-    if (!user) return;
+    if (!user) {
+      notify("Please login first ❌", "error");
+      return;
+    }
 
     try {
       const { error: clearError } = await supabase
@@ -322,11 +347,18 @@ export default function Addresses({ setPage, setAddress }) {
         }))
       );
 
-      selectAddress(updatedDefaultAddress);
-      alert("Default address selected ✅");
+      setSelectedAddress(updatedDefaultAddress);
+      setAddress?.(updatedDefaultAddress);
+      localStorage.setItem("selectedAddressId", updatedDefaultAddress.id);
+      localStorage.setItem(
+        "selectedAddress",
+        JSON.stringify(updatedDefaultAddress)
+      );
+
+      notify("Default address selected ✅", "success");
     } catch (error) {
       console.error("Default address error:", error);
-      alert(error.message || "Failed to set default address");
+      notify(error.message || "Failed to set default address ❌", "error");
     }
   };
 
@@ -352,27 +384,26 @@ export default function Addresses({ setPage, setAddress }) {
     }, 100);
   };
 
-  const deleteAddress = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this address?"
-    );
+  const confirmDeleteAddress = async () => {
+    if (!deleteTarget || !user) return;
 
-    if (!confirmDelete || !user) return;
+    setDeleteLoading(true);
 
     try {
       const { error } = await supabase
         .from("addresses")
         .delete()
-        .eq("id", id)
+        .eq("id", deleteTarget.id)
         .eq("user_id", user.id);
 
       if (error) throw error;
 
-      const updated = addresses.filter((addr) => addr.id !== id);
+      const updated = addresses.filter((addr) => addr.id !== deleteTarget.id);
       setAddresses(updated);
 
-      if (selectedAddress?.id === id) {
-        const nextDefault = updated.find((addr) => addr.isDefault) || updated[0] || null;
+      if (selectedAddress?.id === deleteTarget.id) {
+        const nextDefault =
+          updated.find((addr) => addr.isDefault) || updated[0] || null;
 
         setSelectedAddress(nextDefault);
         setAddress?.(nextDefault);
@@ -386,16 +417,19 @@ export default function Addresses({ setPage, setAddress }) {
         }
       }
 
-      alert("Address deleted ✅");
+      notify("Address deleted ✅", "success");
+      setDeleteTarget(null);
     } catch (error) {
       console.error("Delete address error:", error);
-      alert(error.message || "Failed to delete address");
+      notify(error.message || "Failed to delete address ❌", "error");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   const goToPayment = () => {
     if (!selectedAddress) {
-      alert("Please select one delivery address first");
+      notify("Please select one delivery address first ❌", "error");
       return;
     }
 
@@ -596,7 +630,11 @@ export default function Addresses({ setPage, setAddress }) {
             </label>
 
             <div className="address-form-actions">
-              <button className="address-primary-btn" type="submit" disabled={saving}>
+              <button
+                className="address-primary-btn"
+                type="submit"
+                disabled={saving}
+              >
                 {saving
                   ? "Saving..."
                   : editingId
@@ -696,7 +734,9 @@ export default function Addresses({ setPage, setAddress }) {
                           )}
 
                           {isSelected && (
-                            <span className="address-chip selected">Selected</span>
+                            <span className="address-chip selected">
+                              Selected
+                            </span>
                           )}
                         </div>
                       </div>
@@ -715,7 +755,10 @@ export default function Addresses({ setPage, setAddress }) {
                           {isSelected ? "Selected" : "Deliver Here"}
                         </button>
 
-                        <button type="button" onClick={() => setDefaultAddress(addr)}>
+                        <button
+                          type="button"
+                          onClick={() => setDefaultAddress(addr)}
+                        >
                           Make Default
                         </button>
 
@@ -723,7 +766,10 @@ export default function Addresses({ setPage, setAddress }) {
                           Edit
                         </button>
 
-                        <button type="button" onClick={() => deleteAddress(addr.id)}>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(addr)}
+                        >
                           Delete
                         </button>
                       </div>
@@ -754,6 +800,22 @@ export default function Addresses({ setPage, setAddress }) {
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete Address?"
+        message={
+          deleteTarget
+            ? `${deleteTarget.name}'s ${deleteTarget.type} address will be permanently removed.`
+            : "This address will be permanently removed."
+        }
+        confirmText="Delete"
+        cancelText="Keep"
+        danger
+        loading={deleteLoading}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteAddress}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 
 const emptyForm = {
@@ -41,11 +41,7 @@ export default function AdminProducts({ notify }) {
   const isEditing = Boolean(editingId);
   const previewImage = getImagePreview(form.image);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
 
     const { data, error } = await supabase
@@ -61,7 +57,11 @@ export default function AdminProducts({ notify }) {
     }
 
     setLoading(false);
-  };
+  }, [notify]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filteredProducts = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();

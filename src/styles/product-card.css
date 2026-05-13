@@ -154,3 +154,46 @@
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* =========================
+   PRODUCT CARD POLISH
+========================= */
+
+.card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,255,107,0.045), transparent 40%, rgba(56,189,248,0.045));
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card:hover {
+  border-color: rgba(124, 255, 107, 0.24);
+}
+
+.card:hover .product-img {
+  transform: scale(1.04);
+}
+
+.card-badge,
+.stock-badge {
+  box-shadow: 0 10px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.stock-badge.limited-stock {
+  background: rgba(250, 204, 21, 0.2);
+  color: #fff3b0;
+  border-color: rgba(250, 204, 21, 0.38);
+}

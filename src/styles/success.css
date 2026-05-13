@@ -374,3 +374,37 @@ grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     flex-direction: column;
   }
 }
+
+/* =========================
+   SUCCESS POLISH
+========================= */
+
+.success-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.success-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,255,107,0.075), transparent 36%, rgba(56,189,248,0.06));
+}
+
+.success-box > * {
+  position: relative;
+  z-index: 1;
+}
+
+.success-info-card,
+.success-estimate-card,
+.success-address-card,
+.success-next-box,
+.success-help-box {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.success-step-active span {
+  box-shadow: 0 0 0 6px rgba(124, 255, 107, 0.1);
+}

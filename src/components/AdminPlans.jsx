@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 
 const emptyForm = {
@@ -31,11 +31,7 @@ export default function AdminPlans({ notify }) {
 
   const isEditing = Boolean(editingId);
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
-
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     setLoading(true);
 
     const { data, error } = await supabase
@@ -51,7 +47,11 @@ export default function AdminPlans({ notify }) {
     }
 
     setLoading(false);
-  };
+  }, [notify]);
+
+  useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
 
   const filteredPlans = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();

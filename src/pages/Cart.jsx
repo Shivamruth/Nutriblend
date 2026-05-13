@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
+import { useNotification } from "../context/NotificationContext";
+import ConfirmModal from "../components/ConfirmModal";
 import "../styles/cart.css";
 
 const fallbackProductImage =
@@ -25,19 +27,13 @@ export default function Cart({ setPage }) {
   const [cart, setCart] = useState([]);
   const [syncing, setSyncing] = useState(false);
 
-  useEffect(() => {
-    loadCart();
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [clearCartOpen, setClearCartOpen] = useState(false);
+  const [removeUnavailableOpen, setRemoveUnavailableOpen] = useState(false);
 
-    window.addEventListener("cartUpdated", loadCart);
-    window.addEventListener("storage", loadCart);
+  const { notify } = useNotification();
 
-    return () => {
-      window.removeEventListener("cartUpdated", loadCart);
-      window.removeEventListener("storage", loadCart);
-    };
-  }, []);
-
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     const localCart = JSON.parse(localStorage.getItem("cart")) || [];
 
     if (localCart.length === 0) {
@@ -67,6 +63,7 @@ export default function Cart({ setPage }) {
       console.error("Cart live sync error:", error);
       setCart(localCart);
       setSyncing(false);
+      notify("Could not sync latest cart data ❌", "error");
       return;
     }
 
@@ -93,8 +90,6 @@ export default function Cart({ setPage }) {
 
       return {
         ...item,
-
-        // latest product data from Supabase
         name: liveProduct.name || item.name,
         product_name: liveProduct.name || item.product_name || item.name,
         protein: liveProduct.protein || item.protein,
@@ -108,7 +103,6 @@ export default function Cart({ setPage }) {
         quantity: liveProduct.quantity || item.quantity,
         benefits: liveProduct.benefits || item.benefits,
         ingredients: liveProduct.ingredients || item.ingredients,
-
         price_changed: oldPrice !== newPrice,
         old_price: oldPrice !== newPrice ? oldPrice : item.old_price || null,
       };
@@ -117,7 +111,19 @@ export default function Cart({ setPage }) {
     setCart(syncedCart);
     localStorage.setItem("cart", JSON.stringify(syncedCart));
     setSyncing(false);
-  };
+  }, [notify]);
+
+  useEffect(() => {
+    loadCart();
+
+    window.addEventListener("cartUpdated", loadCart);
+    window.addEventListener("storage", loadCart);
+
+    return () => {
+      window.removeEventListener("cartUpdated", loadCart);
+      window.removeEventListener("storage", loadCart);
+    };
+  }, [loadCart]);
 
   const updateStorage = (updated) => {
     setCart(updated);
@@ -131,25 +137,33 @@ export default function Cart({ setPage }) {
     return normalizeStockStatus(item.stock_status);
   };
 
-  const isOutOfStock = (item) => {
+  const isOutOfStock = useCallback((item) => {
     if (item.isPlan) return false;
 
     const stockStatus = getItemStockStatus(item);
     const isHidden = item.is_active === false;
 
     return stockStatus === "Out of Stock" || isHidden;
-  };
+  }, []);
 
-  const isLimitedStock = (item) => {
+  const isLimitedStock = useCallback((item) => {
     if (item.isPlan) return false;
     return getItemStockStatus(item) === "Limited Stock";
+  }, []);
+
+  const getItemName = (item) => {
+    return item.name || item.product_name || "NutriBlend Item";
+  };
+
+  const getItemSubtotal = (item) => {
+    return Number(item.price || 0) * Number(item.qty || 1);
   };
 
   const updateQty = (id, change) => {
     const currentItem = cart.find((item) => item.id === id);
 
     if (currentItem && isOutOfStock(currentItem)) {
-      alert("This product is out of stock. Please remove it from cart.");
+      notify("This product is out of stock. Please remove it from cart.", "error");
       return;
     }
 
@@ -164,32 +178,31 @@ export default function Cart({ setPage }) {
     updateStorage(updated);
   };
 
-  const removeItem = (id) => {
-    const updated = cart.filter((item) => item.id !== id);
+  const confirmRemoveItem = () => {
+    if (!removeTarget) return;
+
+    const updated = cart.filter((item) => item.id !== removeTarget.id);
     updateStorage(updated);
+    notify(`${getItemName(removeTarget)} removed from cart ✅`, "success");
+    setRemoveTarget(null);
   };
 
-  const removeUnavailableItems = () => {
+  const confirmRemoveUnavailableItems = () => {
     const updated = cart.filter((item) => !isOutOfStock(item));
+    const removedCount = cart.length - updated.length;
+
     updateStorage(updated);
+    notify(`${removedCount} unavailable item${removedCount !== 1 ? "s" : ""} removed ✅`, "success");
+    setRemoveUnavailableOpen(false);
   };
 
-  const clearCart = () => {
-    const confirmClear = window.confirm("Are you sure you want to clear cart?");
-    if (!confirmClear) return;
-
+  const confirmClearCart = () => {
     localStorage.removeItem("cart");
     setCart([]);
     window.dispatchEvent(new Event("cartUpdated"));
     window.dispatchEvent(new Event("storage"));
-  };
-
-  const getItemName = (item) => {
-    return item.name || item.product_name || "NutriBlend Item";
-  };
-
-  const getItemSubtotal = (item) => {
-    return Number(item.price || 0) * Number(item.qty || 1);
+    notify("Cart cleared ✅", "success");
+    setClearCartOpen(false);
   };
 
   const cartStats = useMemo(() => {
@@ -210,7 +223,7 @@ export default function Cart({ setPage }) {
       hasPriceChanges: priceChangedItems.length > 0,
       total,
     };
-  }, [cart]);
+  }, [cart, isLimitedStock, isOutOfStock]);
 
   const total = cartStats.total;
 
@@ -226,6 +239,7 @@ export default function Cart({ setPage }) {
     await loadCart();
 
     const latestCart = JSON.parse(localStorage.getItem("cart")) || [];
+
     const hasUnavailable = latestCart.some((item) => {
       if (item.isPlan) return false;
 
@@ -234,7 +248,12 @@ export default function Cart({ setPage }) {
     });
 
     if (hasUnavailable) {
-      alert("Please remove Out of Stock or hidden items before checkout.");
+      notify("Please remove Out of Stock or hidden items before checkout ❌", "error");
+      return;
+    }
+
+    if (latestCart.length === 0) {
+      notify("Cart is empty ❌", "error");
       return;
     }
 
@@ -270,7 +289,7 @@ export default function Cart({ setPage }) {
           {syncing && <p className="cart-sync-text">Syncing latest prices...</p>}
         </div>
 
-        <button className="cart-clear-btn" onClick={clearCart}>
+        <button className="cart-clear-btn" onClick={() => setClearCartOpen(true)}>
           Clear All
         </button>
       </div>
@@ -285,7 +304,7 @@ export default function Cart({ setPage }) {
             </p>
           </div>
 
-          <button onClick={removeUnavailableItems}>
+          <button onClick={() => setRemoveUnavailableOpen(true)}>
             Remove Unavailable Items
           </button>
         </div>
@@ -483,7 +502,7 @@ export default function Cart({ setPage }) {
 
                   <button
                     className="cart-remove-btn"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => setRemoveTarget(item)}
                     aria-label={`Remove ${getItemName(item)}`}
                   >
                     ✕
@@ -566,6 +585,45 @@ export default function Cart({ setPage }) {
           </button>
         </aside>
       </div>
+
+      <ConfirmModal
+        open={!!removeTarget}
+        title="Remove Item?"
+        message={
+          removeTarget
+            ? `${getItemName(removeTarget)} will be removed from your cart.`
+            : "This item will be removed from your cart."
+        }
+        confirmText="Remove"
+        cancelText="Keep"
+        danger
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={confirmRemoveItem}
+      />
+
+      <ConfirmModal
+        open={clearCartOpen}
+        title="Clear Cart?"
+        message="All products and plans will be removed from your cart."
+        confirmText="Clear Cart"
+        cancelText="Cancel"
+        danger
+        onCancel={() => setClearCartOpen(false)}
+        onConfirm={confirmClearCart}
+      />
+
+      <ConfirmModal
+        open={removeUnavailableOpen}
+        title="Remove Unavailable Items?"
+        message={`${cartStats.unavailableCount} unavailable item${
+          cartStats.unavailableCount !== 1 ? "s" : ""
+        } will be removed from your cart.`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        danger
+        onCancel={() => setRemoveUnavailableOpen(false)}
+        onConfirm={confirmRemoveUnavailableItems}
+      />
     </div>
   );
 }

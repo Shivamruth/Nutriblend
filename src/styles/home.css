@@ -606,3 +606,48 @@
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* =========================
+   HOME POLISH
+========================= */
+
+.home-hero,
+.home-category-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-hero::after {
+  content: "";
+  position: absolute;
+  right: 24px;
+  bottom: -34px;
+  width: 190px;
+  height: 190px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(124, 255, 107, 0.16), transparent 68%);
+}
+
+.home-chip,
+.home-sort-btn,
+.filter-icon {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.home-chip-active,
+.home-sort-btn.active {
+  border-color: rgba(124, 255, 107, 0.58);
+  box-shadow: 0 12px 28px rgba(124, 255, 107, 0.11);
+}
+
+.horizontal-card {
+  will-change: transform;
+}
+
+.horizontal-card:hover .product-img {
+  transform: scale(1.045);
+}
+
+.product-img {
+  transition: transform 0.35s ease, filter 0.25s ease, opacity 0.25s ease;
+}

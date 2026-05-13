@@ -299,3 +299,53 @@ export const updateOrderStatusAdmin = async (req, res) => {
     });
   }
 };
+
+export const verifyPayment = async (req, res, next) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      orderId,
+    } = req.body;
+
+    const isValid = verifyRazorpaySignature({
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    });
+
+    if (!isValid) {
+      throw new ApiError(400, "Invalid payment signature");
+    }
+
+    let query = supabase
+      .from("orders")
+      .update({
+        payment_status: "Paid",
+        razorpay_payment_id,
+      });
+
+    if (orderId) {
+      query = query.eq("id", orderId);
+    } else {
+      query = query
+        .eq("razorpay_order_id", razorpay_order_id)
+        .eq("user_id", req.user.id);
+    }
+
+    const { data, error } = await query.select("id").maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return res.status(200).json({
+      success: true,
+      orderId: data?.id || orderId || null,
+      message: "Payment verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

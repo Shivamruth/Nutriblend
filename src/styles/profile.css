@@ -774,3 +774,35 @@ grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     align-items: flex-start;
   }
 }
+
+/* =========================
+   PROFILE POLISH
+========================= */
+
+.profile-hero-card,
+.profile-card,
+.profile-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-hero-card::before,
+.profile-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(124, 255, 107, 0.06), transparent 34%, rgba(56, 189, 248, 0.055));
+}
+
+.profile-hero-card > *,
+.profile-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-stat-card:hover,
+.profile-quick-actions button:hover,
+.profile-order-row:hover {
+  border-color: rgba(124, 255, 107, 0.22);
+}

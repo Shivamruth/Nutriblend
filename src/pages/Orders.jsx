@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
+import { useNotification } from "../context/NotificationContext";
 import { jsPDF } from "jspdf";
 import "../styles/orders.css";
 
@@ -186,6 +187,8 @@ export default function Orders({ setPage }) {
   const [cancelReason, setCancelReason] = useState("");
   const [customCancelReason, setCustomCancelReason] = useState("");
 
+  const { notify } = useNotification();
+
   const fetchOrdersFromSupabase = useCallback(async (userId) => {
     const { data, error } = await supabase
       .from("orders")
@@ -212,6 +215,7 @@ export default function Orders({ setPage }) {
         await supabase.auth.signOut();
         setOrders([]);
         setErrorMessage("Your login session expired. Please log in again.");
+        notify("Your login session expired. Please log in again ❌", "error");
         return;
       }
 
@@ -223,10 +227,11 @@ export default function Orders({ setPage }) {
       setErrorMessage(
         err.message || "Something went wrong while loading orders."
       );
+      notify(err.message || "Something went wrong while loading orders ❌", "error");
     } finally {
       setLoading(false);
     }
-  }, [fetchOrdersFromSupabase]);
+  }, [fetchOrdersFromSupabase, notify]);
 
   useEffect(() => {
     fetchOrders();
@@ -282,7 +287,10 @@ export default function Orders({ setPage }) {
   }, [orders, searchTerm, statusFilter, paymentFilter, dateFilter]);
 
   const filtersActive =
-    searchTerm || statusFilter !== "All" || paymentFilter !== "All" || dateFilter !== "all";
+    searchTerm ||
+    statusFilter !== "All" ||
+    paymentFilter !== "All" ||
+    dateFilter !== "all";
 
   const resetFilters = () => {
     setSearchTerm("");
@@ -326,7 +334,7 @@ export default function Orders({ setPage }) {
 
   const openCancelModal = (order) => {
     if (!canCancelOrder(order)) {
-      alert("This order cannot be cancelled now.");
+      notify("This order cannot be cancelled now ❌", "error");
       return;
     }
 
@@ -350,7 +358,7 @@ export default function Orders({ setPage }) {
         : cancelReason.trim();
 
     if (!finalReason) {
-      alert("Please select or enter a cancellation reason.");
+      notify("Please select or enter a cancellation reason ❌", "error");
       return;
     }
 
@@ -387,10 +395,10 @@ export default function Orders({ setPage }) {
       );
 
       closeCancelModal();
-      alert("Order cancelled successfully ✅");
+      notify("Order cancelled successfully ✅", "success");
     } catch (error) {
       console.error("Cancel order error:", error);
-      alert(error.message || "Failed to cancel order");
+      notify(error.message || "Failed to cancel order ❌", "error");
     } finally {
       setActionLoadingId(null);
     }
@@ -400,7 +408,7 @@ export default function Orders({ setPage }) {
     const orderItems = getOrderItems(order);
 
     if (!orderItems.length) {
-      alert("No items found in this order.");
+      notify("No items found in this order ❌", "error");
       return;
     }
 
@@ -435,7 +443,7 @@ export default function Orders({ setPage }) {
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("cartUpdated"));
 
-    alert("Items added to cart again ✅");
+    notify("Items added to cart again ✅", "success");
 
     if (setPage) {
       setPage("cart");
@@ -443,83 +451,89 @@ export default function Orders({ setPage }) {
   };
 
   const downloadInvoice = (order) => {
-    const doc = new jsPDF();
-    const items = getOrderItems(order);
-    const orderId = formatOrderId(order.id);
+    try {
+      const doc = new jsPDF();
+      const items = getOrderItems(order);
+      const orderId = formatOrderId(order.id);
 
-    doc.setFontSize(20);
-    doc.text("NUTRIBLEND INVOICE", 20, 20);
+      doc.setFontSize(20);
+      doc.text("NUTRIBLEND INVOICE", 20, 20);
 
-    doc.setFontSize(11);
-    doc.text(`Order ID: ${orderId}`, 20, 38);
-    doc.text(`Date: ${formatDateTime(order.created_at)}`, 20, 48);
-    doc.text(`Name: ${order.address?.name || "N/A"}`, 20, 63);
-    doc.text(`Phone: ${order.address?.phone || "N/A"}`, 20, 73);
+      doc.setFontSize(11);
+      doc.text(`Order ID: ${orderId}`, 20, 38);
+      doc.text(`Date: ${formatDateTime(order.created_at)}`, 20, 48);
+      doc.text(`Name: ${order.address?.name || "N/A"}`, 20, 63);
+      doc.text(`Phone: ${order.address?.phone || "N/A"}`, 20, 73);
 
-    const addressLine = `${order.address?.street || ""}, ${
-      order.address?.city || ""
-    }, ${order.address?.state || ""} - ${order.address?.pincode || ""}`;
+      const addressLine = `${order.address?.street || ""}, ${
+        order.address?.city || ""
+      }, ${order.address?.state || ""} - ${order.address?.pincode || ""}`;
 
-    doc.text(`Address: ${addressLine}`, 20, 83, { maxWidth: 170 });
+      doc.text(`Address: ${addressLine}`, 20, 83, { maxWidth: 170 });
 
-    doc.text(`Payment: ${getPaymentMethod(order)}`, 20, 103);
-    doc.text(`Payment Status: ${getPaymentStatus(order)}`, 20, 113);
-    doc.text(`Order Status: ${formatStatus(order.status)}`, 20, 123);
+      doc.text(`Payment: ${getPaymentMethod(order)}`, 20, 103);
+      doc.text(`Payment Status: ${getPaymentStatus(order)}`, 20, 113);
+      doc.text(`Order Status: ${formatStatus(order.status)}`, 20, 123);
 
-    let y = 138;
+      let y = 138;
 
-    if (formatStatus(order.status) === "Cancelled") {
-      doc.text(`Cancel Reason: ${order.cancel_reason || "N/A"}`, 20, y, {
-        maxWidth: 170,
-      });
+      if (formatStatus(order.status) === "Cancelled") {
+        doc.text(`Cancel Reason: ${order.cancel_reason || "N/A"}`, 20, y, {
+          maxWidth: 170,
+        });
+        y += 12;
+      }
+
+      doc.setFontSize(14);
+      doc.text("Items", 20, y);
       y += 12;
-    }
 
-    doc.setFontSize(14);
-    doc.text("Items", 20, y);
-    y += 12;
+      doc.setFontSize(10);
 
-    doc.setFontSize(10);
+      items.forEach((item, index) => {
+        const name = getItemName(item);
+        const qty = item.qty || 1;
+        const price = item.price || 0;
+        const subtotal = getItemSubtotal(item);
 
-    items.forEach((item, index) => {
-      const name = getItemName(item);
-      const qty = item.qty || 1;
-      const price = item.price || 0;
-      const subtotal = getItemSubtotal(item);
+        doc.text(`${index + 1}. ${name}`, 20, y, { maxWidth: 115 });
+        doc.text(`Qty: ${qty}`, 140, y);
+        doc.text(`Rs. ${subtotal}`, 165, y);
 
-      doc.text(`${index + 1}. ${name}`, 20, y, { maxWidth: 115 });
-      doc.text(`Qty: ${qty}`, 140, y);
-      doc.text(`Rs. ${subtotal}`, 165, y);
-
-      y += 8;
-
-      if (item.isPlan) {
-        doc.text(
-          `Plan: ${item.duration || item.plan_duration || "N/A"} | Protein: ${
-            item.protein || "N/A"
-          }`,
-          25,
-          y,
-          { maxWidth: 150 }
-        );
         y += 8;
-      }
 
-      doc.text(`Price: Rs. ${price}`, 25, y);
-      y += 10;
+        if (item.isPlan) {
+          doc.text(
+            `Plan: ${item.duration || item.plan_duration || "N/A"} | Protein: ${
+              item.protein || "N/A"
+            }`,
+            25,
+            y,
+            { maxWidth: 150 }
+          );
+          y += 8;
+        }
 
-      if (y > 260) {
-        doc.addPage();
-        y = 25;
-      }
-    });
+        doc.text(`Price: Rs. ${price}`, 25, y);
+        y += 10;
 
-    doc.setFontSize(14);
-    doc.text(`Total: Rs. ${getOrderTotal(order)}`, 20, y + 10);
-    doc.setFontSize(10);
-    doc.text("Thank you for choosing NutriBlend.", 20, y + 24);
+        if (y > 260) {
+          doc.addPage();
+          y = 25;
+        }
+      });
 
-    doc.save(`invoice_${orderId}.pdf`);
+      doc.setFontSize(14);
+      doc.text(`Total: Rs. ${getOrderTotal(order)}`, 20, y + 10);
+      doc.setFontSize(10);
+      doc.text("Thank you for choosing NutriBlend.", 20, y + 24);
+
+      doc.save(`invoice_${orderId}.pdf`);
+      notify("Invoice downloaded ✅", "success");
+    } catch (error) {
+      console.error("Invoice download error:", error);
+      notify("Failed to download invoice ❌", "error");
+    }
   };
 
   if (loading) {
@@ -933,11 +947,7 @@ function InfoRow({ label, value, strong = false }) {
   return (
     <div className="order-detail-row">
       <span className="order-detail-label">{label}</span>
-      <span
-        className={`order-detail-value ${
-          strong ? "order-total" : ""
-        }`}
-      >
+      <span className={`order-detail-value ${strong ? "order-total" : ""}`}>
         {value}
       </span>
     </div>

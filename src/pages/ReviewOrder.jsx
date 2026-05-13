@@ -3,7 +3,7 @@ import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import "../styles/review-order.css";
 
-export default function ReviewOrder({ cart, address, payment, setPage }) {
+export default function ReviewOrder({ cart: _cart, address, payment, setPage }) {
   const [loading, setLoading] = useState(false);
   const [localCart, setLocalCart] = useState([]);
   const { notify } = useNotification();

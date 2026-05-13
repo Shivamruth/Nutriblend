@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
-import { supabase } from "./config/supabase.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { apiLimiter } from "./middleware/rateLimit.middleware.js";
 import apiRoutes from "./routes/api.routes.js";

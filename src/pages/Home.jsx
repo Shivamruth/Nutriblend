@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import { fallbackProductImage, withProductImage } from "../utils/productImages";
@@ -64,7 +64,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
 
   const { notify } = useNotification();
 
-  async function fetchProducts() {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
 
     const { data, error } = await supabase
@@ -89,9 +89,9 @@ export default function Home({ search, setPage, setSelectedProduct }) {
     }
 
     setLoading(false);
-  }
+  }, [notify]);
 
-  async function fetchPlans() {
+  const fetchPlans = useCallback(async () => {
     const { data, error } = await supabase
       .from("plans")
       .select("*")
@@ -123,12 +123,12 @@ export default function Home({ search, setPage, setSelectedProduct }) {
     }));
 
     setPlans(formattedPlans);
-  }
+  }, []);
 
   useEffect(() => {
     fetchProducts();
     fetchPlans();
-  }, []);
+  }, [fetchProducts, fetchPlans]);
 
   const addToCart = (e, item) => {
     e.stopPropagation();

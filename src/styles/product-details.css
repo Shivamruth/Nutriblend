@@ -411,3 +411,44 @@
   cursor: not-allowed;
   transform: none !important;
 }
+
+/* =========================
+   PRODUCT DETAILS POLISH
+========================= */
+
+.product-details-card,
+.ingredients-section,
+.product-business-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-details-card::before,
+.ingredients-section::before,
+.product-business-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,255,107,0.05), transparent 34%, rgba(56,189,248,0.05));
+}
+
+.product-details-card > *,
+.ingredients-section > *,
+.product-business-box > * {
+  position: relative;
+  z-index: 1;
+}
+
+.product-image-section img {
+  transition: transform 0.35s ease, filter 0.25s ease;
+}
+
+.product-image-section:hover img {
+  transform: scale(1.025);
+}
+
+.product-stock-status,
+.product-detail-tag {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}

@@ -55,3 +55,29 @@
     align-items: flex-start;
   }
 }
+
+/* =========================
+   REVIEW ORDER POLISH
+========================= */
+
+.review-container .section {
+  position: relative;
+  overflow: hidden;
+}
+
+.review-container .section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,255,107,0.05), transparent 40%, rgba(56,189,248,0.05));
+}
+
+.review-container .section > * {
+  position: relative;
+  z-index: 1;
+}
+
+.review-item {
+  align-items: center;
+}

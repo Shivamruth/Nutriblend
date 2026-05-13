@@ -74,6 +74,7 @@ export default function Payment({ setPage, setPayment }) {
   const [deliveryInstruction, setDeliveryInstruction] = useState("");
   const [showInstructionBox, setShowInstructionBox] = useState(false);
   const [addressLoading, setAddressLoading] = useState(true);
+  const [paymentStage, setPaymentStage] = useState("");
 
   const { notify } = useNotification();
 
@@ -163,6 +164,17 @@ export default function Payment({ setPage, setPayment }) {
   const deliveryFee = Number(selectedDelivery.fee || 0);
   const total = subtotal + deliveryFee;
   const totalItems = getTotalItems(cart);
+
+  const parseApiResponse = async (res) => {
+    const text = await res.text();
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.error("Non-JSON API response:", text);
+      throw new Error(text || "Server returned non-JSON response");
+    }
+  };
 
   const extractOrderId = (json) => {
     return (
@@ -447,12 +459,15 @@ export default function Payment({ setPage, setPayment }) {
   };
 
   const placeCODOrder = async () => {
+    if (loading) return;
+
     const checkout = await validateCheckout();
     if (!checkout) return;
 
     const { cart, user, subtotal, deliveryFee, total } = checkout;
 
     setLoading(true);
+    setPaymentStage("Placing your COD order...");
 
     try {
       let success = false;
@@ -463,11 +478,15 @@ export default function Payment({ setPage, setPayment }) {
           data: { session },
         } = await supabase.auth.getSession();
 
+        if (!session?.access_token) {
+          throw new Error("Session expired. Please login again.");
+        }
+
         const res = await fetch("/api/create-order", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             amount: total,
@@ -481,7 +500,7 @@ export default function Payment({ setPage, setPayment }) {
           }),
         });
 
-        const json = await res.json();
+        const json = await parseApiResponse(res);
 
         if (res.ok && json.success) {
           success = true;
@@ -519,27 +538,43 @@ export default function Payment({ setPage, setPayment }) {
       notify(err.message || "Something went wrong ❌", "error");
     } finally {
       setLoading(false);
+      setPaymentStage("");
     }
   };
 
   const placeOnlineOrder = async () => {
+    if (loading) return;
+
     const checkout = await validateCheckout();
     if (!checkout) return;
 
     const { cart, user, subtotal, deliveryFee, total } = checkout;
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+    if (!razorpayKey) {
+      notify("Razorpay key is missing. Add VITE_RAZORPAY_KEY_ID ❌", "error");
+      return;
+    }
 
     try {
       setLoading(true);
+      setPaymentStage("Creating secure payment order...");
 
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
+      if (!session?.access_token) {
+        notify("Session expired. Please login again ❌", "error");
+        setPage("login");
+        return;
+      }
+
       const res = await fetch("/api/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           amount: total,
@@ -553,7 +588,7 @@ export default function Payment({ setPage, setPayment }) {
         }),
       });
 
-      const json = await res.json();
+      const json = await parseApiResponse(res);
 
       if (!res.ok || !json.success) {
         notify(json.message || "Unable to create payment order ❌", "error");
@@ -568,7 +603,7 @@ export default function Payment({ setPage, setPayment }) {
       }
 
       if (!data || !data.id) {
-        notify("Unable to create payment order ❌", "error");
+        notify("Unable to create Razorpay order ❌", "error");
         return;
       }
 
@@ -577,17 +612,49 @@ export default function Payment({ setPage, setPayment }) {
         return;
       }
 
+      setPaymentStage("Opening Razorpay checkout...");
+
       const options = {
-        key: "rzp_test_Si5qIO79k0W6vT",
+        key: razorpayKey,
         amount: data.amount,
-        currency: "INR",
+        currency: data.currency || "INR",
         order_id: data.id,
         name: "NUTRIBLEND",
         description: "Healthy Protein Order",
 
         handler: async function (response) {
-          if (!data.db_saved) {
-            try {
+          try {
+            setPaymentStage("Verifying payment securely...");
+
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: savedOrderId || null,
+              }),
+            });
+
+            const verifyJson = await parseApiResponse(verifyRes);
+
+            if (!verifyRes.ok || !verifyJson.success) {
+              notify(
+                verifyJson.message || "Payment verification failed ❌",
+                "error"
+              );
+              return;
+            }
+
+            savedOrderId = savedOrderId || verifyJson.orderId || "";
+
+            if (!data.db_saved) {
+              setPaymentStage("Saving your order...");
+
               savedOrderId = await saveOrderDirectlyToSupabase({
                 cart,
                 user,
@@ -599,15 +666,17 @@ export default function Payment({ setPage, setPayment }) {
                 razorpayOrderId: data.id,
                 razorpayPaymentId: response.razorpay_payment_id,
               });
-            } catch (dbErr) {
-              console.error("Client-side order save failed:", dbErr);
-              notify("Payment done but order save failed ❌", "error");
-              return;
             }
-          }
 
-          notify("Payment successful ✅", "success");
-          clearCartAndGoSuccess("Online", savedOrderId);
+            notify("Payment verified successfully ✅", "success");
+            clearCartAndGoSuccess("Online", savedOrderId);
+          } catch (verifyErr) {
+            console.error("Payment verification failed:", verifyErr);
+            notify("Payment verification failed ❌", "error");
+          } finally {
+            setLoading(false);
+            setPaymentStage("");
+          }
         },
 
         prefill: {
@@ -624,24 +693,37 @@ export default function Payment({ setPage, setPayment }) {
         theme: {
           color: "#7cff6b",
         },
+
+        modal: {
+          ondismiss: function () {
+            notify("Payment cancelled by user", "error");
+            setLoading(false);
+            setPaymentStage("");
+          },
+        },
       };
 
       const rzp = new window.Razorpay(options);
 
-      rzp.on("payment.failed", function () {
-        notify("Payment failed ❌", "error");
+      rzp.on("payment.failed", function (response) {
+        console.error("Razorpay payment failed:", response.error);
+        notify(response?.error?.description || "Payment failed ❌", "error");
+        setLoading(false);
+        setPaymentStage("");
       });
 
       rzp.open();
     } catch (err) {
       console.error("PAYMENT ERROR:", err);
-      notify("Something went wrong ❌", "error");
-    } finally {
+      notify(err.message || "Something went wrong ❌", "error");
       setLoading(false);
+      setPaymentStage("");
     }
   };
 
   const placeOrder = () => {
+    if (loading) return;
+
     if (selectedMethod === "cod") {
       placeCODOrder();
       return;
@@ -678,7 +760,9 @@ export default function Payment({ setPage, setPayment }) {
             <p className="payment-muted">Loading selected address...</p>
           ) : address ? (
             <>
-              <p className="checkout-address-line">{formatAddressLine(address)}</p>
+              <p className="checkout-address-line">
+                {formatAddressLine(address)}
+              </p>
               <p className="checkout-address-phone">📞 {address.phone}</p>
 
               {!showInstructionBox ? (
@@ -686,6 +770,7 @@ export default function Payment({ setPage, setPayment }) {
                   className="delivery-instruction-link"
                   onClick={() => setShowInstructionBox(true)}
                   type="button"
+                  disabled={loading}
                 >
                   Add delivery instructions
                 </button>
@@ -696,10 +781,13 @@ export default function Payment({ setPage, setPayment }) {
                     value={deliveryInstruction}
                     onChange={(e) => setDeliveryInstruction(e.target.value)}
                     rows="3"
+                    disabled={loading}
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowInstructionBox(false)}
+                    disabled={loading}
                   >
                     Save instructions
                   </button>
@@ -801,12 +889,14 @@ export default function Payment({ setPage, setPayment }) {
                   value={option.id}
                   checked={deliveryOption === option.id}
                   onChange={(e) => setDeliveryOption(e.target.value)}
+                  disabled={loading}
                 />
 
                 <div>
                   <strong>{option.title}</strong>
                   <p>
-                    {option.eta} • {option.fee === 0 ? "FREE Delivery" : money(option.fee)}
+                    {option.eta} •{" "}
+                    {option.fee === 0 ? "FREE Delivery" : money(option.fee)}
                   </p>
                   <small>{option.desc}</small>
                 </div>
@@ -867,7 +957,7 @@ export default function Payment({ setPage, setPayment }) {
             disabled={!selectedMethod || !address || loading || cart.length === 0}
           >
             {loading
-              ? "Processing..."
+              ? paymentStage || "Processing..."
               : selectedMethod === "cod"
               ? "Place your order"
               : "Pay and place your order"}
@@ -879,6 +969,10 @@ export default function Payment({ setPage, setPayment }) {
               By placing your order, you agree to NutriBlend order confirmation
               and delivery process.
             </p>
+
+            {paymentStage && (
+              <p className="payment-processing-text">{paymentStage}</p>
+            )}
           </div>
         </section>
       </div>
@@ -890,11 +984,15 @@ export default function Payment({ setPage, setPayment }) {
           disabled={!selectedMethod || !address || loading || cart.length === 0}
         >
           {loading
-            ? "Processing..."
+            ? paymentStage || "Processing..."
             : selectedMethod === "cod"
             ? "Place your order"
             : "Pay and place your order"}
         </button>
+
+        {paymentStage && (
+          <p className="payment-processing-text">{paymentStage}</p>
+        )}
 
         <p className="payment-agreement">
           By placing your order, your selected address and payment method will be

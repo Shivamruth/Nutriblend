@@ -611,6 +611,42 @@
     justify-content: flex-start;
   }
 }
+
+/* =========================
+   ADDRESS POLISH
+========================= */
+
+.address-form-card,
+.address-item,
+.selected-address-panel,
+.address-bottom-bar {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.address-item {
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.address-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 255, 107, 0.28);
+}
+
+.address-item.is-selected {
+  border-color: rgba(124, 255, 107, 0.62);
+  background: linear-gradient(135deg, rgba(124, 255, 107, 0.1), rgba(56, 189, 248, 0.055));
+}
+
+.address-radio span {
+  display: grid;
+  place-items: center;
+}
+
+.address-actions button,
+.address-primary-btn,
+.address-secondary-btn {
+  min-height: 42px;
+}
 /* =========================
    ADDRESS RESPONSIVE
 ========================= */

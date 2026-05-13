@@ -8,10 +8,10 @@ const razorpay = new Razorpay({
 });
 
 export const createRazorpayOrder = async ({ amount, currency = "INR", receipt }) => {
-  const amountInPaise = Number(amount);
+  const amountInPaise = Math.round(Number(amount || 0) * 100);
 
   if (!amountInPaise || amountInPaise < 100) {
-    throw new Error("Minimum Razorpay amount is 100 paise");
+    throw new Error("Minimum Razorpay amount is ₹1");
   }
 
   return razorpay.orders.create({

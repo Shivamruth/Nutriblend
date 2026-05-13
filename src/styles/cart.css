@@ -827,3 +827,43 @@
   color: #93c5fd !important;
   font-weight: 900;
 }
+
+/* =========================
+   CART POLISH
+========================= */
+
+.cart-card,
+.cart-summary,
+.cart-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.cart-card::before,
+.cart-summary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,255,107,0.055), transparent 38%, rgba(56,189,248,0.05));
+}
+
+.cart-card > *,
+.cart-summary > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cart-card:hover {
+  border-color: rgba(124, 255, 107, 0.24);
+  transform: translateY(-2px);
+}
+
+.qty-controls {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.cart-remove-btn:hover {
+  background: rgba(255, 93, 115, 0.16);
+  color: #ffb8c4;
+}
