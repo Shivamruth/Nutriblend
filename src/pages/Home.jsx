@@ -348,32 +348,38 @@ export default function Home({ search, setPage, setSelectedProduct }) {
           </p>
         </div>
 
-        <button
-          className="filter-icon"
-          onClick={() => setShowFilters(!showFilters)}
-          aria-label="Toggle filters"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="home-hero-actions">
+          <div className="home-brand-orbit">
+            <img src="/nutriblend-logo.svg" alt="NutriBlend" />
+          </div>
+
+          <button
+            className="filter-icon"
+            onClick={() => setShowFilters(!showFilters)}
+            aria-label="Toggle filters"
           >
-            <path d="M10 5H3" />
-            <path d="M12 19H3" />
-            <path d="M14 3v4" />
-            <path d="M16 17v4" />
-            <path d="M21 12h-9" />
-            <path d="M21 19h-5" />
-            <path d="M21 5h-7" />
-            <path d="M8 10v4" />
-            <path d="M8 12H3" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M10 5H3" />
+              <path d="M12 19H3" />
+              <path d="M14 3v4" />
+              <path d="M16 17v4" />
+              <path d="M21 12h-9" />
+              <path d="M21 19h-5" />
+              <path d="M21 5h-7" />
+              <path d="M8 10v4" />
+              <path d="M8 12H3" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="home-category-bar">

@@ -64,7 +64,8 @@ export default function Navbar({
           onClick={() => navigateTo("home")}
           aria-label="Go to home"
         >
-          NUTRIBLEND
+          <img src="/nutriblend-logo.svg" alt="" className="nav-brand-mark" />
+          <span>NUTRIBLEND</span>
         </button>
 
         <button
@@ -113,9 +114,10 @@ export default function Navbar({
 
       <aside className={`nav-drawer ${drawerOpen ? "drawer-open" : ""}`}>
         <div className="nav-drawer-header">
-          <div>
+          <div className="nav-drawer-brand">
+            <img src="/nutriblend-logo.svg" alt="" className="nav-drawer-logo" />
             <span className="nav-drawer-eyebrow">Menu</span>
-            <strong>🥤 NutriBlend</strong>
+            <strong>NutriBlend</strong>
           </div>
           <button
             type="button"

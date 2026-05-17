@@ -1,6 +1,29 @@
 /* App shell: src/App.jsx */
 .app {
   min-height: 100vh;
+  position: relative;
+  overflow-x: clip;
+}
+
+.app::before,
+.app::after {
+  content: "";
+  position: fixed;
+  top: 72px;
+  bottom: 0;
+  width: min(12vw, 120px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.app::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(139, 46, 212, 0.16), transparent);
+}
+
+.app::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(240, 198, 106, 0.14), transparent);
 }
 
 .page-container {
@@ -18,10 +41,10 @@
   justify-content: center;
 }
 .app-loading-content { text-align: center; }
-.app-loading-logo { font-size: 3.5rem; margin-bottom: 12px; animation: pop 0.6s ease; }
+.app-loading-logo { margin-bottom: 12px; animation: pop 0.6s ease; }
 .app-loading-content h2 {
   font-weight: 800; letter-spacing: 0.1em; font-size: 1.2rem;
-  background: linear-gradient(90deg, #f8fbff, #7cff6b, #38bdf8);
+  background: linear-gradient(90deg, #fff9df, var(--primary), #b984ff);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .app-loading-bar {
@@ -45,9 +68,9 @@
 .review-container .pay-btn,
 .home-container .card button,
 .order-card button {
-  color: #03101f;
-  background: linear-gradient(135deg, var(--primary) 0%, #b8ff70 18%, var(--secondary) 100%);
-  box-shadow: 0 14px 28px rgba(56, 189, 248, 0.18);
+  color: #080404;
+  background: linear-gradient(135deg, var(--primary) 0%, #fff0a8 22%, var(--secondary) 100%);
+  box-shadow: 0 14px 28px rgba(139, 46, 212, 0.2);
 }
 
 .buy-btn:hover,
@@ -56,7 +79,7 @@
 .review-container .pay-btn:hover,
 .home-container .card button:hover,
 .order-card button:hover {
-  box-shadow: 0 18px 34px rgba(56, 189, 248, 0.24);
+  box-shadow: 0 18px 34px rgba(240, 198, 106, 0.2);
 }
 
 .buy-btn,
@@ -176,22 +199,23 @@
 
 .app-loading {
   background:
-    radial-gradient(ellipse at 50% 35%, rgba(124,255,107,0.12), transparent 42%),
-    radial-gradient(ellipse at 50% 65%, rgba(56,189,248,0.1), transparent 46%),
+    radial-gradient(ellipse at 50% 35%, rgba(240,198,106,0.14), transparent 42%),
+    radial-gradient(ellipse at 50% 65%, rgba(139,46,212,0.14), transparent 46%),
     var(--bg);
 }
 
 .app-loading-logo {
   display: grid;
   place-items: center;
-  width: 82px;
-  height: 82px;
+  width: 96px;
+  height: 96px;
   margin-left: auto;
   margin-right: auto;
-  border-radius: 26px;
-  color: #03101f;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  box-shadow: 0 22px 50px rgba(56, 189, 248, 0.22);
+  border-radius: 50%;
+  object-fit: cover;
+  color: #080404;
+  background: #000000;
+  box-shadow: 0 22px 50px rgba(240, 198, 106, 0.22);
 }
 
 .buy-btn,
@@ -200,5 +224,5 @@
 .review-container .pay-btn,
 .home-container .card button,
 .order-card button {
-  box-shadow: 0 16px 34px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255,255,255,0.36);
+  box-shadow: 0 16px 34px rgba(139, 46, 212, 0.22), inset 0 1px 0 rgba(255,255,255,0.36);
 }

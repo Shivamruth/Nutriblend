@@ -26,8 +26,9 @@
 .account-info-hero {
   padding: 26px;
   background:
-    radial-gradient(circle at top right, rgba(223, 255, 41, 0.12), transparent 34%),
-    #1a1e24;
+    radial-gradient(circle at top right, rgba(240, 198, 106, 0.14), transparent 34%),
+    radial-gradient(circle at top left, rgba(139, 46, 212, 0.16), transparent 38%),
+    #17111f;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
 }
@@ -46,9 +47,9 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: rgba(223, 255, 41, 0.1);
-  color: #dfff29;
-  border: 1px solid rgba(223, 255, 41, 0.24);
+  background: rgba(240, 198, 106, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(240, 198, 106, 0.26);
 }
 
 .account-info-badge {
@@ -58,8 +59,8 @@
   padding: 7px 11px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.07);
-  color: #dfff29;
-  border: 1px solid rgba(223, 255, 41, 0.18);
+  color: var(--primary);
+  border: 1px solid rgba(240, 198, 106, 0.2);
   font-size: 0.78rem;
   font-weight: 950;
 }
@@ -93,7 +94,7 @@
   gap: 8px;
   padding: 14px;
   border-radius: 14px;
-  background: #050a0d;
+  background: #050308;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -120,7 +121,7 @@
 
 .account-info-card {
   padding: 22px;
-  background: #050a0d;
+  background: #050308;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
 }
@@ -154,8 +155,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #dfff29;
-  color: #020405;
+  background: linear-gradient(135deg, var(--primary), #fff0a8);
+  color: #080404;
   font-size: 0.88rem;
   font-weight: 950;
 }
@@ -188,7 +189,7 @@
 }
 
 .account-info-lines svg {
-  color: #dfff29;
+  color: var(--primary);
   margin-top: 1px;
 }
 
@@ -196,17 +197,17 @@
   width: 100%;
   min-height: 58px;
   margin-top: 18px;
-  border: 2px solid #dfff29;
+  border: 2px solid var(--primary);
   border-radius: 14px;
-  background: #dfff29;
-  color: #020405;
+  background: linear-gradient(135deg, var(--primary), #fff0a8);
+  color: #080404;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 950;
 }
 
 .account-info-action:hover {
-  box-shadow: 0 14px 34px rgba(223, 255, 41, 0.16);
+  box-shadow: 0 14px 34px rgba(240, 198, 106, 0.16);
 }
 
 @media (min-width: 900px) {

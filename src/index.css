@@ -1,25 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #06111f;
-  --bg-deep: #020817;
-  --surface: rgba(7, 18, 36, 0.82);
-  --surface-strong: #0c1a30;
-  --surface-soft: #16253e;
+  --bg: #060309;
+  --bg-deep: #010101;
+  --surface: rgba(13, 10, 20, 0.86);
+  --surface-strong: #130d1d;
+  --surface-soft: #231535;
   --glass: rgba(255,255,255,0.04);
   --glass-border: rgba(255,255,255,0.08);
   --line: rgba(255,255,255,0.1);
-  --line-strong: rgba(124,255,107,0.22);
+  --line-strong: rgba(230,184,85,0.28);
   --text: #f8fbff;
-  --muted: #8ba2be;
-  --primary: #7cff6b;
-  --primary-deep: #4dd85a;
-  --primary-glow: rgba(124,255,107,0.18);
-  --secondary: #38bdf8;
-  --secondary-glow: rgba(56,189,248,0.15);
+  --muted: #a99dbc;
+  --primary: #f0c66a;
+  --primary-deep: #b67820;
+  --primary-glow: rgba(240,198,106,0.2);
+  --secondary: #8b2ed4;
+  --secondary-glow: rgba(139,46,212,0.18);
   --danger: #ff5d73;
   --warning: #facc15;
-  --gradient-primary: linear-gradient(135deg, #7cff6b 0%, #38bdf8 100%);
+  --brand-gold: #f0c66a;
+  --brand-gold-soft: #fff0a8;
+  --brand-purple: #8b2ed4;
+  --brand-purple-deep: #2b0a55;
+  --gradient-primary: linear-gradient(135deg, #f0c66a 0%, #fff0a8 28%, #8b2ed4 100%);
   --gradient-card: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
   --shadow-xl: 0 32px 64px rgba(0,0,0,0.4);
   --shadow-lg: 0 20px 40px rgba(0,0,0,0.3);
@@ -47,9 +51,9 @@ body {
   color: var(--text);
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse at 10% 0%, rgba(56,189,248,0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 0%, rgba(124,255,107,0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(124,255,107,0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 10% 0%, rgba(139,46,212,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 0%, rgba(240,198,106,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(139,46,212,0.08) 0%, transparent 50%);
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
   overflow-x: hidden;
@@ -186,7 +190,7 @@ textarea {
 ========================= */
 
 ::selection {
-  color: #03101f;
+  color: #080404;
   background: var(--primary);
 }
 
@@ -200,7 +204,7 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(124, 255, 107, 0.6), rgba(56, 189, 248, 0.55));
+  background: linear-gradient(180deg, rgba(240, 198, 106, 0.74), rgba(139, 46, 212, 0.7));
   border: 2px solid rgba(2, 8, 23, 0.9);
   border-radius: 999px;
 }

@@ -178,7 +178,11 @@ export default function App() {
     return (
       <div className="app-loading">
         <div className="app-loading-content">
-          <div className="app-loading-logo">NB</div>
+          <img
+            className="app-loading-logo"
+            src="/nutriblend-logo.svg"
+            alt="NutriBlend"
+          />
           <h2>NUTRIBLEND</h2>
           <div className="app-loading-bar">
             <div className="app-loading-bar-fill" />

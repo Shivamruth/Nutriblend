@@ -8,7 +8,7 @@
   height: 48px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(240, 198, 106, 0.26);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.07);
   color: var(--text);
@@ -22,7 +22,7 @@
   z-index: 10;
   width: min(260px, calc(100vw - 32px));
   padding: 16px;
-  background: rgba(6, 16, 31, 0.96);
+  background: rgba(8, 5, 12, 0.96);
   border: 1px solid var(--line-strong);
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
@@ -46,7 +46,7 @@
 }
 
 .filter-group button:hover {
-  background: rgba(124, 255, 107, 0.12);
+  background: rgba(240, 198, 106, 0.12);
   border-color: var(--line-strong);
   color: #ebffe7;
 }
@@ -76,7 +76,7 @@
   inset: -40% auto auto -10%;
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle, rgba(124, 255, 107, 0.16), transparent 68%);
+  background: radial-gradient(circle, rgba(240, 198, 106, 0.16), transparent 68%);
   pointer-events: none;
 }
 
@@ -129,17 +129,44 @@
 }
 .home-hero-content { max-width: 600px; }
 .home-hero-eyebrow {
-  color: var(--secondary); font-size: 0.78rem; font-weight: 700;
+  color: var(--primary); font-size: 0.78rem; font-weight: 800;
   letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px;
 }
 .home-hero h1 {
   font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800;
   letter-spacing: -0.04em; line-height: 1.08;
-  background: linear-gradient(90deg, #fff, #d8f4ff 34%, #aaff9f 78%);
+  background: linear-gradient(90deg, #fff9df, #f0c66a 42%, #b984ff 86%);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .home-hero-accent { color: var(--primary); }
 .home-hero-desc { color: var(--muted); margin-top: 12px; max-width: 460px; line-height: 1.6; }
+
+.home-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-brand-orbit {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(240, 198, 106, 0.16), transparent 62%),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(240, 198, 106, 0.2);
+  box-shadow: 0 18px 42px rgba(139, 46, 212, 0.2);
+}
+
+.home-brand-orbit img {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 14px rgba(240, 198, 106, 0.24));
+}
 
 /* ===== CATEGORY CHIPS ===== */
 .home-category-bar {
@@ -156,9 +183,9 @@
 }
 .home-chip:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 .home-chip-active {
-  background: rgba(124,255,107,0.12) !important;
-  border-color: rgba(124,255,107,0.25) !important;
-  color: #dfffd9 !important;
+  background: rgba(240,198,106,0.12) !important;
+  border-color: rgba(240,198,106,0.28) !important;
+  color: #fff0c6 !important;
 }
 
 /* ===== SORT BAR ===== */
@@ -175,8 +202,8 @@
 }
 .home-sort-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 .home-sort-btn.active {
-  background: rgba(56,189,248,0.12); color: var(--secondary);
-  border-color: rgba(56,189,248,0.2);
+  background: rgba(139,46,212,0.16); color: #d8b4fe;
+  border-color: rgba(139,46,212,0.26);
 }
 
 /* ===== CARD ENHANCEMENTS ===== */
@@ -243,6 +270,21 @@
 @media (max-width: 720px) {
   .home-hero {
     flex-direction: column;
+  }
+
+  .home-hero-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .home-brand-orbit {
+    width: 76px;
+    height: 76px;
+  }
+
+  .home-brand-orbit img {
+    width: 64px;
+    height: 64px;
   }
 
   .home-sort-bar {
