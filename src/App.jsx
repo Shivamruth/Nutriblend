@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase/Client";
 
 import Login from "./pages/Login";
@@ -16,6 +16,7 @@ import AdminLogin from "./pages/AdminLogin";
 import ProductDetails from "./pages/ProductDetails";
 import Navbar from "./components/Navbar";
 import Plans from "./pages/Plans";
+import AccountPage, { ACCOUNT_PAGE_CONTENT } from "./pages/AccountPage";
 
 import "./styles/app.css";
 import "./styles/cart-feedback.css";
@@ -32,6 +33,7 @@ export default function App() {
   const [payment, setPayment] = useState("");
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState("");
+  const historyReadyRef = useRef(false);
 
   const loadCart = useCallback(() => {
     try {
@@ -110,6 +112,55 @@ export default function App() {
     };
   }, [loadCart]);
 
+  const navigatePage = useCallback((nextPage, options = {}) => {
+    const targetPage = nextPage === "login" ? "home" : nextPage;
+
+    setPage(targetPage);
+
+    if (!historyReadyRef.current || !window.history?.pushState) return;
+
+    const state = { nutriblendPage: targetPage };
+
+    if (options.replace) {
+      window.history.replaceState(state, "", window.location.href);
+      return;
+    }
+
+    window.history.pushState(state, "", window.location.href);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !user || !hasProfile) {
+      historyReadyRef.current = false;
+      return undefined;
+    }
+
+    historyReadyRef.current = true;
+    window.history.replaceState({ nutriblendPage: page }, "", window.location.href);
+
+    const handlePopState = (event) => {
+      const previousPage = event.state?.nutriblendPage;
+
+      if (previousPage) {
+        setPage(previousPage);
+        return;
+      }
+
+      setPage("home");
+      window.history.replaceState(
+        { nutriblendPage: "home" },
+        "",
+        window.location.href
+      );
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [hasProfile, loading, page, user]);
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -119,7 +170,7 @@ export default function App() {
       setUser(null);
       setHasProfile(false);
       setProfile(null);
-      setPage("home");
+      navigatePage("home", { replace: true });
     }
   };
 
@@ -144,12 +195,13 @@ export default function App() {
     (sum, item) => sum + Number(item.qty || 1),
     0
   );
+  const isAccountPage = Object.keys(ACCOUNT_PAGE_CONTENT).includes(page);
 
   return (
     <div className="app">
       <Navbar
         page={page}
-        setPage={setPage}
+        setPage={navigatePage}
         cartItemCount={cartItemCount}
         logout={logout}
         search={search}
@@ -161,29 +213,29 @@ export default function App() {
         {page === "home" && (
           <Home
             search={search}
-            setPage={setPage}
+            setPage={navigatePage}
             setSelectedProduct={setSelectedProduct}
           />
         )}
 
-        {page === "cart" && <Cart setPage={setPage} />}
-        {page === "orders" && <Orders setPage={setPage} />}
-        {page === "profile" && <Profile />}
-        {page === "plans" && <Plans setPage={setPage} />}
+        {page === "cart" && <Cart setPage={navigatePage} />}
+        {page === "orders" && <Orders setPage={navigatePage} />}
+        {page === "profile" && <Profile setPage={navigatePage} />}
+        {page === "plans" && <Plans setPage={navigatePage} />}
 
-        {page === "admin-login" && <AdminLogin setPage={setPage} />}
-        {page === "admin" && <Admin setPage={setPage} />}
+        {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
+        {page === "admin" && <Admin setPage={navigatePage} />}
 
         {page === "product" && (
-          <ProductDetails product={selectedProduct} setPage={setPage} />
+          <ProductDetails product={selectedProduct} setPage={navigatePage} />
         )}
 
         {page === "address" && (
-          <Address setPage={setPage} setAddress={setAddress} />
+          <Address setPage={navigatePage} setAddress={setAddress} />
         )}
 
         {page === "payment" && (
-          <Payment setPage={setPage} setPayment={setPayment} />
+          <Payment setPage={navigatePage} setPayment={setPayment} />
         )}
 
         {page === "review" && (
@@ -191,11 +243,12 @@ export default function App() {
             cart={cart}
             address={JSON.parse(localStorage.getItem("selectedAddress"))}
             payment={payment}
-            setPage={setPage}
+            setPage={navigatePage}
           />
         )}
 
-        {page === "success" && <Success setPage={setPage} />}
+        {page === "success" && <Success setPage={navigatePage} />}
+        {isAccountPage && <AccountPage pageId={page} setPage={navigatePage} />}
       </div>
     </div>
   );

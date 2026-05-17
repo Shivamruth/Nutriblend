@@ -1,4 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bell,
+  ChevronRight,
+  CreditCard,
+  Gift,
+  Headphones,
+  HelpCircle,
+  LogOut,
+  MapPin,
+  PackageCheck,
+  Percent,
+  ShieldCheck,
+  Truck,
+  UserPlus,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { supabase } from "../supabase/Client";
 import "../styles/profile.css";
 
@@ -19,70 +36,11 @@ const GOAL_OPTIONS = [
   "Competition Prep",
 ];
 
-const formatOrderId = (id) => {
-  if (!id) return "NB-000000";
-
-  const value = String(id);
-
-  if (/^\d+$/.test(value)) {
-    return `NB-${value.padStart(6, "0")}`;
-  }
-
-  return `NB-${value.slice(-8).toUpperCase()}`;
-};
-
-const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
-
-const formatDate = (dateValue) => {
-  if (!dateValue) return "N/A";
-
-  return new Date(dateValue).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const formatStatus = (status) => {
-  const value = String(status || "Placed").toLowerCase();
-
-  if (value === "placed") return "Placed";
-  if (value === "preparing") return "Preparing";
-  if (value === "out for delivery") return "Out for Delivery";
-  if (value === "out_for_delivery") return "Out for Delivery";
-  if (value === "delivered") return "Delivered";
-  if (value === "cancelled") return "Cancelled";
-  if (value === "canceled") return "Cancelled";
-
-  return "Placed";
-};
-
-const getStatusClass = (status) =>
-  `profile-order-status status-${String(status || "Placed")
-    .toLowerCase()
-    .replaceAll(" ", "-")}`;
-
-const getOrderItems = (order) => {
-  if (Array.isArray(order.items) && order.items.length > 0) return order.items;
-
-  return [
-    {
-      id: order.id,
-      name: order.product_name || "NutriBlend Order",
-      price: order.price || order.total || 0,
-      qty: order.qty || 1,
-      isPlan: false,
-    },
-  ];
-};
-
-const getItemName = (item) =>
-  item.name || item.product_name || "NutriBlend Item";
-
 const getInitials = (name, email) => {
   if (name) {
     return name
       .split(" ")
+      .filter(Boolean)
       .map((part) => part[0])
       .join("")
       .toUpperCase()
@@ -91,26 +49,15 @@ const getInitials = (name, email) => {
 
   if (email) return email[0].toUpperCase();
 
-  return "U";
-};
-
-const getFitnessRank = (ordersCount, deliveredCount, totalSpent) => {
-  if (deliveredCount >= 25 || totalSpent >= 15000) return "Elite Fueler";
-  if (deliveredCount >= 12 || totalSpent >= 7000) return "Pro Member";
-  if (deliveredCount >= 5 || ordersCount >= 7) return "Consistent Member";
-  if (ordersCount >= 1) return "Started Journey";
-
-  return "New Member";
+  return "NB";
 };
 
 export default function Profile({ setPage }) {
   const [profile, setProfile] = useState(null);
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -134,7 +81,6 @@ export default function Profile({ setPage }) {
 
       if (userError || !userData.user) {
         console.error("User error:", userError?.message);
-        setLoading(false);
         return;
       }
 
@@ -150,7 +96,6 @@ export default function Profile({ setPage }) {
         console.error("Profile error:", profileError.message);
       } else {
         setProfile(profileData);
-
         setForm({
           full_name: profileData.full_name || "",
           phone: profileData.phone || "",
@@ -160,23 +105,18 @@ export default function Profile({ setPage }) {
         });
       }
 
-      const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData } = await supabase
         .from("orders")
-        .select("*")
-        .eq("user_id", userData.user.id)
-        .order("created_at", { ascending: false });
+        .select("id,status,total,price")
+        .eq("user_id", userData.user.id);
 
-      if (ordersError) {
-        console.error("Orders error:", ordersError.message);
-      } else {
-        setOrders(ordersData || []);
-      }
+      const { data: addressData } = await supabase
+        .from("addresses")
+        .select("id")
+        .eq("user_id", userData.user.id);
 
-      const addresses = JSON.parse(localStorage.getItem("addresses")) || [];
-      const selected = JSON.parse(localStorage.getItem("selectedAddress"));
-
-      setSavedAddresses(addresses);
-      setSelectedAddress(selected);
+      setOrders(ordersData || []);
+      setAddresses(addressData || []);
     } catch (error) {
       console.error("Profile page error:", error);
     } finally {
@@ -186,17 +126,7 @@ export default function Profile({ setPage }) {
 
   const stats = useMemo(() => {
     const delivered = orders.filter(
-      (order) => formatStatus(order.status) === "Delivered"
-    ).length;
-
-    const cancelled = orders.filter(
-      (order) => formatStatus(order.status) === "Cancelled"
-    ).length;
-
-    const active = orders.filter((order) =>
-      ["Placed", "Preparing", "Out for Delivery"].includes(
-        formatStatus(order.status)
-      )
+      (order) => String(order.status || "").toLowerCase() === "delivered"
     ).length;
 
     const totalSpent = orders.reduce(
@@ -204,50 +134,125 @@ export default function Profile({ setPage }) {
       0
     );
 
-    const proteinItems = orders.reduce((sum, order) => {
-      return (
-        sum +
-        getOrderItems(order).reduce(
-          (itemSum, item) => itemSum + Number(item.qty || 1),
-          0
-        )
-      );
-    }, 0);
-
     return {
-      total: orders.length,
+      orders: orders.length,
       delivered,
-      cancelled,
-      active,
+      addresses: addresses.length,
       totalSpent,
-      proteinItems,
-      rank: getFitnessRank(orders.length, delivered, totalSpent),
     };
-  }, [orders]);
-
-  const recentOrders = useMemo(() => orders.slice(0, 3), [orders]);
-
-  const memberSince = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "N/A";
+  }, [addresses.length, orders]);
 
   const initials = getInitials(profile?.full_name, user?.email);
+  const email = profile?.email || user?.email || "Email not set";
+  const phone = profile?.phone || "Phone not set";
 
-  const completionItems = [
-    Boolean(profile?.full_name),
-    Boolean(profile?.phone),
-    Boolean(profile?.address || selectedAddress),
-    Boolean(profile?.fitness_goal),
-    Boolean(profile?.fitness_level),
+  const accountRows = [
+    {
+      label: "Orders and Refunds",
+      sub: `${stats.orders} order${stats.orders !== 1 ? "s" : ""}, ${stats.delivered} delivered`,
+      icon: PackageCheck,
+      action: () => setPage?.("orders"),
+    },
+    {
+      label: "Customer Care",
+      sub: "Need help with orders, payments, or delivery?",
+      icon: Headphones,
+      action: () => setPage?.("customer-care"),
+    },
+    {
+      label: "Invite Friends & Earn",
+      sub: "Share NutriBlend with your gym friends",
+      icon: UserPlus,
+      action: () => setPage?.("invite-friends"),
+    },
+    {
+      label: "NutriBlend Wallet",
+      sub: "Manage refunds, rewards, and store credits",
+      icon: Wallet,
+      action: () => setPage?.("wallet"),
+      separated: true,
+    },
+    {
+      label: "Saved Cards",
+      sub: "Payment cards and checkout preferences",
+      icon: CreditCard,
+      action: () => setPage?.("saved-cards"),
+    },
+    {
+      label: "My Rewards",
+      sub: `Lifetime spend: Rs. ${stats.totalSpent.toLocaleString("en-IN")}`,
+      icon: Gift,
+      action: () => setPage?.("rewards"),
+    },
+    {
+      label: "Address",
+      sub: `${stats.addresses} saved delivery address${stats.addresses !== 1 ? "es" : ""}`,
+      icon: MapPin,
+      action: () => setPage?.("address"),
+    },
+    {
+      label: "Notifications",
+      sub: "Order updates and NutriBlend alerts",
+      icon: Bell,
+      action: () => setPage?.("notifications"),
+    },
+    {
+      label: "Return Creation Demo",
+      icon: PackageCheck,
+      action: () => setPage?.("return-demo"),
+      separated: true,
+    },
+    {
+      label: "How To Return",
+      icon: HelpCircle,
+      action: () => setPage?.("how-to-return"),
+    },
+    {
+      label: "How Do I Redeem My Coupon?",
+      icon: Percent,
+      action: () => setPage?.("coupon"),
+    },
+    {
+      label: "Terms & Conditions",
+      icon: ShieldCheck,
+      action: () => setPage?.("terms"),
+    },
+    {
+      label: "Promotions Terms & Conditions",
+      icon: Percent,
+      action: () => setPage?.("promotion-terms"),
+    },
+    {
+      label: "Returns & Refunds Policy",
+      icon: PackageCheck,
+      action: () => setPage?.("refund-policy"),
+    },
+    {
+      label: "We Respect Your Privacy",
+      icon: ShieldCheck,
+      action: () => setPage?.("privacy"),
+    },
+    {
+      label: "Fees & Payments",
+      icon: CreditCard,
+      action: () => setPage?.("fees-payments"),
+    },
+    {
+      label: "Delivery and Shipping Policy",
+      icon: Truck,
+      action: () => setPage?.("shipping"),
+    },
+    {
+      label: "Who We Are",
+      icon: Users,
+      action: () => setPage?.("who-we-are"),
+    },
+    {
+      label: "Join Our Team",
+      icon: UserPlus,
+      action: () => setPage?.("careers"),
+    },
   ];
-
-  const completionPercent = Math.round(
-    (completionItems.filter(Boolean).length / completionItems.length) * 100
-  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -292,14 +297,13 @@ export default function Profile({ setPage }) {
         .single();
 
       if (error) {
-        console.error("Profile update error:", error.message);
         alert(error.message || "Failed to update profile");
         return;
       }
 
       setProfile(data);
       setEditing(false);
-      alert("Profile updated successfully ✅");
+      alert("Profile updated successfully");
     } catch (error) {
       console.error("Save profile error:", error);
       alert("Something went wrong");
@@ -316,376 +320,157 @@ export default function Profile({ setPage }) {
       fitness_goal: profile?.fitness_goal || "",
       fitness_level: profile?.fitness_level || "",
     });
-
     setEditing(false);
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
-    if (setPage) setPage("home");
+    setPage?.("home");
   };
 
   if (loading || !profile) {
     return (
-      <div className="profile-page">
-        <div className="profile-hero-card">
-          <div className="profile-loading-avatar loading" />
-          <div className="home-skeleton-text loading" />
-          <div className="home-skeleton-text-sm loading" />
-        </div>
+      <div className="profile-page profile-account-page">
+        <div className="profile-account-title">My Account</div>
+        <div className="profile-account-header profile-loading-block loading" />
       </div>
     );
   }
 
   return (
-    <div className="profile-page">
-      <section className="profile-hero-card">
-        <div className="profile-hero-glow" />
+    <div className="profile-page profile-account-page">
+      <div className="profile-account-title">My Account</div>
 
-        <div className="profile-hero-main">
-          <div className="profile-avatar-wrap">
-            <div className="profile-avatar">
-              <span>{initials}</span>
-            </div>
+      <section className="profile-account-header">
+        <div className="profile-account-avatar">{initials}</div>
 
-            <div className="profile-level-ring">
-              <span>{completionPercent}%</span>
-            </div>
-          </div>
-
-          <div className="profile-identity">
-            <p className="profile-eyebrow">NutriBlend Fitness Profile</p>
-            <h2 className="profile-name">{profile.full_name || "Gym Member"}</h2>
-
-            <div className="profile-chips">
-              <span>
-                {profile.role === "admin" ? "🛡️ Admin" : "🏋️ Customer"}
-              </span>
-              <span>🔥 {stats.rank}</span>
-              <span>📅 Since {memberSince}</span>
-            </div>
-
-            <p className="profile-motivation">
-              Track your protein orders, keep your delivery details ready, and
-              stay consistent with your fitness fuel.
-            </p>
-          </div>
+        <div className="profile-account-info">
+          <h2>{profile.full_name || "NutriBlend Member"}</h2>
+          <p>{email}</p>
+          <p>{phone}</p>
         </div>
 
-        <div className="profile-quick-actions">
-          <button onClick={() => setPage?.("orders")}>View Orders</button>
-          <button onClick={() => setPage?.("address")}>Manage Address</button>
-          <button onClick={() => setPage?.("home")}>Shop Protein</button>
-          <button className="profile-logout-btn" onClick={logout}>
-            Logout
-          </button>
-        </div>
+        <button
+          type="button"
+          className="profile-account-edit"
+          onClick={() => setEditing((open) => !open)}
+        >
+          {editing ? "Close" : "Edit"}
+        </button>
       </section>
 
-      <div className="profile-stats">
-        <StatCard icon="📦" value={stats.total} label="Total Orders" />
-        <StatCard icon="⏳" value={stats.active} label="Active Orders" />
-        <StatCard icon="✅" value={stats.delivered} label="Delivered" />
-        <StatCard icon="🥤" value={stats.proteinItems} label="Items Ordered" />
-        <StatCard icon="💰" value={money(stats.totalSpent)} label="Total Spent" />
-      </div>
+      {editing && (
+        <form className="profile-edit-panel" onSubmit={saveProfile}>
+          <label>
+            Full Name
+            <input
+              name="full_name"
+              value={form.full_name}
+              onChange={handleChange}
+              placeholder="Enter your full name"
+              required
+            />
+          </label>
 
-      <div className="profile-grid">
-        <div className="profile-card">
-          <div className="profile-section-head">
-            <div>
-              <p className="profile-card-eyebrow">Account</p>
-              <h3 className="profile-section-title">Personal Details</h3>
-            </div>
+          <label>
+            Phone Number
+            <input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder="Enter phone number"
+              maxLength="10"
+            />
+          </label>
 
-            {!editing && (
-              <button
-                className="profile-edit-btn"
-                onClick={() => setEditing(true)}
-              >
-                Edit Profile
-              </button>
-            )}
-          </div>
+          <label>
+            Fitness Goal
+            <select
+              name="fitness_goal"
+              value={form.fitness_goal}
+              onChange={handleChange}
+            >
+              <option value="">Select your fitness goal</option>
+              {GOAL_OPTIONS.map((goal) => (
+                <option key={goal} value={goal}>
+                  {goal}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          {!editing ? (
-            <div className="profile-details">
-              <DetailItem icon="📧" label="Email" value={profile.email || user?.email || "Not set"} />
-              <DetailItem icon="📱" label="Phone" value={profile.phone || "Not set"} />
-              <DetailItem icon="🏠" label="Basic Address" value={profile.address || "Not set"} />
-              <DetailItem icon="🎯" label="Fitness Goal" value={profile.fitness_goal || "Not set"} />
-              <DetailItem icon="🏆" label="Fitness Level" value={profile.fitness_level || "Not set"} />
-              <DetailItem icon="⭐" label="Account Role" value={profile.role || "customer"} />
-            </div>
-          ) : (
-            <form className="profile-edit-form" onSubmit={saveProfile}>
-              <label>
-                Full Name
-                <input
-                  name="full_name"
-                  value={form.full_name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  required
-                />
-              </label>
+          <label>
+            Fitness Level
+            <select
+              name="fitness_level"
+              value={form.fitness_level}
+              onChange={handleChange}
+            >
+              <option value="">Select your fitness level</option>
+              {FITNESS_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          </label>
 
-              <label>
-                Phone Number
-                <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number"
-                  maxLength="10"
-                />
-              </label>
+          <label>
+            Basic Address
+            <textarea
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="Enter basic address"
+              rows="3"
+            />
+          </label>
 
-              <label>
-                Fitness Goal
-                <select
-                  name="fitness_goal"
-                  value={form.fitness_goal}
-                  onChange={handleChange}
-                >
-                  <option value="">Select your fitness goal</option>
-                  {GOAL_OPTIONS.map((goal) => (
-                    <option key={goal} value={goal}>
-                      {goal}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Fitness Level
-                <select
-                  name="fitness_level"
-                  value={form.fitness_level}
-                  onChange={handleChange}
-                >
-                  <option value="">Select your fitness level</option>
-                  {FITNESS_LEVELS.map((level) => (
-                    <option key={level} value={level}>
-                      {level}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Basic Address
-                <textarea
-                  name="address"
-                  value={form.address}
-                  onChange={handleChange}
-                  placeholder="Enter basic address"
-                  rows="3"
-                />
-              </label>
-
-              <div className="profile-edit-actions">
-                <button type="submit" disabled={saving}>
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-
-                <button
-                  type="button"
-                  className="profile-cancel-btn"
-                  onClick={cancelEdit}
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        <div className="profile-side-stack">
-          <div className="profile-card profile-progress-card">
-            <div className="profile-section-head compact">
-              <div>
-                <p className="profile-card-eyebrow">Progress</p>
-                <h3 className="profile-section-title">Profile Strength</h3>
-              </div>
-            </div>
-
-            <div className="profile-progress-circle">
-              <span>{completionPercent}%</span>
-              <p>Complete</p>
-            </div>
-
-            <div className="profile-progress-bar">
-              <span style={{ width: `${completionPercent}%` }} />
-            </div>
-
-            <p className="profile-progress-note">
-              Complete your fitness goal and address details for a smoother
-              checkout experience.
-            </p>
-          </div>
-
-          <div className="profile-card">
-            <div className="profile-section-head compact">
-              <div>
-                <p className="profile-card-eyebrow">Delivery</p>
-                <h3 className="profile-section-title">Selected Address</h3>
-              </div>
-            </div>
-
-            {selectedAddress ? (
-              <div className="profile-address-box">
-                <div className="profile-address-head">
-                  <span>📍</span>
-                  <div>
-                    <h4>
-                      {selectedAddress.name}{" "}
-                      {selectedAddress.type ? `• ${selectedAddress.type}` : ""}
-                    </h4>
-                    <p>{selectedAddress.phone}</p>
-                  </div>
-                </div>
-
-                <p className="profile-address-text">
-                  {selectedAddress.street}, {selectedAddress.city},{" "}
-                  {selectedAddress.state} - {selectedAddress.pincode}
-                </p>
-
-                {selectedAddress.isDefault && (
-                  <span className="profile-default-chip">Default Address</span>
-                )}
-
-                <button
-                  className="profile-small-action"
-                  onClick={() => setPage?.("address")}
-                >
-                  Manage Addresses
-                </button>
-              </div>
-            ) : (
-              <div className="profile-address-empty">
-                <span>📭</span>
-                <p>No selected address found.</p>
-                <button onClick={() => setPage?.("address")}>Add Address</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="profile-grid bottom-grid">
-        <div className="profile-card">
-          <div className="profile-section-head compact">
-            <div>
-              <p className="profile-card-eyebrow">Orders</p>
-              <h3 className="profile-section-title">Recent Fuel Orders</h3>
-            </div>
-
-            <button className="profile-edit-btn" onClick={() => setPage?.("orders")}>
-              View All
+          <div className="profile-edit-actions">
+            <button type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            <button type="button" onClick={cancelEdit} disabled={saving}>
+              Cancel
             </button>
           </div>
+        </form>
+      )}
 
-          {recentOrders.length === 0 ? (
-            <div className="profile-empty-orders">
-              <span>🥤</span>
-              <p>No orders yet. Start your fitness fuel journey.</p>
-              <button onClick={() => setPage?.("home")}>Shop Now</button>
-            </div>
-          ) : (
-            <div className="profile-recent-orders">
-              {recentOrders.map((order) => {
-                const firstItem = getOrderItems(order)[0];
+      <div className="profile-account-list">
+        {accountRows.map((item) => (
+          <AccountRow key={item.label} item={item} />
+        ))}
+      </div>
 
-                return (
-                  <div className="profile-order-row" key={order.id}>
-                    <div>
-                      <strong>{formatOrderId(order.id)}</strong>
-                      <p>
-                        {getItemName(firstItem)} • {formatDate(order.created_at)}
-                      </p>
-                    </div>
-
-                    <div className="profile-order-right">
-                      <span className={getStatusClass(order.status)}>
-                        {formatStatus(order.status)}
-                      </span>
-                      <b>{money(order.total || order.price)}</b>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="profile-card profile-tips-card">
-          <div className="profile-section-head compact">
-            <div>
-              <p className="profile-card-eyebrow">Fitness Fuel</p>
-              <h3 className="profile-section-title">Quick Summary</h3>
-            </div>
-          </div>
-
-          <div className="profile-summary-list">
-            <div>
-              <span>🥤</span>
-              <p>
-                You have ordered <strong>{stats.proteinItems}</strong> protein
-                item{stats.proteinItems !== 1 ? "s" : ""}.
-              </p>
-            </div>
-
-            <div>
-              <span>📍</span>
-              <p>
-                You have saved <strong>{savedAddresses.length}</strong> delivery
-                address{savedAddresses.length !== 1 ? "es" : ""}.
-              </p>
-            </div>
-
-            <div>
-              <span>💪</span>
-              <p>
-                Goal:{" "}
-                <strong>{profile.fitness_goal || "Set your fitness goal"}</strong>
-              </p>
-            </div>
-
-            <div>
-              <span>🔥</span>
-              <p>
-                Rank: <strong>{stats.rank}</strong>. Stay consistent with daily
-                protein intake.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="profile-account-logout-wrap">
+        <button type="button" className="profile-account-logout" onClick={logout}>
+          <LogOut size={20} />
+          Logout
+        </button>
+        <p>Version 1.0.0 Build NutriBlend</p>
       </div>
     </div>
   );
 }
 
-function StatCard({ icon, value, label }) {
-  return (
-    <div className="profile-stat-card">
-      <span>{icon}</span>
-      <h3>{value}</h3>
-      <p>{label}</p>
-    </div>
-  );
-}
+function AccountRow({ item }) {
+  const Icon = item.icon;
 
-function DetailItem({ icon, label, value }) {
   return (
-    <div className="profile-detail-item">
-      <div className="profile-detail-icon">{icon}</div>
-
-      <div>
-        <span className="profile-detail-label">{label}</span>
-        <span className="profile-detail-value">{value}</span>
-      </div>
-    </div>
+    <button
+      type="button"
+      className={`profile-account-row ${item.separated ? "is-separated" : ""}`}
+      onClick={item.action}
+    >
+      <span className="profile-account-row-icon">
+        <Icon size={21} />
+      </span>
+      <span className="profile-account-row-text">
+        <strong>{item.label}</strong>
+        {item.sub && <small>{item.sub}</small>}
+      </span>
+      <ChevronRight size={24} className="profile-account-chevron" />
+    </button>
   );
 }
