@@ -14,6 +14,7 @@ export default function CartProvider({ children }) {
   const saveCart = useCallback((items) => {
     setCartItems(items);
     localStorage.setItem("cart", JSON.stringify(items));
+    window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("cartUpdated"));
   }, []);
 

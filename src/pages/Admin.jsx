@@ -1,71 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import AdminProducts from "../components/AdminProducts";
-import AdminPlans from "../components/AdminPlans";
-import "../styles/admin.css";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-} from "recharts";
+import "./Admin.css";
 
 const ORDER_STATUSES = [
-  "Placed",
+  "Pending",
   "Preparing",
   "Out for Delivery",
   "Delivered",
   "Cancelled",
 ];
 
-const PAYMENT_FILTERS = ["All", "COD", "Online"];
-const DATE_FILTERS = [
-  { value: "all", label: "All Time" },
-  { value: "today", label: "Today" },
-  { value: "week", label: "This Week" },
-  { value: "month", label: "This Month" },
-];
+const PAYMENT_STATUSES = ["Pending", "Paid", "Failed", "Refunded"];
+const STATUS_FILTERS = ["All", ...ORDER_STATUSES];
+const PAYMENT_STATUS_FILTERS = ["All", ...PAYMENT_STATUSES];
+const PAYMENT_METHOD_FILTERS = ["All", "COD", "UPI", "Razorpay", "Online"];
 
-const STATUS_COLORS = ["#facc15", "#60a5fa", "#a855f7", "#7cff6b", "#f87171"];
-
-const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
 
 const formatOrderId = (id) => {
   if (!id) return "NB-000000";
-
   const value = String(id);
-
-  if (/^\d+$/.test(value)) {
-    return `NB-${value.padStart(6, "0")}`;
-  }
-
+  if (/^\d+$/.test(value)) return `NB-${value.padStart(6, "0")}`;
   return `NB-${value.slice(-8).toUpperCase()}`;
-};
-
-const formatDate = (dateValue) => {
-  if (!dateValue) return "N/A";
-
-  return new Date(dateValue).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 };
 
 const formatDateTime = (dateValue) => {
   if (!dateValue) return "N/A";
-
   return new Date(dateValue).toLocaleString("en-IN", {
-    day: "2-digit",
+    day: "numeric",
     month: "short",
     year: "numeric",
     hour: "2-digit",
@@ -73,172 +36,189 @@ const formatDateTime = (dateValue) => {
   });
 };
 
-const isSameDay = (dateA, dateB) =>
-  dateA.getFullYear() === dateB.getFullYear() &&
-  dateA.getMonth() === dateB.getMonth() &&
-  dateA.getDate() === dateB.getDate();
-
-const isThisWeek = (date) => {
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-  return date >= startOfWeek && date < endOfWeek;
+const isToday = (dateValue) => {
+  if (!dateValue) return false;
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.toDateString() === new Date().toDateString();
 };
 
-const isThisMonth = (date) => {
-  const now = new Date();
+const safeArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "string") return [];
 
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth()
-  );
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 };
 
-const filterOrdersByRange = (orders, range) => {
-  if (range === "all") return orders;
+const safeObject = (value) => {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (!value || typeof value !== "string") return {};
 
-  const now = new Date();
-
-  return orders.filter((order) => {
-    if (!order.created_at) return false;
-
-    const orderDate = new Date(order.created_at);
-
-    if (Number.isNaN(orderDate.getTime())) return false;
-
-    if (range === "today") return isSameDay(orderDate, now);
-    if (range === "week") return isThisWeek(orderDate);
-    if (range === "month") return isThisMonth(orderDate);
-
-    return true;
-  });
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
 };
 
-const getOrderAmount = (order) => Number(order.total || order.price || 0);
+const normalizeStatus = (status) => {
+  const value = String(status || "Pending")
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .trim();
 
-const getOrderStatus = (order) => {
-  const value = String(order.status || "Placed").toLowerCase();
-
-  if (value === "placed") return "Placed";
+  if (value === "placed" || value === "pending") return "Pending";
   if (value === "preparing") return "Preparing";
   if (value === "out for delivery") return "Out for Delivery";
-  if (value === "out_for_delivery") return "Out for Delivery";
   if (value === "delivered") return "Delivered";
-  if (value === "cancelled") return "Cancelled";
-  if (value === "canceled") return "Cancelled";
-
-  return "Placed";
+  if (value === "cancelled" || value === "canceled") return "Cancelled";
+  return "Pending";
 };
 
-const getPaymentMethod = (order) => order.payment_method || "COD";
+const normalizePaymentStatus = (status) => {
+  const value = String(status || "Pending").toLowerCase().trim();
+  if (value === "paid") return "Paid";
+  if (value === "failed") return "Failed";
+  if (value === "refunded") return "Refunded";
+  return "Pending";
+};
+
+const normalizePaymentMethod = (method) => {
+  const value = String(method || "COD").trim();
+  if (!value) return "COD";
+  if (value.toLowerCase() === "online") return "Razorpay";
+  return value;
+};
 
 const getOrderItems = (order) => {
-  if (Array.isArray(order.items) && order.items.length > 0) return order.items;
+  const items = safeArray(order.items);
+  if (items.length) return items;
 
   return [
     {
       id: order.id,
       name: order.product_name || "NutriBlend Order",
-      price: order.price || order.total || 0,
-      qty: order.qty || 1,
-      isPlan: false,
+      price: Number(order.price || order.total || 0),
+      qty: Number(order.qty || 1),
     },
   ];
 };
 
 const getItemName = (item) =>
-  item.name || item.product_name || "NutriBlend Item";
+  item.name || item.product_name || item.title || "NutriBlend Item";
 
-const getItemSubtotal = (item) =>
-  Number(item.price || 0) * Number(item.qty || 1);
+const getItemQty = (item) => Number(item.qty || item.quantity || 1);
+const getItemPrice = (item) => Number(item.price || item.amount || 0);
+const getItemSubtotal = (item) => getItemQty(item) * getItemPrice(item);
+const getOrderTotal = (order) => Number(order.total || order.price || 0);
+
+const getOrderQty = (order) =>
+  getOrderItems(order).reduce((sum, item) => sum + getItemQty(item), 0);
+
+const getAddressText = (address) =>
+  [
+    address.street,
+    address.landmark ? `Near ${address.landmark}` : "",
+    address.city,
+    address.state,
+    address.pincode,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
 const getStatusClass = (status) =>
-  `status-badge status-${String(status || "Placed")
+  `admin-status-badge status-${normalizeStatus(status)
     .toLowerCase()
     .replaceAll(" ", "-")}`;
 
-const csvEscape = (value) => {
-  if (value === null || value === undefined) return "";
-  return `"${String(value).replaceAll('"', '""')}"`;
-};
-
-const tooltipStyle = {
-  background: "#0c1a30",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "12px",
-  color: "#ffffff",
-};
+const getPaymentClass = (status) =>
+  `admin-payment-status payment-${normalizePaymentStatus(status).toLowerCase()}`;
 
 export default function Admin({ setPage }) {
+  const { notify } = useNotification();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [updatingKey, setUpdatingKey] = useState("");
+  const [adminReady, setAdminReady] = useState(false);
 
-  const [activeSection, setActiveSection] = useState("dashboard");
-  const [dashboardRange, setDashboardRange] = useState("all");
-
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [paymentFilter, setPaymentFilter] = useState("All");
-  const [orderDateFilter, setOrderDateFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("All");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const fetchOrders = useCallback(
+    async ({ silent = false } = {}) => {
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
-  const { notify } = useNotification();
+      setErrorMessage("");
 
-  const fetchOrders = useCallback(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        setOrders(data || []);
+      } catch (error) {
+        console.error("Admin orders fetch error:", error);
+        setErrorMessage(error.message || "Unable to load admin orders.");
+        notify(error.message || "Unable to load admin orders", "error");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [notify]
+  );
+
+  const checkAdmin = useCallback(async () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data: userData, error: userError } = await supabase.auth.getUser();
 
-      if (error) {
-        throw error;
-      }
-
-      setOrders(data || []);
-    } catch (err) {
-      console.error("Fetch orders error:", err);
-      notify(err.message || "Failed to load orders", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [notify]);
-
-  const checkAdmin = useCallback(async () => {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-
-      if (!userData.user) {
+      if (userError || !userData.user) {
         notify("Login required", "error");
-        setPage("admin-login");
+        setPage?.("admin-login");
         return;
       }
 
-      const { data: profile, error } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", userData.user.id)
         .single();
 
-      if (error || profile?.role !== "admin") {
-        notify("Access denied ❌", "error");
-        setPage("home");
+      if (profileError || profile?.role !== "admin") {
+        notify("Access denied. Admin only.", "error");
+        setPage?.("home");
         return;
       }
 
-      fetchOrders();
+      setAdminReady(true);
+      await fetchOrders();
     } catch (error) {
       console.error("Admin check error:", error);
-      notify("Something went wrong", "error");
-      setPage("home");
+      notify("Admin access check failed", "error");
+      setPage?.("home");
+    } finally {
+      setLoading(false);
     }
   }, [fetchOrders, notify, setPage]);
 
@@ -246,837 +226,379 @@ export default function Admin({ setPage }) {
     checkAdmin();
   }, [checkAdmin]);
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const dashboard = useMemo(() => {
+    const totalOrders = orders.length;
+    const todayOrders = orders.filter((order) => isToday(order.created_at));
+    const todayRevenue = todayOrders.reduce(
+      (sum, order) => sum + getOrderTotal(order),
+      0
+    );
+    const totalRevenue = orders.reduce(
+      (sum, order) => sum + getOrderTotal(order),
+      0
+    );
+
+    const countByStatus = (targetStatus) =>
+      orders.filter((order) => normalizeStatus(order.status) === targetStatus)
+        .length;
+
+    return {
+      totalOrders,
+      todayOrders: todayOrders.length,
+      todayRevenue,
+      pendingOrders: countByStatus("Pending"),
+      preparingOrders: countByStatus("Preparing"),
+      outForDeliveryOrders: countByStatus("Out for Delivery"),
+      deliveredOrders: countByStatus("Delivered"),
+      totalRevenue,
+    };
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    return orders.filter((order) => {
+      const address = safeObject(order.address);
+      const status = normalizeStatus(order.status);
+      const paymentMethod = normalizePaymentMethod(order.payment_method);
+      const paymentStatus = normalizePaymentStatus(order.payment_status);
+
+      const searchText = [
+        formatOrderId(order.id),
+        order.id,
+        order.email,
+        address.phone,
+        address.name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !query || searchText.includes(query);
+      const matchesStatus =
+        statusFilter === "All" || status === statusFilter;
+      const matchesPaymentMethod =
+        paymentMethodFilter === "All" ||
+        paymentMethod
+          .toLowerCase()
+          .includes(paymentMethodFilter.toLowerCase());
+      const matchesPaymentStatus =
+        paymentStatusFilter === "All" || paymentStatus === paymentStatusFilter;
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesPaymentMethod &&
+        matchesPaymentStatus
+      );
+    });
+  }, [orders, paymentMethodFilter, paymentStatusFilter, searchTerm, statusFilter]);
+
+  const updateOrderField = async (orderId, field, value) => {
+    const key = `${orderId}-${field}`;
+    setUpdatingKey(key);
+
     try {
       const { data, error } = await supabase
         .from("orders")
-        .update({ status: newStatus })
+        .update({ [field]: value })
         .eq("id", orderId)
         .select("*")
         .single();
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId ? { ...order, status: data.status } : order
-        )
+        prev.map((order) => (order.id === orderId ? data : order))
       );
 
-      setSelectedOrder((prev) =>
-        prev?.id === orderId ? { ...prev, status: data.status } : prev
+      notify(
+        field === "status"
+          ? "Order status updated"
+          : "Payment status updated",
+        "success"
       );
-
-      notify("Order status updated ✅", "success");
     } catch (error) {
-      console.error("Status update error:", error);
-      notify(error.message || "Failed to update order status", "error");
+      console.error("Admin update error:", error);
+      notify(error.message || "Unable to update order", "error");
+    } finally {
+      setUpdatingKey("");
     }
   };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setPage("home");
-  };
-
-  const filteredOrders = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    const dateFilteredOrders = filterOrdersByRange(orders, orderDateFilter);
-
-    return dateFilteredOrders.filter((order) => {
-      const status = getOrderStatus(order);
-      const payment = getPaymentMethod(order);
-      const formattedId = formatOrderId(order.id).toLowerCase();
-
-      const itemsText = getOrderItems(order)
-        .map((item) => getItemName(item))
-        .join(" ")
-        .toLowerCase();
-
-      const matchesStatus = statusFilter === "All" || status === statusFilter;
-
-      const matchesPayment =
-        paymentFilter === "All" ||
-        payment.toLowerCase().includes(paymentFilter.toLowerCase());
-
-      const matchesSearch =
-        !query ||
-        formattedId.includes(query) ||
-        String(order.id || "").toLowerCase().includes(query) ||
-        String(order.email || "").toLowerCase().includes(query) ||
-        String(order.product_name || "").toLowerCase().includes(query) ||
-        String(order.address?.name || "").toLowerCase().includes(query) ||
-        String(order.address?.phone || "").toLowerCase().includes(query) ||
-        String(order.cancel_reason || "").toLowerCase().includes(query) ||
-        String(payment || "").toLowerCase().includes(query) ||
-        itemsText.includes(query);
-
-      return matchesStatus && matchesPayment && matchesSearch;
-    });
-  }, [orders, searchTerm, statusFilter, paymentFilter, orderDateFilter]);
-
-  const dashboard = useMemo(() => {
-    const dashboardOrders = filterOrdersByRange(orders, dashboardRange);
-    const revenueData = {};
-    const orderCountData = {};
-    const statusData = Object.fromEntries(
-      ORDER_STATUSES.map((status) => [status, 0])
-    );
-
-    const todayKey = formatDate(new Date());
-
-    let totalRevenue = 0;
-    let todayRevenue = 0;
-    let codOrders = 0;
-    let onlineOrders = 0;
-    let planQty = 0;
-    let productQty = 0;
-
-    dashboardOrders.forEach((order) => {
-      const date = formatDate(order.created_at);
-      const amount = getOrderAmount(order);
-      const status = getOrderStatus(order);
-      const payment = getPaymentMethod(order).toLowerCase();
-
-      totalRevenue += amount;
-      revenueData[date] = (revenueData[date] || 0) + amount;
-      orderCountData[date] = (orderCountData[date] || 0) + 1;
-
-      if (statusData[status] !== undefined) statusData[status] += 1;
-      if (date === todayKey) todayRevenue += amount;
-      if (payment.includes("cod")) codOrders += 1;
-      if (payment.includes("online")) onlineOrders += 1;
-
-      getOrderItems(order).forEach((item) => {
-        const qty = Number(item.qty || 1);
-        if (item.isPlan) planQty += qty;
-        else productQty += qty;
-      });
-    });
-
-    const todayOrders = dashboardOrders.filter(
-      (order) => formatDate(order.created_at) === todayKey
-    );
-
-    return {
-      dashboardOrders,
-      range: dashboardRange,
-      totalRevenue,
-      todayRevenue,
-      todayOrders,
-      codOrders,
-      onlineOrders,
-      planQty,
-      productQty,
-      activeOrders:
-        statusData.Placed +
-        statusData.Preparing +
-        statusData["Out for Delivery"],
-      statusData,
-      revenueChart: Object.entries(revenueData).map(([date, revenue]) => ({
-        date,
-        revenue,
-      })),
-      ordersChart: Object.entries(orderCountData).map(([date, count]) => ({
-        date,
-        orders: count,
-      })),
-      statusChart: Object.entries(statusData).map(([name, value]) => ({
-        name,
-        value,
-      })),
-    };
-  }, [orders, dashboardRange]);
-
-  const statCards = useMemo(
-    () => [
-      ["📦", dashboard.dashboardOrders.length, "Range Orders"],
-      ["💰", money(dashboard.totalRevenue), "Range Revenue"],
-      ["⏳", dashboard.activeOrders, "Active Orders"],
-      ["✅", dashboard.statusData.Delivered, "Delivered"],
-      ["📅", dashboard.todayOrders.length, "Today Orders"],
-      ["💸", money(dashboard.todayRevenue), "Today Revenue"],
-      ["💵", dashboard.codOrders, "COD Orders"],
-      ["💳", dashboard.onlineOrders, "Online Orders"],
-      ["🥤", dashboard.productQty, "Product Qty"],
-      ["📅", dashboard.planQty, "Plan Qty"],
-      ["🔎", filteredOrders.length, "Filtered Results"],
-      ["❌", dashboard.statusData.Cancelled, "Cancelled"],
-    ],
-    [dashboard, filteredOrders.length]
-  );
 
   const resetFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
-    setPaymentFilter("All");
-    setOrderDateFilter("all");
+    setPaymentMethodFilter("All");
+    setPaymentStatusFilter("All");
   };
 
-  const exportOrdersToCSV = () => {
-    if (!filteredOrders.length) {
-      notify("No orders available to export", "error");
-      return;
-    }
-
-    const headers = [
-      "Order ID",
-      "Date",
-      "Customer Email",
-      "Customer Name",
-      "Phone",
-      "Address",
-      "Items",
-      "Total Quantity",
-      "Total Amount",
-      "Payment Method",
-      "Payment Status",
-      "Order Status",
-      "Cancel Reason",
-      "Cancelled At",
-    ];
-
-    const rows = filteredOrders.map((order) => {
-      const items = getOrderItems(order);
-
-      const itemsText = items
-        .map((item) => {
-          const type = item.isPlan ? "Plan" : "Product";
-          return `${getItemName(item)} (${type}) x ${item.qty || 1} - ₹${
-            item.price || 0
-          }`;
-        })
-        .join(" | ");
-
-      const totalQty = items.reduce(
-        (sum, item) => sum + Number(item.qty || 1),
-        0
-      );
-
-      const address = order.address
-        ? [
-            order.address.name,
-            order.address.phone,
-            order.address.street,
-            order.address.city,
-            order.address.state,
-            order.address.pincode,
-          ]
-            .filter(Boolean)
-            .join(", ")
-        : "N/A";
-
-      return [
-        formatOrderId(order.id),
-        formatDate(order.created_at),
-        order.email || "N/A",
-        order.address?.name || "N/A",
-        order.address?.phone || "N/A",
-        address,
-        itemsText,
-        totalQty,
-        getOrderAmount(order),
-        getPaymentMethod(order),
-        order.payment_status || "N/A",
-        getOrderStatus(order),
-        order.cancel_reason || "N/A",
-        order.cancelled_at ? formatDateTime(order.cancelled_at) : "N/A",
-      ];
-    });
-
-    const csv = [headers, ...rows]
-      .map((row) => row.map(csvEscape).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const today = new Date().toISOString().slice(0, 10);
-
-    link.href = url;
-    link.download = `nutriblend-orders-${today}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-
-    notify("Orders exported successfully ✅", "success");
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setPage?.("home");
   };
 
-  if (loading) {
+  if (loading && !adminReady) {
     return (
-      <div className="admin-page">
-        <div className="admin-header">
+      <main className="admin-page">
+        <section className="admin-hero">
           <div>
-            <p className="admin-eyebrow">Dashboard</p>
-            <h2>Admin Panel</h2>
+            <p className="admin-eyebrow">Admin Dashboard</p>
+            <h2>Loading Admin Panel</h2>
           </div>
-        </div>
+        </section>
 
-        <div className="admin-stats">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="stat-card">
-              <div className="home-skeleton-text loading" />
+        <section className="admin-dashboard-grid">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div className="admin-skeleton-card" key={index}>
+              <span />
+              <strong />
             </div>
           ))}
-        </div>
-      </div>
+        </section>
+      </main>
     );
   }
 
   return (
-    <div className="admin-page">
-      <div className="admin-header">
+    <main className="admin-page">
+      <section className="admin-hero">
         <div>
-          <p className="admin-eyebrow">Dashboard</p>
-          <h2>NutriBlend Admin Panel</h2>
+          <p className="admin-eyebrow">NutriBlend Control Center</p>
+          <h2>Admin Orders Dashboard</h2>
+          <p>
+            Manage customer orders, update delivery flow, and keep payment
+            status accurate from one premium operations view.
+          </p>
         </div>
 
-        <div className="admin-header-actions">
-          <button className="refresh-btn" onClick={fetchOrders}>
-            Refresh Orders
+        <div className="admin-hero-actions">
+          <button
+            type="button"
+            onClick={() => fetchOrders({ silent: true })}
+            disabled={refreshing}
+          >
+            {refreshing ? "Refreshing..." : "Refresh Orders"}
           </button>
-
-          <button className="logout-btn" onClick={logout}>
+          <button type="button" className="admin-logout-btn" onClick={logout}>
             Logout
           </button>
         </div>
-      </div>
+      </section>
 
-      <AdminSectionNav
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-        ordersCount={orders.length}
-        filteredCount={filteredOrders.length}
-      />
-
-      {activeSection === "dashboard" && (
-        <DashboardSection
-          dashboard={dashboard}
-          statCards={statCards}
-          dashboardRange={dashboardRange}
-          setDashboardRange={setDashboardRange}
+      <section className="admin-dashboard-grid" aria-label="Dashboard metrics">
+        <MetricCard label="Total Orders" value={dashboard.totalOrders} />
+        <MetricCard label="Today Orders" value={dashboard.todayOrders} />
+        <MetricCard label="Today Revenue" value={money(dashboard.todayRevenue)} />
+        <MetricCard label="Pending Orders" value={dashboard.pendingOrders} />
+        <MetricCard label="Preparing Orders" value={dashboard.preparingOrders} />
+        <MetricCard
+          label="Out for Delivery"
+          value={dashboard.outForDeliveryOrders}
         />
-      )}
+        <MetricCard label="Delivered Orders" value={dashboard.deliveredOrders} />
+        <MetricCard label="Total Revenue" value={money(dashboard.totalRevenue)} />
+      </section>
 
-      {activeSection === "orders" && (
-        <OrdersSection
-          filteredOrders={filteredOrders}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          paymentFilter={paymentFilter}
-          setPaymentFilter={setPaymentFilter}
-          orderDateFilter={orderDateFilter}
-          setOrderDateFilter={setOrderDateFilter}
-          resetFilters={resetFilters}
-          exportOrdersToCSV={exportOrdersToCSV}
-          updateOrderStatus={updateOrderStatus}
-          setSelectedOrder={setSelectedOrder}
-        />
-      )}
-
-      {activeSection === "products" && <AdminProducts notify={notify} />}
-      {activeSection === "plans" && <AdminPlans notify={notify} />}
-
-      {selectedOrder && (
-        <OrderModal
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-function AdminSectionNav({
-  activeSection,
-  setActiveSection,
-  ordersCount,
-  filteredCount,
-}) {
-  const sections = [
-    {
-      key: "dashboard",
-      icon: "📊",
-      title: "Dashboard",
-      desc: "Analytics & reports",
-    },
-    {
-      key: "orders",
-      icon: "📦",
-      title: "Orders",
-      desc: `${filteredCount}/${ordersCount} visible`,
-    },
-    {
-      key: "products",
-      icon: "🥤",
-      title: "Products",
-      desc: "Add, edit & stock",
-    },
-    {
-      key: "plans",
-      icon: "📅",
-      title: "Plans",
-      desc: "Subscriptions",
-    },
-  ];
-
-  return (
-    <div className="admin-section-nav">
-      {sections.map((section) => (
-        <button
-          key={section.key}
-          className={activeSection === section.key ? "active" : ""}
-          onClick={() => setActiveSection(section.key)}
-        >
-          <span>{section.icon}</span>
-
+      <section className="admin-orders-panel">
+        <div className="admin-orders-head">
           <div>
-            <strong>{section.title}</strong>
-            <small>{section.desc}</small>
+            <p className="admin-eyebrow">Orders</p>
+            <h3>Customer Orders</h3>
+            <span>
+              Showing {filteredOrders.length} of {orders.length} orders
+            </span>
           </div>
-        </button>
-      ))}
-    </div>
-  );
-}
 
-function DashboardSection({
-  dashboard,
-  statCards,
-  dashboardRange,
-  setDashboardRange,
-}) {
-  return (
-    <>
-      <div className="admin-dashboard-filter">
-        <div>
-          <p className="admin-eyebrow">Analytics Range</p>
-          <h3>Dashboard Overview</h3>
-        </div>
-
-        <RangeButtons
-          value={dashboardRange}
-          onChange={setDashboardRange}
-          compact={false}
-        />
-      </div>
-
-      <div className="admin-stats">
-        {statCards.map(([icon, value, label], index) => (
-          <div
-            key={label}
-            className={`stat-card ${index >= 4 ? "stat-card-secondary" : ""}`}
-          >
-            <span className="stat-icon">{icon}</span>
-            <h3>{value}</h3>
-            <p>{label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="charts-grid">
-        <ChartCard title="📈 Revenue Trend">
-          <LineChart data={dashboard.revenueChart}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.08)"
-            />
-            <XAxis dataKey="date" stroke="#8ba2be" fontSize={12} />
-            <YAxis stroke="#8ba2be" fontSize={12} />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Line
-              type="monotone"
-              dataKey="revenue"
-              stroke="#7cff6b"
-              strokeWidth={3}
-              dot={{ fill: "#7cff6b" }}
-            />
-          </LineChart>
-        </ChartCard>
-
-        <ChartCard title="📦 Orders Trend">
-          <BarChart data={dashboard.ordersChart}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.08)"
-            />
-            <XAxis dataKey="date" stroke="#8ba2be" fontSize={12} />
-            <YAxis stroke="#8ba2be" fontSize={12} />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="orders" fill="#60a5fa" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ChartCard>
-
-        <div className="chart-card full-width">
-          <h3>🥧 Order Status Overview</h3>
-
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie
-                data={dashboard.statusChart}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={95}
-                label
-              >
-                {dashboard.statusChart.map((entry, index) => (
-                  <Cell
-                    key={entry.name}
-                    fill={STATUS_COLORS[index % STATUS_COLORS.length]}
-                  />
-                ))}
-              </Pie>
-
-              <Tooltip contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function OrdersSection({
-  filteredOrders,
-  searchTerm,
-  setSearchTerm,
-  statusFilter,
-  setStatusFilter,
-  paymentFilter,
-  setPaymentFilter,
-  orderDateFilter,
-  setOrderDateFilter,
-  resetFilters,
-  exportOrdersToCSV,
-  updateOrderStatus,
-  setSelectedOrder,
-}) {
-  const filtersActive =
-    searchTerm ||
-    statusFilter !== "All" ||
-    paymentFilter !== "All" ||
-    orderDateFilter !== "all";
-
-  return (
-    <>
-      <div className="admin-controls">
-        <input
-          className="admin-search"
-          type="text"
-          placeholder="Search NB-000055, email, name, phone, cancel reason, product..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <select
-          className="admin-filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="All">All Status</option>
-
-          {ORDER_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="admin-filter"
-          value={paymentFilter}
-          onChange={(e) => setPaymentFilter(e.target.value)}
-        >
-          {PAYMENT_FILTERS.map((payment) => (
-            <option key={payment} value={payment}>
-              {payment === "All" ? "All Payments" : payment}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="admin-filter"
-          value={orderDateFilter}
-          onChange={(e) => setOrderDateFilter(e.target.value)}
-        >
-          {DATE_FILTERS.map((filter) => (
-            <option key={filter.value} value={filter.value}>
-              {filter.label}
-            </option>
-          ))}
-        </select>
-
-        {filtersActive && (
-          <button className="admin-clear-filter-btn" onClick={resetFilters}>
-            Clear Filters
+          <button type="button" onClick={resetFilters}>
+            Reset Filters
           </button>
-        )}
-
-        <button
-          className="admin-export-btn"
-          onClick={exportOrdersToCSV}
-          disabled={filteredOrders.length === 0}
-        >
-          Export CSV
-        </button>
-      </div>
-
-      <div className="orders-section">
-        <div className="orders-section-head">
-          <div>
-            <h3>Recent Orders</h3>
-            <p>{filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""} found</p>
-          </div>
         </div>
 
-        {filteredOrders.length === 0 ? (
-          <div className="admin-empty">
-            <p>No matching orders found</p>
+        <div className="admin-filters">
+          <input
+            type="search"
+            placeholder="Search order ID, email, phone..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            {STATUS_FILTERS.map((status) => (
+              <option key={status} value={status}>
+                {status === "All" ? "All Order Status" : status}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={paymentMethodFilter}
+            onChange={(event) => setPaymentMethodFilter(event.target.value)}
+          >
+            {PAYMENT_METHOD_FILTERS.map((method) => (
+              <option key={method} value={method}>
+                {method === "All" ? "All Payment Methods" : method}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={paymentStatusFilter}
+            onChange={(event) => setPaymentStatusFilter(event.target.value)}
+          >
+            {PAYMENT_STATUS_FILTERS.map((status) => (
+              <option key={status} value={status}>
+                {status === "All" ? "All Payment Status" : status}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {errorMessage ? (
+          <div className="admin-state-box">
+            <h3>Unable to load orders</h3>
+            <p>{errorMessage}</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="admin-state-box">
+            <h3>No orders found</h3>
+            <p>Try changing the search or filters.</p>
           </div>
         ) : (
-          <div className="orders-table-wrapper">
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Date</th>
-                  <th>Customer</th>
-                  <th>Product</th>
-                  <th>Qty</th>
-                  <th>Total</th>
-                  <th>Payment</th>
-                  <th>Current Status</th>
-                  <th>Update Status</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredOrders.map((order) => {
-                  const items = getOrderItems(order);
-                  const firstItem = items[0];
-                  const status = getOrderStatus(order);
-
-                  return (
-                    <tr key={order.id}>
-                      <td>
-                        <span className="order-id">
-                          {formatOrderId(order.id)}
-                        </span>
-                      </td>
-
-                      <td>{formatDate(order.created_at)}</td>
-
-                      <td>
-                        <div className="customer-email">
-                          <strong>{order.address?.name || "Customer"}</strong>
-                          <span>{order.email || "No email"}</span>
-                          <span>{order.address?.phone || "No phone"}</span>
-                        </div>
-                      </td>
-
-                      <td>
-                        {items.length > 1
-                          ? `${items.length} items order`
-                          : getItemName(firstItem)}
-                      </td>
-
-                      <td>{order.qty || items.length || 1}</td>
-
-                      <td>
-                        <span className="order-total">
-                          {money(getOrderAmount(order))}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="payment-badge">
-                          {getPaymentMethod(order)}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className={getStatusClass(status)}>{status}</span>
-                      </td>
-
-                      <td>
-                        <select
-                          value={status}
-                          onChange={(e) =>
-                            updateOrderStatus(order.id, e.target.value)
-                          }
-                          className="status-select"
-                        >
-                          {ORDER_STATUSES.map((statusOption) => (
-                            <option key={statusOption} value={statusOption}>
-                              {statusOption}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-
-                      <td>
-                        <button
-                          className="view-order-btn"
-                          onClick={() => setSelectedOrder(order)}
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-function RangeButtons({ value, onChange }) {
-  return (
-    <div className="admin-range-buttons">
-      {DATE_FILTERS.map((filter) => (
-        <button
-          key={filter.value}
-          className={value === filter.value ? "active" : ""}
-          onClick={() => onChange(filter.value)}
-          type="button"
-        >
-          {filter.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ChartCard({ title, children }) {
-  return (
-    <div className="chart-card">
-      <h3>{title}</h3>
-
-      <ResponsiveContainer width="100%" height={250}>
-        {children}
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function OrderModal({ order, onClose }) {
-  const items = getOrderItems(order);
-  const status = getOrderStatus(order);
-  const isCancelled = status === "Cancelled";
-
-  return (
-    <div className="order-modal-overlay">
-      <div className="order-modal">
-        <div className="order-modal-header">
-          <div>
-            <p className="admin-eyebrow">Order Details</p>
-            <h3>{formatOrderId(order.id)}</h3>
-          </div>
-
-          <button className="modal-close-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        {isCancelled && (
-          <div className="admin-cancelled-warning">
-            <strong>❌ This order was cancelled</strong>
-
-            <p>
-              <span>Reason:</span>{" "}
-              {order.cancel_reason || "No reason provided"}
-            </p>
-
-            <p>
-              <span>Cancelled At:</span>{" "}
-              {order.cancelled_at ? formatDateTime(order.cancelled_at) : "N/A"}
-            </p>
-          </div>
-        )}
-
-        <div className="order-modal-grid">
-          <InfoCard label="Customer Email" value={order.email || "N/A"} />
-          <InfoCard label="Customer Name" value={order.address?.name || "N/A"} />
-          <InfoCard label="Phone" value={order.address?.phone || "N/A"} />
-          <InfoCard label="Payment" value={getPaymentMethod(order)} />
-          <InfoCard label="Status" value={status} />
-          <InfoCard label="Total" value={money(getOrderAmount(order))} />
-        </div>
-
-        <div className="modal-section">
-          <h4>Order Items</h4>
-
-          <div className="admin-order-items-list">
-            {items.map((item, index) => (
-              <div className="admin-order-item" key={item.id || index}>
-                <div>
-                  <strong>{getItemName(item)}</strong>
-
-                  {item.isPlan && <span className="admin-plan-chip">Plan</span>}
-
-                  <p>
-                    Qty: {item.qty || 1} • {money(item.price || 0)}
-                  </p>
-
-                  {item.isPlan && (
-                    <p>
-                      Duration: {item.duration || item.plan_duration || "N/A"} •
-                      Protein: {item.protein || "N/A"}
-                    </p>
-                  )}
-                </div>
-
-                <span>{money(getItemSubtotal(item))}</span>
-              </div>
+          <div className="admin-order-list">
+            {filteredOrders.map((order) => (
+              <AdminOrderCard
+                key={order.id}
+                order={order}
+                updatingKey={updatingKey}
+                onUpdate={updateOrderField}
+              />
             ))}
           </div>
-        </div>
+        )}
+      </section>
+    </main>
+  );
+}
 
-        <div className="modal-section">
-          <h4>Delivery Address</h4>
-
-          <p>
-            <strong>Name:</strong> {order.address?.name || "N/A"}
-          </p>
-
-          <p>
-            <strong>Phone:</strong> {order.address?.phone || "N/A"}
-          </p>
-
-          <p>
-            {order.address?.street || "No street"},{" "}
-            {order.address?.city || "No city"}, {order.address?.state || ""}
-          </p>
-
-          <p>
-            <strong>Pincode:</strong> {order.address?.pincode || "N/A"}
-          </p>
-        </div>
-
-        <div className="modal-section">
-          <h4>Order Date</h4>
-          <p>{formatDateTime(order.created_at)}</p>
-        </div>
-      </div>
+function MetricCard({ label, value }) {
+  return (
+    <div className="admin-metric-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
 
-function InfoCard({ label, value }) {
+function AdminOrderCard({ order, updatingKey, onUpdate }) {
+  const address = safeObject(order.address);
+  const items = getOrderItems(order);
+  const orderStatus = normalizeStatus(order.status);
+  const paymentMethod = normalizePaymentMethod(order.payment_method);
+  const paymentStatus = normalizePaymentStatus(order.payment_status);
+  const quantity = getOrderQty(order);
+  const addressText = getAddressText(address) || "Address not available";
+
   return (
-    <div className="modal-info-card">
+    <article className="admin-order-card">
+      <header className="admin-order-top">
+        <div>
+          <p className="admin-order-label">Order ID</p>
+          <h3>{formatOrderId(order.id)}</h3>
+          <span>{formatDateTime(order.created_at)}</span>
+        </div>
+
+        <div className="admin-order-badges">
+          <span className={getStatusClass(orderStatus)}>{orderStatus}</span>
+          <span className={getPaymentClass(paymentStatus)}>
+            {paymentStatus}
+          </span>
+        </div>
+      </header>
+
+      <div className="admin-order-grid">
+        <InfoBlock label="Customer Email" value={order.email || "N/A"} />
+        <InfoBlock label="Phone" value={address.phone || "N/A"} />
+        <InfoBlock label="Quantity" value={quantity} />
+        <InfoBlock label="Total Amount" value={money(getOrderTotal(order))} highlight />
+        <InfoBlock label="Payment Method" value={paymentMethod} />
+        <InfoBlock label="Payment Status" value={paymentStatus} />
+        <InfoBlock label="Order Status" value={orderStatus} />
+        <InfoBlock label="Created Date" value={formatDateTime(order.created_at)} />
+      </div>
+
+      <section className="admin-order-items">
+        <div className="admin-order-section-head">
+          <h4>Ordered Items</h4>
+          <span>{items.length} item{items.length === 1 ? "" : "s"}</span>
+        </div>
+
+        <div className="admin-order-item-list">
+          {items.map((item, index) => (
+            <div className="admin-order-item-row" key={item.id || `${order.id}-${index}`}>
+              <div>
+                <strong>{getItemName(item)}</strong>
+                <p>
+                  Qty {getItemQty(item)} x {money(getItemPrice(item))}
+                </p>
+              </div>
+              <span>{money(getItemSubtotal(item))}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="admin-address-box">
+        <p className="admin-order-label">Delivery Address</p>
+        <strong>{address.name || "Customer"}</strong>
+        <p>{addressText}</p>
+      </section>
+
+      <div className="admin-update-grid">
+        <label>
+          Update Order Status
+          <select
+            value={orderStatus}
+            disabled={updatingKey === `${order.id}-status`}
+            onChange={(event) => onUpdate(order.id, "status", event.target.value)}
+          >
+            {ORDER_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Update Payment Status
+          <select
+            value={paymentStatus}
+            disabled={updatingKey === `${order.id}-payment_status`}
+            onChange={(event) =>
+              onUpdate(order.id, "payment_status", event.target.value)
+            }
+          >
+            {PAYMENT_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </article>
+  );
+}
+
+function InfoBlock({ label, value, highlight = false }) {
+  return (
+    <div className="admin-info-block">
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong className={highlight ? "highlight" : ""}>{value}</strong>
     </div>
   );
 }

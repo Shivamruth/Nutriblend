@@ -23,6 +23,27 @@ const normalizeStockStatus = (status) => {
 const getStockClass = (status) =>
   normalizeStockStatus(status).toLowerCase().replaceAll(" ", "-");
 
+const UPSELL_ITEMS = [
+  {
+    title: "Add Premium Pre-Workout",
+    description: "Stack your shake with a high-energy pre-workout option.",
+    action: "Explore Products",
+    page: "home",
+  },
+  {
+    title: "Add Monthly Plan",
+    description: "Lock in daily protein with a weekly or monthly plan.",
+    action: "View Plans",
+    page: "plans",
+  },
+  {
+    title: "Recommended Combos",
+    description: "Pair shakes, plans, and pre-workout for better value.",
+    action: "Shop Combos",
+    page: "home",
+  },
+];
+
 export default function Cart({ setPage }) {
   const [cart, setCart] = useState([]);
   const [syncing, setSyncing] = useState(false);
@@ -260,19 +281,56 @@ export default function Cart({ setPage }) {
     setPage("address");
   };
 
+  const renderUpsellSection = () => (
+    <section className="cart-upsell-section" aria-label="Recommended additions">
+      <div className="cart-upsell-head">
+        <p className="cart-eyebrow">Complete Your Stack</p>
+        <h3>Recommended add-ons</h3>
+      </div>
+
+      <div className="cart-upsell-grid">
+        {UPSELL_ITEMS.map((item) => (
+          <article className="cart-upsell-card" key={item.title}>
+            <div>
+              <h4>{item.title}</h4>
+              <p>{item.description}</p>
+            </div>
+
+            <button type="button" onClick={() => setPage(item.page)}>
+              {item.action}
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+
   if (cart.length === 0) {
     return (
-      <div className="cart-empty">
+      <div className="cart-empty-page">
+        <div className="cart-empty">
         <span className="cart-empty-icon">🛒</span>
-        <h2>Your Cart is Empty</h2>
+        <h2>Your cart is empty</h2>
         <p className="cart-empty-subtitle">
-          Looks like you haven&apos;t added any products or plans yet. Browse
-          our protein-packed collection!
+          Build your NutriBlend stack with protein shakes, pre-workout, and
+          monthly plans made for daily fitness routines.
         </p>
 
-        <button className="buy-btn" onClick={() => setPage("home")}>
+        <div className="cart-empty-actions">
+          <button type="button" className="buy-btn" onClick={() => setPage("home")}>
           Start Shopping →
-        </button>
+          </button>
+          <button
+            type="button"
+            className="cart-continue-btn"
+            onClick={() => setPage("plans")}
+          >
+            Add Monthly Plan
+          </button>
+        </div>
+        </div>
+
+        {renderUpsellSection()}
       </div>
     );
   }
@@ -289,7 +347,7 @@ export default function Cart({ setPage }) {
           {syncing && <p className="cart-sync-text">Syncing latest prices...</p>}
         </div>
 
-        <button className="cart-clear-btn" onClick={() => setClearCartOpen(true)}>
+        <button type="button" className="cart-clear-btn" onClick={() => setClearCartOpen(true)}>
           Clear All
         </button>
       </div>
@@ -304,7 +362,7 @@ export default function Cart({ setPage }) {
             </p>
           </div>
 
-          <button onClick={() => setRemoveUnavailableOpen(true)}>
+          <button type="button" onClick={() => setRemoveUnavailableOpen(true)}>
             Remove Unavailable Items
           </button>
         </div>
@@ -486,6 +544,7 @@ export default function Cart({ setPage }) {
                 <div className="cart-controls">
                   <div className="qty-controls">
                     <button
+                      type="button"
                       onClick={() => updateQty(item.id, -1)}
                       disabled={itemOutOfStock}
                     >
@@ -493,6 +552,7 @@ export default function Cart({ setPage }) {
                     </button>
                     <span>{item.qty || 1}</span>
                     <button
+                      type="button"
                       onClick={() => updateQty(item.id, 1)}
                       disabled={itemOutOfStock}
                     >
@@ -501,6 +561,7 @@ export default function Cart({ setPage }) {
                   </div>
 
                   <button
+                    type="button"
                     className="cart-remove-btn"
                     onClick={() => setRemoveTarget(item)}
                     aria-label={`Remove ${getItemName(item)}`}
@@ -558,7 +619,7 @@ export default function Cart({ setPage }) {
           <div className="cart-summary-divider" />
 
           <div className="cart-summary-row cart-summary-total">
-            <span>Total</span>
+            <span>Grand Total</span>
             <span>₹{total.toLocaleString("en-IN")}</span>
           </div>
 
@@ -569,6 +630,7 @@ export default function Cart({ setPage }) {
           )}
 
           <button
+            type="button"
             className="buy-btn"
             onClick={proceedToCheckout}
             disabled={cartStats.hasUnavailable || syncing}
@@ -580,11 +642,13 @@ export default function Cart({ setPage }) {
               : "Proceed to Checkout →"}
           </button>
 
-          <button className="cart-continue-btn" onClick={() => setPage("home")}>
+          <button type="button" className="cart-continue-btn" onClick={() => setPage("home")}>
             Continue Shopping
           </button>
         </aside>
       </div>
+
+      {renderUpsellSection()}
 
       <ConfirmModal
         open={!!removeTarget}

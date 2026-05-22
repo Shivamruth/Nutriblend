@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
+import { useNotification } from "../context/NotificationContext";
 import { fallbackProductImage } from "../utils/productImages";
 import "../styles/product-card.css";
 
@@ -20,6 +21,7 @@ const getStockClass = (status) =>
 
 export default function ProductCard({ item, onView }) {
   const { addToCart } = useCart();
+  const { notify } = useNotification();
   const [added, setAdded] = useState(false);
 
   const stockStatus = normalizeStockStatus(item.stock_status);
@@ -72,8 +74,11 @@ export default function ProductCard({ item, onView }) {
   };
 
   const handleAdd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (isOutOfStock) {
-      alert("This product is currently out of stock.");
+      notify("This product is currently out of stock", "error");
       return;
     }
 
@@ -83,6 +88,7 @@ export default function ProductCard({ item, onView }) {
     addToCart(item);
 
     setAdded(true);
+    notify("Added to cart", "success");
 
     setTimeout(() => {
       setAdded(false);
@@ -126,6 +132,7 @@ export default function ProductCard({ item, onView }) {
 
           <div className="card-actions">
             <button
+              type="button"
               className={`cart-btn ${added ? "added" : ""}`}
               onClick={handleAdd}
               disabled={isOutOfStock}
@@ -134,7 +141,7 @@ export default function ProductCard({ item, onView }) {
               {isOutOfStock ? "Out of Stock" : added ? "✔ Added" : "+ Cart"}
             </button>
 
-            <button onClick={() => onView(item)}>View</button>
+            <button type="button" onClick={() => onView(item)}>View</button>
           </div>
         </div>
       </div>

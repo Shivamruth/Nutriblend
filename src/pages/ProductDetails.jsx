@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNotification } from "../context/NotificationContext";
 import { fallbackProductImage, getProductImage } from "../utils/productImages";
 import "../styles/product-details.css";
 
@@ -47,6 +48,7 @@ const parseIngredients = (value) => {
 export default function ProductDetails({ product, setPage }) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const { notify } = useNotification();
 
   const isPlan = product?.isPlan;
   const stockStatus = product?.stock_status || "In Stock";
@@ -78,9 +80,12 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
     );
   }
 
-  const addToCart = () => {
+  const addToCart = (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+
     if (isOutOfStock) {
-      alert("This product is currently out of stock.");
+      notify("This product is currently out of stock", "error");
       return;
     }
 
@@ -115,6 +120,7 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
     window.dispatchEvent(new Event("cartUpdated"));
 
     setAdded(true);
+    notify("Added to cart", "success");
     setTimeout(() => setAdded(false), 1800);
 
     const cartIcon = document.getElementById("cart-icon");
@@ -125,9 +131,12 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
     }
   };
 
-  const buyNow = () => {
+  const buyNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (isOutOfStock) {
-      alert("This product is currently out of stock.");
+      notify("This product is currently out of stock", "error");
       return;
     }
 
@@ -266,19 +275,21 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
 
           <div className="qty-box">
             <button
+              type="button"
               onClick={() => setQty(Math.max(1, qty - 1))}
               disabled={isOutOfStock}
             >
               −
             </button>
             <span>{qty}</span>
-            <button onClick={() => setQty(qty + 1)} disabled={isOutOfStock}>
+            <button type="button" onClick={() => setQty(qty + 1)} disabled={isOutOfStock}>
               +
             </button>
           </div>
 
           <div className="product-detail-actions">
             <button
+              type="button"
               className={`product-add-btn ${added ? "added" : ""}`}
               onClick={addToCart}
               disabled={isOutOfStock}
@@ -292,12 +303,12 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
                 : "Add to Cart"}
             </button>
 
-            <button className="buy-btn" onClick={buyNow} disabled={isOutOfStock}>
+            <button type="button" className="buy-btn" onClick={buyNow} disabled={isOutOfStock}>
               {isOutOfStock ? "Unavailable" : isPlan ? "Buy Plan ⚡" : "Buy Now ⚡"}
             </button>
           </div>
 
-          <button className="product-back-btn" onClick={() => setPage("home")}>
+          <button type="button" className="product-back-btn" onClick={() => setPage("home")}>
             ← Back to Products
           </button>
         </div>

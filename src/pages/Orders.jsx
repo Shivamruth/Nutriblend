@@ -1,79 +1,47 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import { jsPDF } from "jspdf";
-import "../styles/orders.css";
+import "./Orders.css";
 
-const ORDER_STEPS = ["Placed", "Preparing", "Out for Delivery", "Delivered"];
+const ORDER_STEPS = ["Pending", "Preparing", "Out for Delivery", "Delivered"];
+const STATUS_FILTERS = ["All", ...ORDER_STEPS, "Cancelled"];
 
-const ORDER_STATUSES = [
-  "All",
-  "Placed",
-  "Preparing",
-  "Out for Delivery",
-  "Delivered",
-  "Cancelled",
-];
-
-const PAYMENT_FILTERS = ["All", "COD", "Online"];
-
-const DATE_FILTERS = [
-  { value: "all", label: "All Time" },
-  { value: "today", label: "Today" },
-  { value: "week", label: "This Week" },
-  { value: "month", label: "This Month" },
-];
-
-const CANCEL_REASONS = [
-  "Ordered by mistake",
-  "Need to change address",
-  "Need to change items",
-  "Delivery time issue",
-  "Payment issue",
-  "Other reason",
-];
-
-const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
+const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
 
 const formatOrderId = (id) => {
   if (!id) return "NB-000000";
-
   const value = String(id);
-
-  if (/^\d+$/.test(value)) {
-    return `NB-${value.padStart(6, "0")}`;
-  }
-
+  if (/^\d+$/.test(value)) return `NB-${value.padStart(6, "0")}`;
   return `NB-${value.slice(-8).toUpperCase()}`;
 };
 
-const formatStatus = (status) => {
-  const value = String(status || "Placed").toLowerCase();
+const normalizeStatus = (status) => {
+  const value = String(status || "Pending")
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .trim();
 
-  if (value === "placed") return "Placed";
+  if (value === "placed" || value === "pending") return "Pending";
   if (value === "preparing") return "Preparing";
   if (value === "out for delivery") return "Out for Delivery";
-  if (value === "out_for_delivery") return "Out for Delivery";
   if (value === "delivered") return "Delivered";
-  if (value === "cancelled") return "Cancelled";
-  if (value === "canceled") return "Cancelled";
+  if (value === "cancelled" || value === "canceled") return "Cancelled";
 
-  return "Placed";
+  return "Pending";
 };
 
-const formatDate = (dateValue) => {
-  if (!dateValue) return "N/A";
-
-  return new Date(dateValue).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+const normalizePaymentMethod = (method) => {
+  const value = String(method || "COD").trim();
+  if (!value) return "COD";
+  if (value.toLowerCase() === "online") return "Razorpay";
+  return value;
 };
+
+const normalizePaymentStatus = (status) =>
+  String(status || "Pending").trim() || "Pending";
 
 const formatDateTime = (dateValue) => {
   if (!dateValue) return "N/A";
-
   return new Date(dateValue).toLocaleString("en-IN", {
     day: "numeric",
     month: "short",
@@ -83,155 +51,130 @@ const formatDateTime = (dateValue) => {
   });
 };
 
-const isSameDay = (dateA, dateB) =>
-  dateA.getFullYear() === dateB.getFullYear() &&
-  dateA.getMonth() === dateB.getMonth() &&
-  dateA.getDate() === dateB.getDate();
+const safeArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "string") return [];
 
-const isThisWeek = (date) => {
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-  return date >= startOfWeek && date < endOfWeek;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 };
 
-const isThisMonth = (date) => {
-  const now = new Date();
+const safeObject = (value) => {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (!value || typeof value !== "string") return {};
 
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth()
-  );
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
 };
-
-const filterByDateRange = (orders, range) => {
-  if (range === "all") return orders;
-
-  const now = new Date();
-
-  return orders.filter((order) => {
-    if (!order.created_at) return false;
-
-    const orderDate = new Date(order.created_at);
-
-    if (Number.isNaN(orderDate.getTime())) return false;
-
-    if (range === "today") return isSameDay(orderDate, now);
-    if (range === "week") return isThisWeek(orderDate);
-    if (range === "month") return isThisMonth(orderDate);
-
-    return true;
-  });
-};
-
-const getPaymentMethod = (order) => order.payment_method || "COD";
-const getPaymentStatus = (order) => order.payment_status || "Pending";
 
 const getOrderItems = (order) => {
-  if (Array.isArray(order.items) && order.items.length > 0) {
-    return order.items;
-  }
+  const items = safeArray(order.items);
+  if (items.length) return items;
 
   return [
     {
       id: order.id,
       name: order.product_name || "NutriBlend Order",
-      price: order.price || order.total || 0,
-      qty: order.qty || 1,
-      isPlan: false,
+      price: Number(order.price || order.total || 0),
+      qty: Number(order.qty || 1),
     },
   ];
 };
 
 const getItemName = (item) =>
-  item.name || item.product_name || "NutriBlend Item";
+  item.name || item.product_name || item.title || "NutriBlend Item";
 
-const getItemSubtotal = (item) =>
-  Number(item.price || 0) * Number(item.qty || 1);
-
+const getItemPrice = (item) => Number(item.price || item.amount || 0);
+const getItemQty = (item) => Number(item.qty || item.quantity || 1);
+const getItemSubtotal = (item) => getItemPrice(item) * getItemQty(item);
 const getOrderTotal = (order) => Number(order.total || order.price || 0);
 
+const getAddressText = (address) =>
+  [
+    address.name,
+    address.phone,
+    address.street,
+    address.city,
+    address.state,
+    address.pincode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
 const getStatusClass = (status) =>
-  `order-status-badge status-${String(status || "Placed")
+  `orders-status-badge status-${normalizeStatus(status)
     .toLowerCase()
     .replaceAll(" ", "-")}`;
 
-const getPaymentClass = (paymentMethod) =>
-  `orders-payment-badge payment-${String(paymentMethod || "COD")
-    .toLowerCase()
-    .replaceAll(" ", "-")}`;
-
-const getPaymentStatusClass = (paymentStatus) =>
-  `orders-payment-status payment-status-${String(paymentStatus || "Pending")
+const getPaymentStatusClass = (status) =>
+  `orders-payment-status payment-${normalizePaymentStatus(status)
     .toLowerCase()
     .replaceAll(" ", "-")}`;
 
 export default function Orders({ setPage }) {
+  const { notify } = useNotification();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [paymentFilter, setPaymentFilter] = useState("All");
-  const [dateFilter, setDateFilter] = useState("all");
 
-  const [expandedOrderId, setExpandedOrderId] = useState(null);
-  const [cancelTarget, setCancelTarget] = useState(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [customCancelReason, setCustomCancelReason] = useState("");
-
-  const { notify } = useNotification();
-
-  const fetchOrdersFromSupabase = useCallback(async (userId) => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    return data || [];
-  }, []);
-
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage("");
-
-    try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError || !session?.user) {
-        await supabase.auth.signOut();
-        setOrders([]);
-        setErrorMessage("Your login session expired. Please log in again.");
-        notify("Your login session expired. Please log in again ❌", "error");
-        return;
+  const fetchOrders = useCallback(
+    async ({ silent = false } = {}) => {
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
       }
 
-      const userOrders = await fetchOrdersFromSupabase(session.user.id);
-      setOrders(userOrders);
-    } catch (err) {
-      console.error("Fetch orders error:", err);
-      setOrders([]);
-      setErrorMessage(
-        err.message || "Something went wrong while loading orders."
-      );
-      notify(err.message || "Something went wrong while loading orders ❌", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchOrdersFromSupabase, notify]);
+      setErrorMessage("");
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          setOrders([]);
+          setErrorMessage("Please login again to view your orders.");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("orders")
+          .select(
+            "id, product_name, price, created_at, user_id, email, qty, total, payment_status, payment_method, upi_id, status, address, items"
+          )
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        setOrders(data || []);
+      } catch (error) {
+        console.error("Orders fetch error:", error);
+        setOrders([]);
+        setErrorMessage(error.message || "Unable to fetch your orders.");
+        notify(error.message || "Unable to fetch your orders", "error");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [notify]
+  );
 
   useEffect(() => {
     fetchOrders();
@@ -239,717 +182,322 @@ export default function Orders({ setPage }) {
 
   const filteredOrders = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    const dateFiltered = filterByDateRange(orders, dateFilter);
 
-    return dateFiltered.filter((order) => {
-      const status = formatStatus(order.status);
-      const paymentMethod = getPaymentMethod(order);
-      const paymentStatus = getPaymentStatus(order);
-      const formattedId = formatOrderId(order.id).toLowerCase();
+    return orders.filter((order) => {
+      const address = safeObject(order.address);
+      const items = getOrderItems(order);
+      const status = normalizeStatus(order.status);
+      const paymentMethod = normalizePaymentMethod(order.payment_method);
+      const paymentStatus = normalizePaymentStatus(order.payment_status);
 
-      const itemsText = getOrderItems(order)
-        .map((item) => getItemName(item))
-        .join(" ")
-        .toLowerCase();
-
-      const addressText = [
-        order.address?.name,
-        order.address?.phone,
-        order.address?.street,
-        order.address?.city,
-        order.address?.state,
-        order.address?.pincode,
+      const searchable = [
+        formatOrderId(order.id),
+        order.id,
+        order.product_name,
+        order.email,
+        order.upi_id,
+        status,
+        paymentMethod,
+        paymentStatus,
+        getAddressText(address),
+        ...items.map(getItemName),
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
 
+      const matchesSearch = !query || searchable.includes(query);
       const matchesStatus = statusFilter === "All" || status === statusFilter;
 
-      const matchesPayment =
-        paymentFilter === "All" ||
-        paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase());
-
-      const matchesSearch =
-        !query ||
-        formattedId.includes(query) ||
-        String(order.id || "").toLowerCase().includes(query) ||
-        String(order.email || "").toLowerCase().includes(query) ||
-        String(order.product_name || "").toLowerCase().includes(query) ||
-        String(order.cancel_reason || "").toLowerCase().includes(query) ||
-        String(paymentMethod || "").toLowerCase().includes(query) ||
-        String(paymentStatus || "").toLowerCase().includes(query) ||
-        itemsText.includes(query) ||
-        addressText.includes(query);
-
-      return matchesStatus && matchesPayment && matchesSearch;
+      return matchesSearch && matchesStatus;
     });
-  }, [orders, searchTerm, statusFilter, paymentFilter, dateFilter]);
-
-  const filtersActive =
-    searchTerm ||
-    statusFilter !== "All" ||
-    paymentFilter !== "All" ||
-    dateFilter !== "all";
-
-  const resetFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("All");
-    setPaymentFilter("All");
-    setDateFilter("all");
-  };
+  }, [orders, searchTerm, statusFilter]);
 
   const getStatusStep = (status) => {
-    const currentStatus = formatStatus(status);
-    return ORDER_STEPS.indexOf(currentStatus);
+    const normalized = normalizeStatus(status);
+    if (normalized === "Cancelled") return -1;
+    return Math.max(0, ORDER_STEPS.indexOf(normalized));
   };
 
-  const canCancelOrder = (order) => formatStatus(order.status) === "Placed";
-
-  const getDeliveryMessage = (status) => {
-    const currentStatus = formatStatus(status);
-
-    if (currentStatus === "Placed") {
-      return "Your order is received. Preparation will start soon.";
-    }
-
-    if (currentStatus === "Preparing") {
-      return "Your shake/order is being prepared.";
-    }
-
-    if (currentStatus === "Out for Delivery") {
-      return "Your order is on the way.";
-    }
-
-    if (currentStatus === "Delivered") {
-      return "Your order has been delivered.";
-    }
-
-    if (currentStatus === "Cancelled") {
-      return "This order was cancelled.";
-    }
-
-    return "Order status is being updated.";
+  const handleTrackOrder = (order) => {
+    localStorage.setItem("trackOrderId", String(order.id));
+    notify("Track Order page is coming soon. Order ID saved.", "success");
   };
 
-  const openCancelModal = (order) => {
-    if (!canCancelOrder(order)) {
-      notify("This order cannot be cancelled now ❌", "error");
-      return;
-    }
-
-    setCancelTarget(order);
-    setCancelReason("");
-    setCustomCancelReason("");
-  };
-
-  const closeCancelModal = () => {
-    setCancelTarget(null);
-    setCancelReason("");
-    setCustomCancelReason("");
-  };
-
-  const confirmCancelOrder = async () => {
-    if (!cancelTarget) return;
-
-    const finalReason =
-      cancelReason === "Other reason"
-        ? customCancelReason.trim()
-        : cancelReason.trim();
-
-    if (!finalReason) {
-      notify("Please select or enter a cancellation reason ❌", "error");
-      return;
-    }
-
-    setActionLoadingId(cancelTarget.id);
-
-    try {
-      const cancelledAt = new Date().toISOString();
-
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          status: "Cancelled",
-          cancel_reason: finalReason,
-          cancelled_at: cancelledAt,
-        })
-        .eq("id", cancelTarget.id)
-        .eq("status", "Placed")
-        .select("*")
-        .single();
-
-      if (error) throw error;
-
-      setOrders((prev) =>
-        prev.map((order) =>
-          order.id === cancelTarget.id
-            ? {
-                ...order,
-                status: "Cancelled",
-                cancel_reason: finalReason,
-                cancelled_at: cancelledAt,
-              }
-            : order
-        )
-      );
-
-      closeCancelModal();
-      notify("Order cancelled successfully ✅", "success");
-    } catch (error) {
-      console.error("Cancel order error:", error);
-      notify(error.message || "Failed to cancel order ❌", "error");
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const reorderItems = (order) => {
-    const orderItems = getOrderItems(order);
-
-    if (!orderItems.length) {
-      notify("No items found in this order ❌", "error");
-      return;
-    }
-
+  const handleOrderAgain = (order) => {
+    const items = getOrderItems(order);
     const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
-    const updatedCart = [...existingCart];
+    const nextCart = [...existingCart];
 
-    orderItems.forEach((orderItem) => {
-      const itemId = orderItem.id || orderItem.product_id || orderItem.name;
-
-      const existing = updatedCart.find(
+    items.forEach((item) => {
+      const itemName = getItemName(item);
+      const itemId = item.id || item.product_id || itemName;
+      const existing = nextCart.find(
         (cartItem) =>
           cartItem.id === itemId ||
-          cartItem.name === orderItem.name ||
-          cartItem.product_name === orderItem.product_name
+          cartItem.name === itemName ||
+          cartItem.product_name === itemName
       );
 
       if (existing) {
-        existing.qty = Number(existing.qty || 1) + Number(orderItem.qty || 1);
+        existing.qty = Number(existing.qty || 1) + getItemQty(item);
       } else {
-        updatedCart.push({
-          ...orderItem,
+        nextCart.push({
+          ...item,
           id: itemId,
-          name: getItemName(orderItem),
-          product_name: getItemName(orderItem),
-          qty: Number(orderItem.qty || 1),
-          price: Number(orderItem.price || 0),
+          name: itemName,
+          product_name: itemName,
+          qty: getItemQty(item),
+          price: getItemPrice(item),
         });
       }
     });
 
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    localStorage.setItem("cart", JSON.stringify(nextCart));
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("cartUpdated"));
-
-    notify("Items added to cart again ✅", "success");
-
-    if (setPage) {
-      setPage("cart");
-    }
+    notify("Order items added to cart", "success");
+    setPage?.("cart");
   };
 
-  const downloadInvoice = (order) => {
-    try {
-      const doc = new jsPDF();
-      const items = getOrderItems(order);
-      const orderId = formatOrderId(order.id);
-
-      doc.setFontSize(20);
-      doc.text("NUTRIBLEND INVOICE", 20, 20);
-
-      doc.setFontSize(11);
-      doc.text(`Order ID: ${orderId}`, 20, 38);
-      doc.text(`Date: ${formatDateTime(order.created_at)}`, 20, 48);
-      doc.text(`Name: ${order.address?.name || "N/A"}`, 20, 63);
-      doc.text(`Phone: ${order.address?.phone || "N/A"}`, 20, 73);
-
-      const addressLine = `${order.address?.street || ""}, ${
-        order.address?.city || ""
-      }, ${order.address?.state || ""} - ${order.address?.pincode || ""}`;
-
-      doc.text(`Address: ${addressLine}`, 20, 83, { maxWidth: 170 });
-
-      doc.text(`Payment: ${getPaymentMethod(order)}`, 20, 103);
-      doc.text(`Payment Status: ${getPaymentStatus(order)}`, 20, 113);
-      doc.text(`Order Status: ${formatStatus(order.status)}`, 20, 123);
-
-      let y = 138;
-
-      if (formatStatus(order.status) === "Cancelled") {
-        doc.text(`Cancel Reason: ${order.cancel_reason || "N/A"}`, 20, y, {
-          maxWidth: 170,
-        });
-        y += 12;
-      }
-
-      doc.setFontSize(14);
-      doc.text("Items", 20, y);
-      y += 12;
-
-      doc.setFontSize(10);
-
-      items.forEach((item, index) => {
-        const name = getItemName(item);
-        const qty = item.qty || 1;
-        const price = item.price || 0;
-        const subtotal = getItemSubtotal(item);
-
-        doc.text(`${index + 1}. ${name}`, 20, y, { maxWidth: 115 });
-        doc.text(`Qty: ${qty}`, 140, y);
-        doc.text(`Rs. ${subtotal}`, 165, y);
-
-        y += 8;
-
-        if (item.isPlan) {
-          doc.text(
-            `Plan: ${item.duration || item.plan_duration || "N/A"} | Protein: ${
-              item.protein || "N/A"
-            }`,
-            25,
-            y,
-            { maxWidth: 150 }
-          );
-          y += 8;
-        }
-
-        doc.text(`Price: Rs. ${price}`, 25, y);
-        y += 10;
-
-        if (y > 260) {
-          doc.addPage();
-          y = 25;
-        }
-      });
-
-      doc.setFontSize(14);
-      doc.text(`Total: Rs. ${getOrderTotal(order)}`, 20, y + 10);
-      doc.setFontSize(10);
-      doc.text("Thank you for choosing NutriBlend.", 20, y + 24);
-
-      doc.save(`invoice_${orderId}.pdf`);
-      notify("Invoice downloaded ✅", "success");
-    } catch (error) {
-      console.error("Invoice download error:", error);
-      notify("Failed to download invoice ❌", "error");
-    }
+  const handleContactSupport = (order) => {
+    const message = encodeURIComponent(
+      `Hi NutriBlend, I need help with order ${formatOrderId(order.id)}.`
+    );
+    window.open(`https://wa.me/?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
     return (
-      <div className="orders-page">
-        <div className="orders-header">
-          <div>
-            <p className="orders-eyebrow">Order History</p>
-            <h2>Your Orders</h2>
-          </div>
-        </div>
+      <main className="orders-page">
+        <OrdersHero
+          orderCount={0}
+          refreshing={false}
+          onRefresh={() => fetchOrders({ silent: true })}
+        />
 
-        <div className="orders-loading">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="order-card order-skeleton">
-              <div className="home-skeleton-text loading" />
-              <div className="home-skeleton-text-sm loading" />
-              <div className="home-skeleton-text-sm loading" />
+        <section className="orders-loading" aria-label="Loading orders">
+          {[1, 2, 3].map((item) => (
+            <div className="orders-skeleton-card" key={item}>
+              <div className="orders-skeleton-line wide" />
+              <div className="orders-skeleton-line" />
+              <div className="orders-skeleton-line short" />
             </div>
           ))}
-        </div>
-      </div>
+        </section>
+      </main>
     );
   }
 
   return (
-    <div className="orders-page">
-      <div className="orders-header">
-        <div>
-          <p className="orders-eyebrow">Order History</p>
-          <h2>Your Orders</h2>
-        </div>
-
-        <div className="orders-header-actions">
-          <button className="orders-refresh-btn" onClick={fetchOrders}>
-            Refresh
-          </button>
-
-          <span className="orders-count">
-            {orders.length} order{orders.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-      </div>
+    <main className="orders-page">
+      <OrdersHero
+        orderCount={orders.length}
+        refreshing={refreshing}
+        onRefresh={() => fetchOrders({ silent: true })}
+      />
 
       {orders.length > 0 && (
-        <div className="orders-controls">
+        <section className="orders-toolbar" aria-label="Orders filters">
           <input
-            type="text"
-            placeholder="Search NB-000055, product, phone, address, payment..."
+            type="search"
+            placeholder="Search order ID, item, address, payment..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
           />
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(event) => setStatusFilter(event.target.value)}
           >
-            {ORDER_STATUSES.map((status) => (
+            {STATUS_FILTERS.map((status) => (
               <option key={status} value={status}>
                 {status === "All" ? "All Status" : status}
               </option>
             ))}
           </select>
-
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-          >
-            {PAYMENT_FILTERS.map((payment) => (
-              <option key={payment} value={payment}>
-                {payment === "All" ? "All Payments" : payment}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          >
-            {DATE_FILTERS.map((filter) => (
-              <option key={filter.value} value={filter.value}>
-                {filter.label}
-              </option>
-            ))}
-          </select>
-
-          {filtersActive && (
-            <button className="orders-clear-btn" onClick={resetFilters}>
-              Clear
-            </button>
-          )}
-        </div>
+        </section>
       )}
 
-      {orders.length === 0 ? (
-        <div className="orders-empty">
-          <span className="orders-empty-icon">📦</span>
-
-          <h3>{errorMessage ? "Unable to load orders" : "No orders yet"}</h3>
-
-          <p>
-            {errorMessage ||
-              "When you place your first order, it will appear here."}
-          </p>
-
-          {errorMessage ? (
-            <button onClick={fetchOrders}>Try Again</button>
-          ) : (
-            <button onClick={() => setPage?.("home")}>Start Shopping</button>
-          )}
-        </div>
+      {errorMessage ? (
+        <OrdersState
+          title="Unable to load orders"
+          message={errorMessage}
+          actionLabel="Try Again"
+          onAction={() => fetchOrders()}
+        />
+      ) : orders.length === 0 ? (
+        <OrdersState
+          title="No orders yet"
+          message="Your past and current NutriBlend orders will appear here after checkout."
+          actionLabel="Continue Shopping"
+          onAction={() => setPage?.("home")}
+        />
       ) : filteredOrders.length === 0 ? (
-        <div className="orders-empty">
-          <span className="orders-empty-icon">🔎</span>
-          <h3>No matching orders found</h3>
-          <p>Try clearing filters or changing your search.</p>
-          <button onClick={resetFilters}>Clear Filters</button>
-        </div>
+        <OrdersState
+          title="No matching orders"
+          message="Try another search term or status filter."
+          actionLabel="Clear Filters"
+          onAction={() => {
+            setSearchTerm("");
+            setStatusFilter("All");
+          }}
+        />
       ) : (
-        <div className="orders-list">
-          {filteredOrders.map((order, index) => {
-            const currentStatus = formatStatus(order.status);
-            const currentStep = getStatusStep(currentStatus);
-            const orderItems = getOrderItems(order);
-            const isCancelled = currentStatus === "Cancelled";
-            const isActionLoading = actionLoadingId === order.id;
-            const isExpanded = expandedOrderId === order.id;
-            const paymentMethod = getPaymentMethod(order);
-            const paymentStatus = getPaymentStatus(order);
-
-            return (
-              <div
-                key={order.id}
-                className={`order-card ${
-                  isCancelled ? "order-card-cancelled" : ""
-                }`}
-                style={{ animationDelay: `${index * 0.06}s` }}
-              >
-                <div className="order-card-header">
-                  <div className="order-id">
-                    <span className="order-id-label">Order</span>
-                    <span className="order-id-value">
-                      {formatOrderId(order.id)}
-                    </span>
-                  </div>
-
-                  <div className="order-card-badges">
-                    <span className={getPaymentClass(paymentMethod)}>
-                      {paymentMethod}
-                    </span>
-                    <span className={getPaymentStatusClass(paymentStatus)}>
-                      {paymentStatus}
-                    </span>
-                    <span className={getStatusClass(currentStatus)}>
-                      {currentStatus}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="order-delivery-message">
-                  <span>
-                    {isCancelled
-                      ? "❌"
-                      : currentStatus === "Delivered"
-                      ? "✅"
-                      : "🚚"}
-                  </span>
-                  <p>{getDeliveryMessage(currentStatus)}</p>
-                </div>
-
-                <div className="order-card-body">
-                  <InfoRow label="Total" value={money(getOrderTotal(order))} strong />
-                  <InfoRow label="Location" value={order.address?.city || "N/A"} />
-                  <InfoRow label="Payment" value={paymentMethod} />
-                  <InfoRow label="Placed At" value={formatDate(order.created_at)} />
-                </div>
-
-                <div className="order-items-box">
-                  <div className="order-items-header">
-                    <h3>Order Items</h3>
-
-                    <span>
-                      {orderItems.length} item
-                      {orderItems.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  <div className="order-items-list">
-                    {orderItems.map((item, itemIndex) => (
-                      <div
-                        className={`order-item-row ${
-                          item.isPlan ? "order-plan-row" : ""
-                        }`}
-                        key={item.id || itemIndex}
-                      >
-                        <div className="order-item-left">
-                          <div className="order-item-icon">
-                            {item.isPlan ? item.image || "📅" : "🥤"}
-                          </div>
-
-                          <div>
-                            <div className="order-item-title">
-                              <strong>{getItemName(item)}</strong>
-
-                              {item.isPlan && (
-                                <span className="order-plan-chip">Plan</span>
-                              )}
-                            </div>
-
-                            <p>
-                              Qty: {item.qty || 1} • {money(item.price || 0)}
-                            </p>
-
-                            {item.isPlan && (
-                              <p>
-                                {item.duration ||
-                                  item.plan_duration ||
-                                  "Plan duration"}{" "}
-                                • {item.protein || "Protein"}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <span className="order-item-price">
-                          {money(getItemSubtotal(item))}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {isCancelled ? (
-                  <div className="cancelled-box">
-                    <strong>❌ This order has been cancelled</strong>
-
-                    {order.cancel_reason && (
-                      <p>Reason: {order.cancel_reason}</p>
-                    )}
-
-                    {order.cancelled_at && (
-                      <p>Cancelled at: {formatDateTime(order.cancelled_at)}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="order-tracking">
-                    {ORDER_STEPS.map((step, stepIndex) => (
-                      <div
-                        key={step}
-                        className={`tracking-step ${
-                          stepIndex <= currentStep ? "active" : ""
-                        }`}
-                      >
-                        <div className="tracking-circle">{stepIndex + 1}</div>
-                        <p>{step}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {isExpanded && (
-                  <div className="order-extra-details">
-                    <h3>Delivery Details</h3>
-
-                    <div className="order-address-card">
-                      <p>
-                        <strong>{order.address?.name || "Customer"}</strong>
-                      </p>
-                      <p>{order.address?.phone || "No phone"}</p>
-                      <p>
-                        {order.address?.street || "No street"},{" "}
-                        {order.address?.city || "No city"},{" "}
-                        {order.address?.state || ""} -{" "}
-                        {order.address?.pincode || "N/A"}
-                      </p>
-                    </div>
-
-                    <div className="order-extra-grid">
-                      <InfoRow label="Order ID" value={formatOrderId(order.id)} />
-                      <InfoRow
-                        label="Full Date"
-                        value={formatDateTime(order.created_at)}
-                      />
-                      <InfoRow label="Payment Status" value={paymentStatus} />
-                      <InfoRow label="Order Status" value={currentStatus} />
-                    </div>
-
-                    <div className="order-help-box">
-                      <span>💬</span>
-                      <p>
-                        Need help with this order? Keep your order ID{" "}
-                        <strong>{formatOrderId(order.id)}</strong> ready.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="order-actions">
-                  {canCancelOrder(order) && (
-                    <button
-                      className="cancel-order-btn"
-                      disabled={isActionLoading}
-                      onClick={() => openCancelModal(order)}
-                    >
-                      {isActionLoading ? "Cancelling..." : "Cancel Order"}
-                    </button>
-                  )}
-
-                  <button
-                    className="details-btn"
-                    onClick={() =>
-                      setExpandedOrderId(isExpanded ? null : order.id)
-                    }
-                  >
-                    {isExpanded ? "Hide Details" : "View Details"}
-                  </button>
-
-                  <button
-                    className="reorder-btn"
-                    onClick={() => reorderItems(order)}
-                  >
-                    Reorder
-                  </button>
-
-                  <button
-                    className="invoice-btn"
-                    onClick={() => downloadInvoice(order)}
-                  >
-                    Invoice
-                  </button>
-                </div>
-
-                {canCancelOrder(order) && (
-                  <p className="order-cancel-note">
-                    You can cancel this order before preparation starts.
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <section className="orders-list" aria-label="Customer orders">
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              currentStep={getStatusStep(order.status)}
+              onTrack={() => handleTrackOrder(order)}
+              onOrderAgain={() => handleOrderAgain(order)}
+              onSupport={() => handleContactSupport(order)}
+              onContinueShopping={() => setPage?.("home")}
+            />
+          ))}
+        </section>
       )}
-
-      {cancelTarget && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal">
-            <div className="cancel-modal-header">
-              <div>
-                <p className="orders-eyebrow">Cancel Order</p>
-                <h3>{formatOrderId(cancelTarget.id)}</h3>
-              </div>
-
-              <button onClick={closeCancelModal}>✕</button>
-            </div>
-
-            <p className="cancel-modal-desc">
-              Please select a reason. This helps us improve NutriBlend service.
-            </p>
-
-            <div className="cancel-reasons-list">
-              {CANCEL_REASONS.map((reason) => (
-                <label
-                  key={reason}
-                  className={cancelReason === reason ? "selected" : ""}
-                >
-                  <input
-                    type="radio"
-                    name="cancelReason"
-                    value={reason}
-                    checked={cancelReason === reason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                  />
-
-                  <span>{reason}</span>
-                </label>
-              ))}
-            </div>
-
-            {cancelReason === "Other reason" && (
-              <textarea
-                placeholder="Enter your reason"
-                value={customCancelReason}
-                onChange={(e) => setCustomCancelReason(e.target.value)}
-                rows="3"
-              />
-            )}
-
-            <div className="cancel-modal-actions">
-              <button className="cancel-modal-back" onClick={closeCancelModal}>
-                Keep Order
-              </button>
-
-              <button
-                className="cancel-modal-confirm"
-                onClick={confirmCancelOrder}
-                disabled={actionLoadingId === cancelTarget.id}
-              >
-                {actionLoadingId === cancelTarget.id
-                  ? "Cancelling..."
-                  : "Confirm Cancel"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
 
-function InfoRow({ label, value, strong = false }) {
+function OrdersHero({ orderCount, refreshing, onRefresh }) {
   return (
-    <div className="order-detail-row">
-      <span className="order-detail-label">{label}</span>
-      <span className={`order-detail-value ${strong ? "order-total" : ""}`}>
-        {value}
-      </span>
+    <header className="orders-hero">
+      <div>
+        <p className="orders-eyebrow">Order History</p>
+        <h2>Your Orders</h2>
+        <p>
+          Track current deliveries, review past nutrition orders, and reorder
+          your favorite NutriBlend stack.
+        </p>
+      </div>
+
+      <div className="orders-hero-actions">
+        <button type="button" onClick={onRefresh} disabled={refreshing}>
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </button>
+        <span>{orderCount} order{orderCount === 1 ? "" : "s"}</span>
+      </div>
+    </header>
+  );
+}
+
+function OrdersState({ title, message, actionLabel, onAction }) {
+  return (
+    <section className="orders-state">
+      <span>NB</span>
+      <h3>{title}</h3>
+      <p>{message}</p>
+      <button type="button" onClick={onAction}>
+        {actionLabel}
+      </button>
+    </section>
+  );
+}
+
+function OrderCard({
+  order,
+  currentStep,
+  onTrack,
+  onOrderAgain,
+  onSupport,
+  onContinueShopping,
+}) {
+  const address = safeObject(order.address);
+  const items = getOrderItems(order);
+  const status = normalizeStatus(order.status);
+  const paymentStatus = normalizePaymentStatus(order.payment_status);
+  const paymentMethod = normalizePaymentMethod(order.payment_method);
+  const addressText = getAddressText(address) || "Delivery address not available";
+
+  return (
+    <article className="order-card">
+      <div className="order-card-top">
+        <div>
+          <p className="order-label">Order ID</p>
+          <h3>{formatOrderId(order.id)}</h3>
+          <span>{formatDateTime(order.created_at)}</span>
+        </div>
+
+        <div className="order-badges">
+          <span className={getStatusClass(status)}>{status}</span>
+          <span className={getPaymentStatusClass(paymentStatus)}>
+            {paymentStatus}
+          </span>
+        </div>
+      </div>
+
+      <div className="order-summary-grid">
+        <InfoTile label="Total Amount" value={money(getOrderTotal(order))} highlight />
+        <InfoTile label="Payment Method" value={paymentMethod} />
+        <InfoTile label="Quantity" value={items.reduce((sum, item) => sum + getItemQty(item), 0)} />
+        <InfoTile label="Order Status" value={status} />
+      </div>
+
+      <section className="ordered-items">
+        <div className="ordered-items-head">
+          <h4>Ordered Items</h4>
+          <span>{items.length} item{items.length === 1 ? "" : "s"}</span>
+        </div>
+
+        <div className="ordered-items-list">
+          {items.map((item, index) => (
+            <div className="ordered-item-row" key={item.id || `${order.id}-${index}`}>
+              <div>
+                <strong>{getItemName(item)}</strong>
+                <p>Qty {getItemQty(item)} x {money(getItemPrice(item))}</p>
+              </div>
+              <span>{money(getItemSubtotal(item))}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="order-address-box">
+        <p className="order-label">Delivery Address</p>
+        <strong>{address.name || "Customer"}</strong>
+        <p>{addressText}</p>
+      </section>
+
+      {status !== "Cancelled" && (
+        <div className="order-progress" aria-label="Order tracking progress">
+          {ORDER_STEPS.map((step, index) => (
+            <div
+              className={`order-progress-step ${index <= currentStep ? "active" : ""}`}
+              key={step}
+            >
+              <span>{index + 1}</span>
+              <p>{step}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="order-actions">
+        <button type="button" className="track-btn" onClick={onTrack}>
+          Track Order
+        </button>
+        <button type="button" className="again-btn" onClick={onOrderAgain}>
+          Order Again
+        </button>
+        <button type="button" className="support-btn" onClick={onSupport}>
+          Contact Support
+        </button>
+        <button type="button" className="shop-btn" onClick={onContinueShopping}>
+          Continue Shopping
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function InfoTile({ label, value, highlight = false }) {
+  return (
+    <div className="order-info-tile">
+      <span>{label}</span>
+      <strong className={highlight ? "highlight" : ""}>{value}</strong>
     </div>
   );
 }

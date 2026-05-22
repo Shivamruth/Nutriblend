@@ -711,3 +711,72 @@
     padding-right: 0;
   }
 }
+
+/* Compatibility for newer checkout sections, using the previous theme */
+.payment-hero,
+.payment-error-box {
+  padding: 22px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(7, 18, 36, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.payment-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.payment-hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  line-height: 1.08;
+  font-weight: 950;
+}
+
+.secure-payment-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(124, 255, 107, 0.12);
+  color: #dfffd9;
+  border: 1px solid rgba(124, 255, 107, 0.25);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.payment-error-box {
+  border-color: rgba(255, 77, 77, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 77, 77, 0.12), rgba(255, 255, 255, 0.02)),
+    rgba(7, 18, 36, 0.86);
+}
+
+.payment-error-box strong {
+  color: #ff8b8b;
+}
+
+.payment-error-box p {
+  margin: 6px 0 0;
+  color: #ffd6d6;
+}
+
+@media (max-width: 650px) {
+  .payment-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .secure-payment-badge {
+    justify-content: center;
+    width: 100%;
+  }
+}

@@ -1,435 +1,300 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../supabase/Client";
-import { useNotification } from "../context/NotificationContext";
+import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "../components/ConfirmModal";
+import { countries } from "../data/countries";
+import { indiaStatesDistricts } from "../data/indiaStatesDistricts";
+import { useNotification } from "../context/NotificationContext";
 import "../styles/address.css";
 
-const ADDRESS_TYPES = [
-  { value: "Home", icon: "🏠", label: "Home" },
-  { value: "Hostel", icon: "🏫", label: "Hostel" },
-  { value: "Gym", icon: "🏋️", label: "Gym" },
-  { value: "Office", icon: "🏢", label: "Office" },
-  { value: "Other", icon: "📍", label: "Other" },
-];
+const DELIVERY_TIMES = ["Morning", "Afternoon", "Evening", "Custom"];
+const ADDRESS_TYPES = ["Home", "Hostel", "Gym", "Office", "Other"];
 
 const EMPTY_FORM = {
-  name: "",
-  phone: "",
+  id: "",
+  fullName: "",
+  mobile: "",
+  alternateMobile: "",
+  email: "",
+  country: "India",
+  state: "",
+  district: "",
+  city: "",
+  pincode: "",
+  houseNo: "",
+  building: "",
   street: "",
   landmark: "",
-  city: "",
-  state: "",
-  pincode: "",
-  type: "Home",
-  isDefault: false,
+  addressType: "Home",
+  deliveryTime: "Morning",
+  customDeliveryTime: "",
+  orderNote: "",
 };
 
-const getAddressIcon = (type) => {
-  return ADDRESS_TYPES.find((item) => item.value === type)?.icon || "📍";
+const normalize = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const readJson = (key, fallback) => {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
 };
 
-const cleanText = (value) => String(value || "").trim();
+const buildLegacyStreet = (address) =>
+  [address.houseNo, address.building, address.street].filter(Boolean).join(", ");
 
-const normalizeDbAddress = (addr) => ({
-  id: addr.id,
-  user_id: addr.user_id,
-  name: addr.name || "",
-  phone: addr.phone || "",
-  street: addr.street || "",
-  landmark: addr.landmark || "",
-  city: addr.city || "",
-  state: addr.state || "",
-  pincode: addr.pincode || "",
-  type: addr.type || "Home",
-  isDefault: Boolean(addr.is_default),
-  createdAt: addr.created_at,
-  updatedAt: addr.updated_at,
+const toCheckoutAddress = (address) => ({
+  ...address,
+  name: address.fullName,
+  phone: address.mobile,
+  type: address.addressType,
+  street: buildLegacyStreet(address),
+  pincode: address.pincode,
 });
 
-const toDbAddress = (form, userId) => ({
-  user_id: userId,
-  name: cleanText(form.name),
-  phone: cleanText(form.phone),
-  street: cleanText(form.street),
-  landmark: cleanText(form.landmark),
-  city: cleanText(form.city),
-  state: cleanText(form.state),
-  pincode: cleanText(form.pincode),
-  type: form.type || "Home",
-  is_default: Boolean(form.isDefault),
-  updated_at: new Date().toISOString(),
-});
+const makeAddressId = () => `addr-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export default function Addresses({ setPage, setAddress }) {
-  const [user, setUser] = useState(null);
+  const { notify } = useNotification();
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [search, setSearch] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
   const [form, setForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showForm, setShowForm] = useState(true);
+  const [pinStatus, setPinStatus] = useState({ state: "idle", message: "" });
+  const [checkingPin, setCheckingPin] = useState(false);
 
-  const formRef = useRef(null);
-  const { notify } = useNotification();
+  const states = useMemo(() => Object.keys(indiaStatesDistricts), []);
+  const districts = form.country === "India" && form.state ? indiaStatesDistricts[form.state] || [] : [];
 
-  const fetchAddresses = useCallback(async () => {
-    setLoading(true);
-    setFormError("");
+  useEffect(() => {
+    const saved = readJson("savedAddresses", []);
+    const selected = readJson("selectedAddress", null);
+    const selectedFromSaved = saved.find(
+      (address) => String(address.id) === String(selected?.id)
+    );
 
-    try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !userData.user) {
-        setFormError("Please login to manage delivery addresses.");
-        setAddresses([]);
-        setSelectedAddress(null);
-        setAddress?.(null);
-        return;
-      }
-
-      setUser(userData.user);
-
-      const { data, error } = await supabase
-        .from("addresses")
-        .select("*")
-        .eq("user_id", userData.user.id)
-        .order("is_default", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const normalized = (data || []).map(normalizeDbAddress);
-      setAddresses(normalized);
-
-      const savedSelectedId = localStorage.getItem("selectedAddressId");
-      const selectedFromStorage = normalized.find(
-        (addr) => String(addr.id) === String(savedSelectedId)
-      );
-
-      const defaultAddress =
-        normalized.find((addr) => addr.isDefault) || normalized[0] || null;
-
-      const finalSelected = selectedFromStorage || defaultAddress;
-
-      setSelectedAddress(finalSelected);
-      setAddress?.(finalSelected);
-
-      if (finalSelected) {
-        localStorage.setItem("selectedAddressId", finalSelected.id);
-        localStorage.setItem("selectedAddress", JSON.stringify(finalSelected));
-      } else {
-        localStorage.removeItem("selectedAddressId");
-        localStorage.removeItem("selectedAddress");
-      }
-    } catch (error) {
-      console.error("Fetch addresses error:", error);
-      setFormError(error.message || "Failed to load addresses.");
-    } finally {
-      setLoading(false);
-    }
+    setAddresses(saved);
+    setSelectedAddress(selectedFromSaved ? toCheckoutAddress(selectedFromSaved) : null);
+    setAddress?.(selectedFromSaved ? toCheckoutAddress(selectedFromSaved) : null);
+    setShowForm(saved.length === 0);
   }, [setAddress]);
 
   useEffect(() => {
-    fetchAddresses();
-  }, [fetchAddresses]);
+    if (form.country !== "India") {
+      setPinStatus({ state: "verified", message: "International address selected" });
+      return;
+    }
 
-  const selectedAddressId = selectedAddress?.id;
+    if (form.pincode.length !== 6) {
+      setPinStatus({ state: "idle", message: "Enter a 6 digit PIN code" });
+      return;
+    }
 
-  const filteredAddresses = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    if (!form.state || !form.district) {
+      setPinStatus({ state: "error", message: "Select state and district before PIN verification" });
+      return;
+    }
 
-    if (!query) return addresses;
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      setCheckingPin(true);
+      setPinStatus({ state: "checking", message: "Verifying PIN code..." });
 
-    return addresses.filter((addr) =>
-      [
-        addr.name,
-        addr.phone,
-        addr.street,
-        addr.landmark,
-        addr.city,
-        addr.state,
-        addr.pincode,
-        addr.type,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [addresses, search]);
+      try {
+        const response = await fetch(`https://api.postalpincode.in/pincode/${form.pincode}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        const result = data?.[0];
+        const offices = result?.PostOffice || [];
+
+        if (result?.Status !== "Success" || offices.length === 0) {
+          setPinStatus({ state: "error", message: "PIN code not found" });
+          return;
+        }
+
+        const matches = offices.some((office) => {
+          const apiState = normalize(office.State);
+          const apiDistrict = normalize(office.District);
+          return apiState === normalize(form.state) && apiDistrict === normalize(form.district);
+        });
+
+        setPinStatus(
+          matches
+            ? { state: "verified", message: "PIN code verified" }
+            : {
+                state: "error",
+                message: "PIN code does not match selected state/district",
+              }
+        );
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setPinStatus({ state: "error", message: "Could not verify PIN code. Try again." });
+        }
+      } finally {
+        setCheckingPin(false);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [form.country, form.district, form.pincode, form.state]);
+
+  const validation = useMemo(() => {
+    const emailOk = !form.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    const required = [
+      form.fullName,
+      form.mobile,
+      form.email,
+      form.country,
+      form.state,
+      form.district,
+      form.city,
+      form.pincode,
+      form.houseNo,
+      form.street,
+      form.addressType,
+      form.deliveryTime,
+    ].every((value) => String(value || "").trim());
+
+    if (!required) return { valid: false, message: "Complete all required address fields" };
+    if (!/^\d{10}$/.test(form.mobile)) return { valid: false, message: "Mobile number must be 10 digits" };
+    if (form.alternateMobile && !/^\d{10}$/.test(form.alternateMobile)) {
+      return { valid: false, message: "Alternate mobile number must be 10 digits" };
+    }
+    if (!emailOk) return { valid: false, message: "Enter a valid email address" };
+    if (form.country === "India" && !/^\d{6}$/.test(form.pincode)) {
+      return { valid: false, message: "PIN code must be exactly 6 digits" };
+    }
+    if (form.country === "India" && pinStatus.state !== "verified") {
+      return { valid: false, message: pinStatus.message || "Verify PIN code" };
+    }
+    if (form.deliveryTime === "Custom" && !form.customDeliveryTime.trim()) {
+      return { valid: false, message: "Enter a custom delivery time" };
+    }
+
+    return { valid: true, message: "Address ready" };
+  }, [form, pinStatus]);
+
+  const saveAddresses = (nextAddresses, nextSelected) => {
+    setAddresses(nextAddresses);
+    localStorage.setItem("savedAddresses", JSON.stringify(nextAddresses));
+
+    if (nextSelected) {
+      const checkoutAddress = toCheckoutAddress(nextSelected);
+      setSelectedAddress(checkoutAddress);
+      setAddress?.(checkoutAddress);
+      localStorage.setItem("selectedAddressId", checkoutAddress.id);
+      localStorage.setItem("selectedAddress", JSON.stringify(checkoutAddress));
+    }
+  };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
+    const numericFields = ["mobile", "alternateMobile", "pincode"];
+    const nextValue = numericFields.includes(name) ? value.replace(/\D/g, "") : value;
 
-    setFormError("");
+    setForm((prev) => {
+      const next = { ...prev, [name]: nextValue };
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+      if (name === "country") {
+        next.state = "";
+        next.district = "";
+        next.pincode = "";
+      }
+
+      if (name === "state") {
+        next.district = "";
+        next.pincode = "";
+      }
+
+      return next;
+    });
   };
 
   const resetForm = () => {
     setForm(EMPTY_FORM);
-    setEditingId(null);
-    setShowForm(false);
-    setFormError("");
+    setEditingId("");
+    setPinStatus({ state: "idle", message: "" });
+    setShowForm(addresses.length === 0);
   };
 
-  const openAddForm = () => {
-    setForm({
-      ...EMPTY_FORM,
-      isDefault: addresses.length === 0,
-    });
+  const saveAddress = () => {
+    if (!validation.valid) {
+      notify(validation.message, "error");
+      return;
+    }
 
-    setEditingId(null);
+    const address = {
+      ...form,
+      id: editingId || makeAddressId(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const nextAddresses = editingId
+      ? addresses.map((item) => (item.id === editingId ? address : item))
+      : [address, ...addresses];
+
+    saveAddresses(nextAddresses, address);
+    notify(editingId ? "Address updated" : "Address saved", "success");
+    resetForm();
+  };
+
+  const selectAddress = (address) => {
+    const checkoutAddress = toCheckoutAddress(address);
+    setSelectedAddress(checkoutAddress);
+    setAddress?.(checkoutAddress);
+    localStorage.setItem("selectedAddressId", checkoutAddress.id);
+    localStorage.setItem("selectedAddress", JSON.stringify(checkoutAddress));
+    notify("Delivery address selected", "success");
+  };
+
+  const editAddress = (address) => {
+    setForm({ ...EMPTY_FORM, ...address });
+    setEditingId(address.id);
     setShowForm(true);
-
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  };
-
-  const validateForm = () => {
-    const phoneRegex = /^[6-9]\d{9}$/;
-    const pincodeRegex = /^\d{6}$/;
-
-    if (!cleanText(form.name)) return "Full name is required.";
-
-    if (!phoneRegex.test(form.phone)) {
-      return "Enter a valid 10-digit Indian phone number.";
-    }
-
-    if (!cleanText(form.street)) return "Flat / building / street is required.";
-    if (!cleanText(form.city)) return "City is required.";
-    if (!cleanText(form.state)) return "State is required.";
-    if (!pincodeRegex.test(form.pincode)) return "Enter a valid 6-digit pincode.";
-
-    return "";
-  };
-
-  const selectAddress = (addr) => {
-    setSelectedAddress(addr);
-    setAddress?.(addr);
-    localStorage.setItem("selectedAddressId", addr.id);
-    localStorage.setItem("selectedAddress", JSON.stringify(addr));
-    notify("Delivery address selected ✅", "success");
-  };
-
-  const saveAddress = async (e) => {
-    e.preventDefault();
-
-    if (!user) {
-      setFormError("Please login to save address.");
-      notify("Please login to save address ❌", "error");
-      return;
-    }
-
-    const error = validateForm();
-
-    if (error) {
-      setFormError(error);
-      notify(error, "error");
-      return;
-    }
-
-    setSaving(true);
-    setFormError("");
-
-    try {
-      const shouldBeDefault = form.isDefault || addresses.length === 0;
-
-      if (shouldBeDefault) {
-        const { error: clearDefaultError } = await supabase
-          .from("addresses")
-          .update({ is_default: false })
-          .eq("user_id", user.id);
-
-        if (clearDefaultError) throw clearDefaultError;
-      }
-
-      const payload = {
-        ...toDbAddress(form, user.id),
-        is_default: shouldBeDefault,
-      };
-
-      let savedAddress;
-
-      if (editingId) {
-        const { data, error: updateError } = await supabase
-          .from("addresses")
-          .update(payload)
-          .eq("id", editingId)
-          .eq("user_id", user.id)
-          .select("*")
-          .single();
-
-        if (updateError) throw updateError;
-
-        savedAddress = normalizeDbAddress(data);
-        notify("Address updated ✅", "success");
-      } else {
-        const { data, error: insertError } = await supabase
-          .from("addresses")
-          .insert([{ ...payload, created_at: new Date().toISOString() }])
-          .select("*")
-          .single();
-
-        if (insertError) throw insertError;
-
-        savedAddress = normalizeDbAddress(data);
-        notify("Address added ✅", "success");
-      }
-
-      await fetchAddresses();
-
-      if (
-        shouldBeDefault ||
-        selectedAddress?.id === savedAddress.id ||
-        addresses.length === 0
-      ) {
-        setSelectedAddress(savedAddress);
-        setAddress?.(savedAddress);
-        localStorage.setItem("selectedAddressId", savedAddress.id);
-        localStorage.setItem("selectedAddress", JSON.stringify(savedAddress));
-      }
-
-      resetForm();
-    } catch (error) {
-      console.error("Save address error:", error);
-      setFormError(error.message || "Failed to save address.");
-      notify(error.message || "Failed to save address ❌", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const setDefaultAddress = async (addr) => {
-    if (!user) {
-      notify("Please login first ❌", "error");
-      return;
-    }
-
-    try {
-      const { error: clearError } = await supabase
-        .from("addresses")
-        .update({ is_default: false })
-        .eq("user_id", user.id);
-
-      if (clearError) throw clearError;
-
-      const { data, error: setError } = await supabase
-        .from("addresses")
-        .update({
-          is_default: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", addr.id)
-        .eq("user_id", user.id)
-        .select("*")
-        .single();
-
-      if (setError) throw setError;
-
-      const updatedDefaultAddress = normalizeDbAddress(data);
-
-      setAddresses((prev) =>
-        prev.map((item) => ({
-          ...item,
-          isDefault: item.id === updatedDefaultAddress.id,
-        }))
-      );
-
-      setSelectedAddress(updatedDefaultAddress);
-      setAddress?.(updatedDefaultAddress);
-      localStorage.setItem("selectedAddressId", updatedDefaultAddress.id);
-      localStorage.setItem(
-        "selectedAddress",
-        JSON.stringify(updatedDefaultAddress)
-      );
-
-      notify("Default address selected ✅", "success");
-    } catch (error) {
-      console.error("Default address error:", error);
-      notify(error.message || "Failed to set default address ❌", "error");
-    }
-  };
-
-  const editAddress = (addr) => {
-    setForm({
-      name: addr.name || "",
-      phone: addr.phone || "",
-      street: addr.street || "",
-      landmark: addr.landmark || "",
-      city: addr.city || "",
-      state: addr.state || "",
-      pincode: addr.pincode || "",
-      type: addr.type || "Home",
-      isDefault: addr.isDefault || false,
+    setPinStatus({ state: "idle", message: "" });
+    window.requestAnimationFrame(() => {
+      document.querySelector(".address-form-card")?.scrollIntoView({ behavior: "smooth" });
     });
-
-    setEditingId(addr.id);
-    setShowForm(true);
-    setFormError("");
-
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
   };
 
-  const confirmDeleteAddress = async () => {
-    if (!deleteTarget || !user) return;
+  const deleteAddress = () => {
+    if (!deleteTarget) return;
 
-    setDeleteLoading(true);
+    const nextAddresses = addresses.filter((address) => address.id !== deleteTarget.id);
+    const wasSelected = selectedAddress?.id === deleteTarget.id;
+    const nextSelected = wasSelected ? nextAddresses[0] || null : selectedAddress;
 
-    try {
-      const { error } = await supabase
-        .from("addresses")
-        .delete()
-        .eq("id", deleteTarget.id)
-        .eq("user_id", user.id);
+    setAddresses(nextAddresses);
+    localStorage.setItem("savedAddresses", JSON.stringify(nextAddresses));
 
-      if (error) throw error;
-
-      const updated = addresses.filter((addr) => addr.id !== deleteTarget.id);
-      setAddresses(updated);
-
-      if (selectedAddress?.id === deleteTarget.id) {
-        const nextDefault =
-          updated.find((addr) => addr.isDefault) || updated[0] || null;
-
-        setSelectedAddress(nextDefault);
-        setAddress?.(nextDefault);
-
-        if (nextDefault) {
-          localStorage.setItem("selectedAddressId", nextDefault.id);
-          localStorage.setItem("selectedAddress", JSON.stringify(nextDefault));
-        } else {
-          localStorage.removeItem("selectedAddressId");
-          localStorage.removeItem("selectedAddress");
-        }
-      }
-
-      notify("Address deleted ✅", "success");
-      setDeleteTarget(null);
-    } catch (error) {
-      console.error("Delete address error:", error);
-      notify(error.message || "Failed to delete address ❌", "error");
-    } finally {
-      setDeleteLoading(false);
+    if (nextSelected) {
+      const checkoutAddress = toCheckoutAddress(nextSelected);
+      setSelectedAddress(checkoutAddress);
+      setAddress?.(checkoutAddress);
+      localStorage.setItem("selectedAddressId", checkoutAddress.id);
+      localStorage.setItem("selectedAddress", JSON.stringify(checkoutAddress));
+    } else {
+      setSelectedAddress(null);
+      setAddress?.(null);
+      localStorage.removeItem("selectedAddressId");
+      localStorage.removeItem("selectedAddress");
     }
+
+    setDeleteTarget(null);
+    notify("Address deleted", "success");
   };
 
-  const goToPayment = () => {
+  const continueToPayment = () => {
     if (!selectedAddress) {
-      notify("Please select one delivery address first ❌", "error");
+      notify("Select or save a valid address first", "error");
       return;
     }
 
@@ -439,363 +304,169 @@ export default function Addresses({ setPage, setAddress }) {
     setPage?.("payment");
   };
 
-  if (loading) {
-    return (
-      <div className="address-page">
-        <div className="address-shell">
-          <div className="address-form-card">
-            <div className="home-skeleton-text loading" />
-            <div className="home-skeleton-text-sm loading" />
-            <div className="home-skeleton-text-sm loading" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="address-page">
       <div className="address-shell">
-        <div className="address-heading">
+        <header className="address-heading">
           <div>
-            <p className="address-eyebrow">Delivery Address</p>
-            <h2>Choose where to deliver</h2>
+            <p className="address-eyebrow">Checkout Address</p>
+            <h2>Delivery details</h2>
             <p className="address-subtitle">
-              Save all your delivery locations like home, hostel, gym, office,
-              or any other place. Select one address before moving to payment.
+              Add a verified delivery address for fresh NutriBlend orders. Your saved addresses stay on this device for fast checkout.
             </p>
           </div>
 
-          <button className="address-add-top-btn" onClick={openAddForm}>
-            + Add New Address
+          <button type="button" className="address-add-top-btn" onClick={() => setShowForm(true)}>
+            Add New Address
           </button>
-        </div>
+        </header>
 
         {selectedAddress && (
-          <div className="selected-address-panel">
-            <div className="selected-address-left">
-              <span>{getAddressIcon(selectedAddress.type)}</span>
-
-              <div>
-                <p className="selected-label">Delivering to</p>
-                <h3>
-                  {selectedAddress.name}{" "}
-                  <small>• {selectedAddress.type || "Address"}</small>
-                </h3>
-                <p>
-                  {selectedAddress.street}
-                  {selectedAddress.landmark
-                    ? `, Near ${selectedAddress.landmark}`
-                    : ""}
-                  , {selectedAddress.city}, {selectedAddress.state} -{" "}
-                  {selectedAddress.pincode}
-                </p>
-                <p>📞 {selectedAddress.phone}</p>
-              </div>
+          <section className="selected-address-panel">
+            <div>
+              <p className="selected-label">Selected for delivery</p>
+              <h3>{selectedAddress.name} <small>{selectedAddress.type}</small></h3>
+              <p>{selectedAddress.street}, {selectedAddress.city}, {selectedAddress.district}, {selectedAddress.state} - {selectedAddress.pincode}</p>
+              <p>{selectedAddress.phone} {selectedAddress.email ? ` | ${selectedAddress.email}` : ""}</p>
             </div>
 
-            <button onClick={goToPayment}>Continue to Payment →</button>
-          </div>
+            <button type="button" onClick={continueToPayment}>Continue to Payment</button>
+          </section>
         )}
 
         {showForm && (
-          <form
-            ref={formRef}
-            className="address-form-card address-form-full"
-            onSubmit={saveAddress}
-          >
+          <section className="address-form-card">
             <div className="address-card-head">
               <div>
-                <h3>{editingId ? "Edit Address" : "Add New Address"}</h3>
-                <span>
-                  Enter delivery details the same way you do on shopping apps.
-                </span>
+                <h3>{editingId ? "Edit Address" : "Add Address"}</h3>
+                <span>{validation.message}</span>
               </div>
 
-              <button
-                type="button"
-                className="address-close-form-btn"
-                onClick={resetForm}
-              >
-                ✕
-              </button>
+              {addresses.length > 0 && (
+                <button type="button" className="address-close-form-btn" onClick={resetForm}>Close</button>
+              )}
             </div>
 
-            {formError && <div className="address-error-box">{formError}</div>}
+            <div className="address-section-title">Contact Details</div>
+            <div className="address-form-grid">
+              <label>Full Name<input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Receiver full name" /></label>
+              <label>Mobile Number<input name="mobile" value={form.mobile} onChange={handleChange} maxLength="10" inputMode="numeric" placeholder="10 digit mobile number" /></label>
+              <label>Alternate Mobile Number <span>Optional</span><input name="alternateMobile" value={form.alternateMobile} onChange={handleChange} maxLength="10" inputMode="numeric" placeholder="Alternate contact" /></label>
+              <label>Email Address<input name="email" value={form.email} onChange={handleChange} type="email" placeholder="email@example.com" /></label>
+            </div>
 
-            <div className="address-type-selector">
+            <div className="address-section-title">Location Details</div>
+            <div className="address-form-grid">
+              <label>Country<select name="country" value={form.country} onChange={handleChange}>{countries.map((country) => <option key={country}>{country}</option>)}</select></label>
+              {form.country === "India" ? (
+                <>
+                  <label>State / Union Territory<select name="state" value={form.state} onChange={handleChange}><option value="">Select state</option>{states.map((state) => <option key={state}>{state}</option>)}</select></label>
+                  <label>District<select name="district" value={form.district} onChange={handleChange} disabled={!form.state}><option value="">Select district</option>{districts.map((district) => <option key={district}>{district}</option>)}</select></label>
+                </>
+              ) : (
+                <>
+                  <label>State / Region<input name="state" value={form.state} onChange={handleChange} placeholder="State or region" /></label>
+                  <label>District<input name="district" value={form.district} onChange={handleChange} placeholder="District" /></label>
+                </>
+              )}
+              <label>City / Town<input name="city" value={form.city} onChange={handleChange} placeholder="City or town" /></label>
+              <label>Postal Code / PIN Code<input name="pincode" value={form.pincode} onChange={handleChange} maxLength={form.country === "India" ? "6" : "12"} inputMode="numeric" placeholder="PIN code" /></label>
+            </div>
+
+            <div className={`pin-status ${pinStatus.state}`}>{checkingPin ? "Verifying PIN code..." : pinStatus.message || "PIN verification will run automatically"}</div>
+
+            <div className="address-section-title">Full Address</div>
+            <div className="address-form-grid">
+              <label>House No / Flat No / Room No<input name="houseNo" value={form.houseNo} onChange={handleChange} placeholder="Flat 203 / Room 12" /></label>
+              <label>Building / Hostel / Gym Name<input name="building" value={form.building} onChange={handleChange} placeholder="Building, hostel, gym" /></label>
+              <label className="address-form-wide">Street / Area / Locality<input name="street" value={form.street} onChange={handleChange} placeholder="Street, area, locality" /></label>
+              <label>Landmark<input name="landmark" value={form.landmark} onChange={handleChange} placeholder="Near college, gym, metro..." /></label>
+            </div>
+
+            <div className="address-section-title">Delivery Preference</div>
+            <div className="address-toggle-grid">
               {ADDRESS_TYPES.map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  className={form.type === type.value ? "active" : ""}
-                  onClick={() =>
-                    setForm((prev) => ({ ...prev, type: type.value }))
-                  }
-                >
-                  <span>{type.icon}</span>
-                  {type.label}
-                </button>
+                <button type="button" key={type} className={form.addressType === type ? "active" : ""} onClick={() => setForm((prev) => ({ ...prev, addressType: type }))}>{type}</button>
               ))}
             </div>
 
-            <div className="address-form-grid">
-              <label>
-                Full Name
-                <input
-                  name="name"
-                  placeholder="Receiver name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Mobile Number
-                <input
-                  name="phone"
-                  placeholder="10-digit phone number"
-                  value={form.phone}
-                  onChange={handleChange}
-                  maxLength="10"
-                  required
-                />
-              </label>
-
-              <label className="address-form-wide">
-                Flat / House No. / Building / Area
-                <input
-                  name="street"
-                  placeholder="Example: Flat 203, SR Hostel, Madhapur"
-                  value={form.street}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Landmark
-                <input
-                  name="landmark"
-                  placeholder="Near gym / college / office"
-                  value={form.landmark}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label>
-                City
-                <input
-                  name="city"
-                  placeholder="City"
-                  value={form.city}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                State
-                <input
-                  name="state"
-                  placeholder="State"
-                  value={form.state}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Pincode
-                <input
-                  name="pincode"
-                  placeholder="6-digit pincode"
-                  value={form.pincode}
-                  onChange={handleChange}
-                  maxLength="6"
-                  required
-                />
-              </label>
+            <div className="address-toggle-grid delivery-time-grid">
+              {DELIVERY_TIMES.map((time) => (
+                <button type="button" key={time} className={form.deliveryTime === time ? "active" : ""} onClick={() => setForm((prev) => ({ ...prev, deliveryTime: time }))}>{time}</button>
+              ))}
             </div>
 
-            <label className="default-check">
-              <input
-                type="checkbox"
-                name="isDefault"
-                checked={form.isDefault}
-                onChange={handleChange}
-              />
-              Set this as default delivery address
-            </label>
+            {form.deliveryTime === "Custom" && (
+              <div className="address-form-grid">
+                <label>Custom Delivery Time<input name="customDeliveryTime" value={form.customDeliveryTime} onChange={handleChange} placeholder="Example: After 7 PM" /></label>
+              </div>
+            )}
+
+            <label className="address-note-label">Order Note <span>Optional</span><textarea name="orderNote" value={form.orderNote} onChange={handleChange} placeholder="Any delivery instruction for this order" /></label>
 
             <div className="address-form-actions">
-              <button
-                className="address-primary-btn"
-                type="submit"
-                disabled={saving}
-              >
-                {saving
-                  ? "Saving..."
-                  : editingId
-                  ? "Update Address"
-                  : "Save Address"}
+              <button type="button" className="address-primary-btn" onClick={saveAddress} disabled={!validation.valid || checkingPin}>
+                {editingId ? "Update Address" : "Save Address"}
               </button>
-
-              <button
-                className="address-secondary-btn"
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-              >
-                Cancel
-              </button>
+              <button type="button" className="address-secondary-btn" onClick={resetForm}>Cancel</button>
             </div>
-          </form>
+          </section>
         )}
 
-        {!showForm && formError && (
-          <div className="address-error-box">{formError}</div>
-        )}
-
-        <div className="address-book-section">
+        <section className="address-book-section">
           <div className="address-book-head">
             <div>
-              <h3>Your Saved Addresses</h3>
-              <p>
-                {addresses.length} saved address
-                {addresses.length !== 1 ? "es" : ""}
-              </p>
-            </div>
-
-            <div className="address-search-wrap">
-              <input
-                type="text"
-                placeholder="Search address, phone, city..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <h3>Saved Addresses</h3>
+              <p>{addresses.length} address{addresses.length === 1 ? "" : "es"} saved</p>
             </div>
           </div>
 
-          {filteredAddresses.length === 0 ? (
+          {addresses.length === 0 ? (
             <div className="address-empty-state">
-              <span>📭</span>
-              <h3>
-                {addresses.length === 0
-                  ? "No addresses saved yet"
-                  : "No matching address found"}
-              </h3>
-              <p>
-                {addresses.length === 0
-                  ? "Add your first delivery address to continue checkout."
-                  : "Try searching by name, city, phone, gym, hostel, or office."}
-              </p>
-
-              {addresses.length === 0 && (
-                <button onClick={openAddForm}>Add Address</button>
-              )}
+              <h3>No saved address yet</h3>
+              <p>Add a verified address to continue checkout.</p>
             </div>
           ) : (
             <div className="address-list">
-              {filteredAddresses.map((addr) => {
-                const isSelected = selectedAddressId === addr.id;
+              {addresses.map((address) => {
+                const isSelected = selectedAddress?.id === address.id;
 
                 return (
-                  <article
-                    key={addr.id}
-                    className={`address-item ${isSelected ? "is-selected" : ""}`}
-                    onClick={() => selectAddress(addr)}
-                  >
-                    <div className="address-radio">
-                      <span>{isSelected ? "✓" : ""}</span>
+                  <article key={address.id} className={`address-item ${isSelected ? "is-selected" : ""}`} onClick={() => selectAddress(address)}>
+                    <div className="address-item-top">
+                      <div>
+                        <p className="address-name"><b>{address.fullName}</b></p>
+                        <p className="address-phone">{address.mobile} {address.alternateMobile ? ` | Alt ${address.alternateMobile}` : ""}</p>
+                      </div>
+                      <div className="address-chip-group">
+                        <span className="address-type-chip">{address.addressType}</span>
+                        {isSelected && <span className="address-chip selected">Selected</span>}
+                      </div>
                     </div>
 
-                    <div className="address-item-content">
-                      <div className="address-item-top">
-                        <div>
-                          <div className="address-name-row">
-                            <span className="address-type-icon">
-                              {getAddressIcon(addr.type)}
-                            </span>
-                            <p className="address-name">
-                              <b>{addr.name}</b>
-                            </p>
-                          </div>
+                    <p className="address-text">
+                      {buildLegacyStreet(address)}, {address.landmark ? `${address.landmark}, ` : ""}{address.city}, {address.district}, {address.state} - {address.pincode}
+                    </p>
+                    <p className="address-text">{address.deliveryTime === "Custom" ? address.customDeliveryTime : address.deliveryTime} delivery {address.orderNote ? ` | ${address.orderNote}` : ""}</p>
 
-                          <p className="address-phone">📞 {addr.phone}</p>
-                        </div>
-
-                        <div className="address-chip-group">
-                          <span className="address-type-chip">{addr.type}</span>
-
-                          {addr.isDefault && (
-                            <span className="address-chip">Default</span>
-                          )}
-
-                          {isSelected && (
-                            <span className="address-chip selected">
-                              Selected
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="address-text">
-                        {addr.street}
-                        {addr.landmark ? `, Near ${addr.landmark}` : ""},{" "}
-                        {addr.city}, {addr.state} - {addr.pincode}
-                      </p>
-
-                      <div
-                        className="address-actions"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button type="button" onClick={() => selectAddress(addr)}>
-                          {isSelected ? "Selected" : "Deliver Here"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setDefaultAddress(addr)}
-                        >
-                          Make Default
-                        </button>
-
-                        <button type="button" onClick={() => editAddress(addr)}>
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(addr)}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                    <div className="address-actions" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" onClick={() => selectAddress(address)}>{isSelected ? "Selected" : "Deliver Here"}</button>
+                      <button type="button" onClick={() => editAddress(address)}>Edit</button>
+                      <button type="button" onClick={() => setDeleteTarget(address)}>Delete</button>
                     </div>
                   </article>
                 );
               })}
             </div>
           )}
-        </div>
+        </section>
 
         <div className="address-bottom-bar">
           <div>
-            <span>Selected Address</span>
-            <strong>
-              {selectedAddress
-                ? `${selectedAddress.name} • ${selectedAddress.type}`
-                : "No address selected"}
-            </strong>
+            <span>Checkout address</span>
+            <strong>{selectedAddress ? `${selectedAddress.name} - ${selectedAddress.pincode}` : "Save or select a valid address"}</strong>
           </div>
-
-          <button
-            className="address-primary-btn address-continue-btn"
-            onClick={goToPayment}
-            disabled={!selectedAddress}
-          >
+          <button type="button" className="address-primary-btn address-continue-btn" onClick={continueToPayment} disabled={!selectedAddress}>
             Continue to Payment
           </button>
         </div>
@@ -804,18 +475,14 @@ export default function Addresses({ setPage, setAddress }) {
       <ConfirmModal
         open={!!deleteTarget}
         title="Delete Address?"
-        message={
-          deleteTarget
-            ? `${deleteTarget.name}'s ${deleteTarget.type} address will be permanently removed.`
-            : "This address will be permanently removed."
-        }
+        message="This saved address will be removed from this device."
         confirmText="Delete"
         cancelText="Keep"
         danger
-        loading={deleteLoading}
         onCancel={() => setDeleteTarget(null)}
-        onConfirm={confirmDeleteAddress}
+        onConfirm={deleteAddress}
       />
     </div>
   );
 }
+

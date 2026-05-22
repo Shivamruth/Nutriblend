@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import { KITCHEN_LOCATION } from "../config/location";
 import "../styles/payment.css";
 
 const DELIVERY_OPTIONS = [
@@ -23,17 +24,24 @@ const DELIVERY_OPTIONS = [
 const PAYMENT_METHODS = [
   {
     id: "cod",
-    label: "Cash on Delivery / Pay on Delivery",
+    label: "Cash on Delivery",
     shortLabel: "Cash on Delivery",
-    icon: "💵",
-    desc: "Cash, UPI or card accepted at delivery time",
+    icon: "COD",
+    desc: "Pay in cash when your NutriBlend order arrives",
+  },
+  {
+    id: "upi",
+    label: "UPI",
+    shortLabel: "UPI",
+    icon: "UPI",
+    desc: "Pay by UPI at delivery or after order confirmation",
   },
   {
     id: "razorpay",
-    label: "UPI / Cards / Netbanking",
-    shortLabel: "Online Payment",
-    icon: "💳",
-    desc: "Pay securely online using Razorpay test mode",
+    label: "Razorpay",
+    shortLabel: "Razorpay",
+    icon: "RP",
+    desc: "Pay securely online using UPI, cards, or netbanking",
   },
 ];
 
@@ -66,6 +74,11 @@ const formatAddressLine = (address) => {
     .join(", ");
 };
 
+const toCoordinate = (value) => {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+};
+
 export default function Payment({ setPage, setPayment }) {
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState(null);
@@ -75,6 +88,7 @@ export default function Payment({ setPage, setPayment }) {
   const [showInstructionBox, setShowInstructionBox] = useState(false);
   const [addressLoading, setAddressLoading] = useState(true);
   const [paymentStage, setPaymentStage] = useState("");
+  const [paymentError, setPaymentError] = useState("");
 
   const { notify } = useNotification();
 
@@ -130,6 +144,8 @@ export default function Payment({ setPage, setPayment }) {
         pincode: data.pincode,
         type: data.type,
         isDefault: data.is_default,
+        lat: data.lat ?? data.latitude ?? null,
+        lng: data.lng ?? data.longitude ?? null,
       };
 
       setAddress(normalizedAddress);
@@ -164,6 +180,20 @@ export default function Payment({ setPage, setPayment }) {
   const deliveryFee = Number(selectedDelivery.fee || 0);
   const total = subtotal + deliveryFee;
   const totalItems = getTotalItems(cart);
+
+  useEffect(() => {
+    if (cart.length === 0) {
+      notify("Cart is empty. Please add items before payment.", "error");
+      setPage("cart");
+    }
+  }, [cart.length, notify, setPage]);
+
+  useEffect(() => {
+    if (!addressLoading && !address) {
+      notify("Please select a delivery address first", "error");
+      setPage("address");
+    }
+  }, [address, addressLoading, notify, setPage]);
 
   const parseApiResponse = async (res) => {
     const text = await res.text();
@@ -323,20 +353,24 @@ export default function Payment({ setPage, setPayment }) {
   };
 
   const validateCheckout = async () => {
+    setPaymentError("");
     const cartItems = getCart();
 
     if (!address) {
+      setPaymentError("Please select a delivery address first.");
       notify("Please select a delivery address first ❌", "error");
       setPage("address");
       return null;
     }
 
     if (!selectedMethod) {
+      setPaymentError("Please select a payment method.");
       notify("Please select a payment method ❌", "error");
       return null;
     }
 
     if (!cartItems.length) {
+      setPaymentError("Your cart is empty.");
       notify("Cart is empty ❌", "error");
       setPage("cart");
       return null;
@@ -345,6 +379,7 @@ export default function Payment({ setPage, setPayment }) {
     const { data: userData } = await supabase.auth.getUser();
 
     if (!userData.user) {
+      setPaymentError("Please login again to place this order.");
       notify("Please login first ❌", "error");
       setPage("login");
       return null;
@@ -368,10 +403,14 @@ export default function Payment({ setPage, setPayment }) {
     };
   };
 
-  const clearCartAndGoSuccess = (paymentMethod, orderId = "") => {
+  const clearCartAndGoSuccess = (paymentMethod, orderId = "", orderTotal = 0) => {
     localStorage.setItem(
       "lastPaymentMethod",
-      paymentMethod === "COD" ? "Cash on Delivery" : "Online Payment"
+      paymentMethod === "COD"
+        ? "Cash on Delivery"
+        : paymentMethod === "UPI"
+        ? "UPI"
+        : "Razorpay"
     );
 
     if (orderId) {
@@ -381,6 +420,15 @@ export default function Payment({ setPage, setPayment }) {
       localStorage.removeItem("lastOrderId");
       localStorage.removeItem("lastFullOrderId");
     }
+
+    if (orderTotal) {
+      localStorage.setItem("lastOrderTotal", String(orderTotal));
+    } else {
+      localStorage.removeItem("lastOrderTotal");
+    }
+
+    localStorage.setItem("lastDeliveryTitle", selectedDelivery.title);
+    localStorage.setItem("lastDeliveryEta", selectedDelivery.eta);
 
     localStorage.removeItem("cart");
 
@@ -401,7 +449,18 @@ export default function Payment({ setPage, setPayment }) {
     state: address?.state || "",
     pincode: address?.pincode || "",
     type: address?.type || "Address",
+    lat: toCoordinate(address?.lat),
+    lng: toCoordinate(address?.lng),
     delivery_instruction: deliveryInstruction.trim(),
+  });
+
+  const buildDeliveryTrackingPayload = () => ({
+    delivery_status: "Pending",
+    kitchen_lat: KITCHEN_LOCATION.lat,
+    kitchen_lng: KITCHEN_LOCATION.lng,
+    customer_lat: toCoordinate(address?.lat),
+    customer_lng: toCoordinate(address?.lng),
+    estimated_delivery_time: "30-45 minutes",
   });
 
   const saveOrderDirectlyToSupabase = async ({
@@ -414,6 +473,7 @@ export default function Payment({ setPage, setPayment }) {
     paymentStatus,
     razorpayOrderId = null,
     razorpayPaymentId = null,
+    razorpaySignature = null,
   }) => {
     const firstItem = cart[0];
 
@@ -431,10 +491,12 @@ export default function Payment({ setPage, setPayment }) {
       address: buildOrderAddressSnapshot(),
       payment_method: paymentMethod,
       payment_status: paymentStatus,
-      status: "Placed",
+      status: "Pending",
+      created_at: new Date().toISOString(),
       delivery_fee: deliveryFee,
       subtotal,
       delivery_option: selectedDelivery.title,
+      ...buildDeliveryTrackingPayload(),
     };
 
     if (razorpayOrderId) {
@@ -443,6 +505,10 @@ export default function Payment({ setPage, setPayment }) {
 
     if (razorpayPaymentId) {
       payload.razorpay_payment_id = razorpayPaymentId;
+    }
+
+    if (razorpaySignature) {
+      payload.razorpay_signature = razorpaySignature;
     }
 
     const { data, error } = await supabase
@@ -458,6 +524,56 @@ export default function Payment({ setPage, setPayment }) {
     return data?.id || "";
   };
 
+  const updateExistingOrderInSupabase = async ({
+    orderId,
+    cart,
+    user,
+    subtotal,
+    deliveryFee,
+    total,
+    paymentMethod,
+    paymentStatus,
+    razorpayOrderId = null,
+    razorpayPaymentId = null,
+    razorpaySignature = null,
+  }) => {
+    if (!orderId) return "";
+
+    const firstItem = cart[0];
+    const payload = {
+      user_id: user.id,
+      email: user.email,
+      product_name:
+        cart.length === 1
+          ? firstItem.name || firstItem.product_name || "NutriBlend Order"
+          : `${cart.length} items order`,
+      price: Number(firstItem.price || 0),
+      qty: getTotalItems(cart),
+      total,
+      items: cart,
+      address: buildOrderAddressSnapshot(),
+      payment_method: paymentMethod,
+      payment_status: paymentStatus,
+      status: "Pending",
+      delivery_fee: deliveryFee,
+      subtotal,
+      delivery_option: selectedDelivery.title,
+      ...buildDeliveryTrackingPayload(),
+      razorpay_order_id: razorpayOrderId,
+      razorpay_payment_id: razorpayPaymentId,
+      razorpay_signature: razorpaySignature,
+    };
+
+    const { error } = await supabase
+      .from("orders")
+      .update(payload)
+      .eq("id", orderId);
+
+    if (error) throw error;
+
+    return orderId;
+  };
+
   const placeCODOrder = async () => {
     if (loading) return;
 
@@ -467,75 +583,60 @@ export default function Payment({ setPage, setPayment }) {
     const { cart, user, subtotal, deliveryFee, total } = checkout;
 
     setLoading(true);
-    setPaymentStage("Placing your COD order...");
+    setPaymentStage("Processing your order...");
+    setPaymentError("");
 
     try {
-      let success = false;
-      let orderId = "";
+      const orderId = await saveOrderDirectlyToSupabase({
+        cart,
+        user,
+        subtotal,
+        deliveryFee,
+        total,
+        paymentMethod: "COD",
+        paymentStatus: "Pending",
+      });
 
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.access_token) {
-          throw new Error("Session expired. Please login again.");
-        }
-
-        const res = await fetch("/api/create-order", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            amount: total,
-            subtotal,
-            deliveryFee,
-            items: cart,
-            address: buildOrderAddressSnapshot(),
-            userId: user.id,
-            paymentMethod: "COD",
-            deliveryOption: selectedDelivery.title,
-          }),
-        });
-
-        const json = await parseApiResponse(res);
-
-        if (res.ok && json.success) {
-          success = true;
-          orderId = extractOrderId(json);
-
-          if (!orderId) {
-            orderId = await fetchLatestOrderId(user.id);
-          }
-        } else {
-          console.warn("Backend order failed:", json.message);
-        }
-      } catch (backendErr) {
-        console.warn(
-          "Backend unavailable, using direct Supabase insert:",
-          backendErr
-        );
-      }
-
-      if (!success || !orderId) {
-        orderId = await saveOrderDirectlyToSupabase({
-          cart,
-          user,
-          subtotal,
-          deliveryFee,
-          total,
-          paymentMethod: "COD",
-          paymentStatus: "Pending",
-        });
-      }
-
-      notify("Order placed with Cash on Delivery ✅", "success");
-      clearCartAndGoSuccess("COD", orderId);
+      notify("Order placed with Cash on Delivery", "success");
+      clearCartAndGoSuccess("COD", orderId, total);
     } catch (err) {
       console.error("COD ERROR:", err);
-      notify(err.message || "Something went wrong ❌", "error");
+      setPaymentError(err.message || "Could not place your COD order.");
+      notify(err.message || "Could not place your COD order", "error");
+    } finally {
+      setLoading(false);
+      setPaymentStage("");
+    }
+  };
+  const placeUPIOrder = async () => {
+    if (loading) return;
+
+    const checkout = await validateCheckout();
+    if (!checkout) return;
+
+    const { cart, user, subtotal, deliveryFee, total } = checkout;
+
+    setLoading(true);
+    setPaymentStage("Processing your order...");
+    setPaymentError("");
+
+    try {
+      const orderId = await saveOrderDirectlyToSupabase({
+        cart,
+        user,
+        subtotal,
+        deliveryFee,
+        total,
+        paymentMethod: "UPI",
+        paymentStatus: "Pending",
+      });
+
+      notify("UPI order placed successfully", "success");
+      clearCartAndGoSuccess("UPI", orderId, total);
+    } catch (err) {
+      console.error("UPI ORDER ERROR:", err);
+      setPaymentError(err.message || "Could not place your UPI order.");
+      notify(err.message || "Could not place your UPI order", "error");
     } finally {
       setLoading(false);
       setPaymentStage("");
@@ -552,6 +653,7 @@ export default function Payment({ setPage, setPayment }) {
     const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
     if (!razorpayKey) {
+      setPaymentError("Razorpay key is missing. Add VITE_RAZORPAY_KEY_ID.");
       notify("Razorpay key is missing. Add VITE_RAZORPAY_KEY_ID ❌", "error");
       return;
     }
@@ -559,6 +661,7 @@ export default function Payment({ setPage, setPayment }) {
     try {
       setLoading(true);
       setPaymentStage("Creating secure payment order...");
+      setPaymentError("");
 
       const {
         data: { session },
@@ -583,14 +686,22 @@ export default function Payment({ setPage, setPayment }) {
           items: cart,
           address: buildOrderAddressSnapshot(),
           userId: user.id,
-          paymentMethod: "Online",
+          paymentMethod: "Razorpay",
           deliveryOption: selectedDelivery.title,
+          deliveryStatus: "Pending",
+          kitchenLocation: KITCHEN_LOCATION,
+          customerLocation: {
+            lat: toCoordinate(address?.lat),
+            lng: toCoordinate(address?.lng),
+          },
+          estimatedDeliveryTime: "30-45 minutes",
         }),
       });
 
       const json = await parseApiResponse(res);
 
       if (!res.ok || !json.success) {
+        setPaymentError(json.message || "Unable to create payment order.");
         notify(json.message || "Unable to create payment order ❌", "error");
         return;
       }
@@ -603,11 +714,13 @@ export default function Payment({ setPage, setPayment }) {
       }
 
       if (!data || !data.id) {
+        setPaymentError("Unable to create Razorpay order.");
         notify("Unable to create Razorpay order ❌", "error");
         return;
       }
 
       if (!window.Razorpay) {
+        setPaymentError("Razorpay SDK is not loaded.");
         notify("Razorpay SDK not loaded ❌", "error");
         return;
       }
@@ -643,6 +756,9 @@ export default function Payment({ setPage, setPayment }) {
             const verifyJson = await parseApiResponse(verifyRes);
 
             if (!verifyRes.ok || !verifyJson.success) {
+              setPaymentError(
+                verifyJson.message || "Payment verification failed."
+              );
               notify(
                 verifyJson.message || "Payment verification failed ❌",
                 "error"
@@ -652,26 +768,42 @@ export default function Payment({ setPage, setPayment }) {
 
             savedOrderId = savedOrderId || verifyJson.orderId || "";
 
-            if (!data.db_saved) {
-              setPaymentStage("Saving your order...");
+            setPaymentStage("Processing your order...");
 
+            if (savedOrderId) {
+              savedOrderId = await updateExistingOrderInSupabase({
+                orderId: savedOrderId,
+                cart,
+                user,
+                subtotal,
+                deliveryFee,
+                total,
+                paymentMethod: "Razorpay",
+                paymentStatus: "Paid",
+                razorpayOrderId: data.id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+            } else {
               savedOrderId = await saveOrderDirectlyToSupabase({
                 cart,
                 user,
                 subtotal,
                 deliveryFee,
                 total,
-                paymentMethod: "Online",
+                paymentMethod: "Razorpay",
                 paymentStatus: "Paid",
                 razorpayOrderId: data.id,
                 razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
               });
             }
 
-            notify("Payment verified successfully ✅", "success");
-            clearCartAndGoSuccess("Online", savedOrderId);
+            notify("Payment verified successfully", "success");
+            clearCartAndGoSuccess("Razorpay", savedOrderId, total);
           } catch (verifyErr) {
             console.error("Payment verification failed:", verifyErr);
+            setPaymentError("Payment verification failed. Please try again.");
             notify("Payment verification failed ❌", "error");
           } finally {
             setLoading(false);
@@ -707,6 +839,7 @@ export default function Payment({ setPage, setPayment }) {
 
       rzp.on("payment.failed", function (response) {
         console.error("Razorpay payment failed:", response.error);
+        setPaymentError(response?.error?.description || "Payment failed.");
         notify(response?.error?.description || "Payment failed ❌", "error");
         setLoading(false);
         setPaymentStage("");
@@ -715,6 +848,7 @@ export default function Payment({ setPage, setPayment }) {
       rzp.open();
     } catch (err) {
       console.error("PAYMENT ERROR:", err);
+      setPaymentError(err.message || "Something went wrong while processing payment.");
       notify(err.message || "Something went wrong ❌", "error");
       setLoading(false);
       setPaymentStage("");
@@ -729,6 +863,11 @@ export default function Payment({ setPage, setPayment }) {
       return;
     }
 
+    if (selectedMethod === "upi") {
+      placeUPIOrder();
+      return;
+    }
+
     if (selectedMethod === "razorpay") {
       placeOnlineOrder();
       return;
@@ -740,18 +879,35 @@ export default function Payment({ setPage, setPayment }) {
   const selectedPayment = PAYMENT_METHODS.find(
     (method) => method.id === selectedMethod
   );
+  const placeOrderLabel =
+    selectedMethod === "razorpay" ? "Pay and place your order" : "Place Order";
 
   return (
     <div className="payment-page">
       <div className="payment-main">
+        <section className="payment-hero">
+          <div>
+            <p className="payment-eyebrow">Secure Checkout</p>
+            <h2>Review and place your order</h2>
+          </div>
+          <span className="secure-payment-badge">Secure Payment</span>
+        </section>
+
+        {paymentError && (
+          <section className="payment-error-box">
+            <strong>Payment error</strong>
+            <p>{paymentError}</p>
+          </section>
+        )}
+
         <section className="checkout-block">
           <div className="checkout-block-head">
             <div>
-              <p className="payment-eyebrow">Step 1</p>
-              <h3>Delivering to {address?.name || "Customer"}</h3>
+              <p className="payment-eyebrow">Selected Address</p>
+              <h3>{address?.name || "Delivery address"}</h3>
             </div>
 
-            <button onClick={() => setPage("address")} disabled={loading}>
+            <button type="button" onClick={() => setPage("address")} disabled={loading}>
               Change
             </button>
           </div>
@@ -808,8 +964,8 @@ export default function Payment({ setPage, setPayment }) {
         <section className="checkout-block">
           <div className="checkout-block-head">
             <div>
-              <p className="payment-eyebrow">Step 2</p>
-              <h3>Payment method</h3>
+              <p className="payment-eyebrow">Payment Methods</p>
+              <h3>Choose how to pay</h3>
             </div>
           </div>
 
@@ -841,6 +997,7 @@ export default function Payment({ setPage, setPayment }) {
           </div>
 
           <button
+            type="button"
             className="use-payment-btn"
             onClick={() => {
               if (!selectedMethod) {
@@ -857,12 +1014,12 @@ export default function Payment({ setPage, setPayment }) {
         </section>
 
         <section className="checkout-alert">
-          <span>⚠️</span>
+          <span>SSL</span>
           <div>
-            <strong>One-time password may be required at time of delivery</strong>
+            <strong>Secure Payment badge</strong>
             <p>
-              Please ensure someone is available to receive the delivery. For gym
-              or hostel delivery, mention clear instructions.
+              Your payment method, selected address, and order items are saved
+              only after the order is placed successfully.
             </p>
           </div>
         </section>
@@ -870,7 +1027,7 @@ export default function Payment({ setPage, setPayment }) {
         <section className="checkout-block">
           <div className="checkout-block-head">
             <div>
-              <p className="payment-eyebrow">Step 3</p>
+              <p className="payment-eyebrow">Order Summary</p>
               <h3>Review items and delivery</h3>
             </div>
           </div>
@@ -908,7 +1065,7 @@ export default function Payment({ setPage, setPayment }) {
             {cart.length === 0 ? (
               <div className="payment-empty-cart">
                 <p>Your cart is empty.</p>
-                <button onClick={() => setPage("home")}>Start Shopping</button>
+                <button type="button" onClick={() => setPage("cart")}>Back to Cart</button>
               </div>
             ) : (
               cart.map((item, index) => (
@@ -952,15 +1109,14 @@ export default function Payment({ setPage, setPayment }) {
 
         <section className="checkout-place-bottom">
           <button
+            type="button"
             className="place-order-btn"
             onClick={placeOrder}
             disabled={!selectedMethod || !address || loading || cart.length === 0}
           >
             {loading
-              ? paymentStage || "Processing..."
-              : selectedMethod === "cod"
-              ? "Place your order"
-              : "Pay and place your order"}
+              ? "Processing your order..."
+              : placeOrderLabel}
           </button>
 
           <div>
@@ -978,16 +1134,20 @@ export default function Payment({ setPage, setPayment }) {
       </div>
 
       <aside className="payment-sidebar">
+        <div className="payment-sidebar-head">
+          <p className="payment-eyebrow">Order Summary</p>
+          <h3>{money(total)}</h3>
+        </div>
+
         <button
+          type="button"
           className="place-order-btn"
           onClick={placeOrder}
           disabled={!selectedMethod || !address || loading || cart.length === 0}
         >
           {loading
-            ? paymentStage || "Processing..."
-            : selectedMethod === "cod"
-            ? "Place your order"
-            : "Pay and place your order"}
+            ? "Processing your order..."
+            : placeOrderLabel}
         </button>
 
         {paymentStage && (

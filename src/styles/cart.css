@@ -867,3 +867,95 @@
   background: rgba(255, 93, 115, 0.16);
   color: #ffb8c4;
 }
+
+/* Compatibility for newer cart sections, using the previous theme */
+.cart-empty-page {
+  display: grid;
+  gap: 22px;
+}
+
+.cart-empty-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 460px;
+  margin: 18px auto 0;
+}
+
+.cart-empty-actions .buy-btn,
+.cart-empty-actions .cart-continue-btn {
+  margin-top: 0;
+}
+
+.cart-upsell-section {
+  margin-top: 22px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(124, 255, 107, 0.09), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.cart-upsell-head {
+  margin-bottom: 14px;
+}
+
+.cart-upsell-head h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.25rem;
+}
+
+.cart-upsell-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cart-upsell-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 160px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cart-upsell-card h4 {
+  margin: 0;
+  color: #ffffff;
+}
+
+.cart-upsell-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cart-upsell-card button {
+  min-height: 42px;
+  border-radius: 12px;
+  background: rgba(124, 255, 107, 0.12);
+  color: #dfffd9;
+  border: 1px solid rgba(124, 255, 107, 0.25);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 920px) {
+  .cart-upsell-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .cart-empty-actions {
+    grid-template-columns: 1fr;
+  }
+}

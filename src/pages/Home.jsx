@@ -131,6 +131,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
   }, [fetchProducts, fetchPlans]);
 
   const addToCart = (e, item) => {
+    e.preventDefault();
     e.stopPropagation();
 
     const isPlan = item.isPlan;
@@ -179,7 +180,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
       setTimeout(() => cartIcon.classList.remove("bump"), 400);
     }
 
-    notify(`${item.name} added to cart ✅`, "success");
+    notify("Added to cart", "success");
   };
 
   const handleProductClick = (product) => {
@@ -318,6 +319,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
             <span className="card-price">₹{item.price}</span>
 
             <button
+              type="button"
               onClick={(e) => addToCart(e, item)}
               disabled={isOutOfStock}
               className={isOutOfStock ? "home-stock-disabled-btn" : ""}

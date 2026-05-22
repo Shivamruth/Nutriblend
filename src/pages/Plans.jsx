@@ -1,3 +1,4 @@
+import { useNotification } from "../context/NotificationContext";
 import "../styles/plans.css";
 
 const plans = [
@@ -106,7 +107,12 @@ const plans = [
 ];
 
 export default function Plans({ setPage }) {
-  const addPlanToCart = (plan) => {
+  const { notify } = useNotification();
+
+  const addPlanToCart = (e, plan) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
     const planItem = {
@@ -136,9 +142,10 @@ export default function Plans({ setPage }) {
     }
 
     localStorage.setItem("cart", JSON.stringify(updatedCart));
+    window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("cartUpdated"));
 
-    alert(`${plan.name} added to cart ✅`);
+    notify("Added to cart", "success");
     setPage("cart");
   };
 
@@ -184,7 +191,7 @@ export default function Plans({ setPage }) {
                 <h4>₹{plan.price}</h4>
               </div>
 
-              <button onClick={() => addPlanToCart(plan)}>
+              <button type="button" onClick={(e) => addPlanToCart(e, plan)}>
                 Add Plan
               </button>
             </div>

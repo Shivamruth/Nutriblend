@@ -1,176 +1,180 @@
 import { useEffect, useMemo, useState } from "react";
 import "../styles/success.css";
 
+const formatMoney = (value) => {
+  const amount = Number(value || 0);
+  if (!amount) return "Available in Orders";
+  return `Rs. ${amount.toLocaleString("en-IN")}`;
+};
+
+const formatOrderId = (orderId) => {
+  if (!orderId) return "Available in Orders";
+  return `NB-${String(orderId).padStart(6, "0")}`;
+};
+
 export default function Success({ setPage }) {
-  const [address, setAddress] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [orderTime, setOrderTime] = useState("");
-  const [lastOrderId, setLastOrderId] = useState("");
+  const [orderInfo, setOrderInfo] = useState({
+    address: null,
+    paymentMethod: "",
+    orderId: "",
+    total: "",
+    deliveryTitle: "",
+    deliveryEta: "",
+    placedAt: "",
+  });
 
   useEffect(() => {
-    const savedAddress = JSON.parse(localStorage.getItem("selectedAddress"));
-    const savedPayment =
-      localStorage.getItem("lastPaymentMethod") ||
-      localStorage.getItem("paymentMethod") ||
-      "";
+    let savedAddress = null;
 
-    const savedOrderId = localStorage.getItem("lastOrderId") || "";
+    try {
+      savedAddress = JSON.parse(localStorage.getItem("selectedAddress"));
+    } catch {
+      savedAddress = null;
+    }
 
-    setAddress(savedAddress);
-    setPaymentMethod(savedPayment);
-    setLastOrderId(savedOrderId);
-    setOrderTime(new Date().toISOString());
+    setOrderInfo({
+      address: savedAddress,
+      paymentMethod:
+        localStorage.getItem("lastPaymentMethod") ||
+        localStorage.getItem("paymentMethod") ||
+        "",
+      orderId:
+        localStorage.getItem("lastOrderId") ||
+        localStorage.getItem("lastFullOrderId") ||
+        "",
+      total: localStorage.getItem("lastOrderTotal") || "",
+      deliveryTitle: localStorage.getItem("lastDeliveryTitle") || "",
+      deliveryEta: localStorage.getItem("lastDeliveryEta") || "",
+      placedAt: new Date().toISOString(),
+    });
   }, []);
 
   const displayPayment = useMemo(() => {
-    if (!paymentMethod) return "Order Payment";
-    if (paymentMethod === "COD") return "Cash on Delivery";
-    if (paymentMethod === "Online") return "Online Payment";
-    return paymentMethod;
-  }, [paymentMethod]);
+    const value = String(orderInfo.paymentMethod || "").trim();
+    if (!value) return "Payment recorded";
+    if (value === "COD") return "Cash on Delivery";
+    if (value === "Online") return "Razorpay";
+    return value;
+  }, [orderInfo.paymentMethod]);
 
   const displayTime = useMemo(() => {
-    if (!orderTime) return "Just now";
+    if (!orderInfo.placedAt) return "Just now";
 
-    return new Date(orderTime).toLocaleString("en-IN", {
+    return new Date(orderInfo.placedAt).toLocaleString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  }, [orderTime]);
+  }, [orderInfo.placedAt]);
 
-  const deliveryMessage = useMemo(() => {
-    if (displayPayment.toLowerCase().includes("cash")) {
-      return "Keep cash or UPI ready at delivery time.";
-    }
+  const estimatedDelivery = useMemo(() => {
+    const city = orderInfo.address?.city ? ` in ${orderInfo.address.city}` : "";
+    const option = orderInfo.deliveryTitle || "Standard Delivery";
+    const eta = orderInfo.deliveryEta || "Today / Tomorrow";
+    return `${option}: expected ${eta}${city}. Track live status from Orders.`;
+  }, [orderInfo.address, orderInfo.deliveryEta, orderInfo.deliveryTitle]);
 
-    if (displayPayment.toLowerCase().includes("online")) {
-      return "Your online payment has been recorded. You can track the order from Orders.";
-    }
-
-    return "You can track the order from the Orders page.";
-  }, [displayPayment]);
+  const openWhatsAppSupport = () => {
+    const orderLabel = orderInfo.orderId
+      ? `order ${formatOrderId(orderInfo.orderId)}`
+      : "my recent order";
+    const message = encodeURIComponent(
+      `Hi NutriBlend, I need help with ${orderLabel}.`
+    );
+    window.open(`https://wa.me/?text=${message}`, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="success-container">
-      <div className="success-box">
-        <div className="success-glow" />
-
-        <div className="checkmark-circle">
-          <div className="checkmark" />
+      <section className="success-box">
+        <div className="success-checkmark" aria-hidden="true">
+          <svg viewBox="0 0 80 80" role="img">
+            <circle className="success-checkmark-circle" cx="40" cy="40" r="34" />
+            <path className="success-checkmark-path" d="M24 41.5 35 52 57 29" />
+          </svg>
         </div>
 
-        <p className="success-eyebrow">Order Confirmed</p>
-        <h2>Order Placed Successfully!</h2>
-
+        <p className="success-eyebrow">Payment Complete</p>
+        <h1>Order Confirmed</h1>
         <p className="success-main-text">
-          Your healthy fuel is being prepared. You can track preparation,
-          delivery, and final status from the Orders page.
+          Your NutriBlend order has been placed successfully. We have saved your
+          order details and will start preparing it shortly.
         </p>
 
         <div className="success-info-grid">
           <div className="success-info-card">
-            <span>Payment</span>
+            <span>Order ID</span>
+            <strong>{formatOrderId(orderInfo.orderId)}</strong>
+          </div>
+
+          <div className="success-info-card">
+            <span>Payment Method</span>
             <strong>{displayPayment}</strong>
           </div>
 
           <div className="success-info-card">
-            <span>Status</span>
-            <strong>Placed</strong>
+            <span>Total Amount</span>
+            <strong>{formatMoney(orderInfo.total)}</strong>
           </div>
 
           <div className="success-info-card">
             <span>Placed At</span>
             <strong>{displayTime}</strong>
           </div>
-
-          <div className="success-info-card">
-            <span>Tracking</span>
-           <strong>
-  {lastOrderId
-    ? `NB-${String(lastOrderId).padStart(6, "0")}`
-    : "Available in Orders"}
-</strong>
-          </div>
         </div>
 
         <div className="success-estimate-card">
-          <span>🚚</span>
+          <span>ETA</span>
           <div>
             <h3>Estimated Delivery</h3>
-            <p>
-              Your order will move through preparation and delivery updates soon.
-              {address?.city ? ` Delivery city: ${address.city}.` : ""}
-            </p>
-            <small>{deliveryMessage}</small>
+            <p>{estimatedDelivery}</p>
+            <small>Status starts as Pending and updates as your order moves.</small>
           </div>
         </div>
 
-        {address && (
+        {orderInfo.address && (
           <div className="success-address-card">
             <div className="success-address-head">
-              <span>📍</span>
+              <span>ADR</span>
               <div>
-                <h3>Delivery Address</h3>
+                <h3>Selected Address</h3>
                 <p>
-                  {address.name} {address.type ? `• ${address.type}` : ""}
+                  {orderInfo.address.name}{" "}
+                  {orderInfo.address.type ? `- ${orderInfo.address.type}` : ""}
                 </p>
               </div>
             </div>
 
             <p className="success-address-text">
-              {address.street}, {address.city}, {address.state} -{" "}
-              {address.pincode}
+              {orderInfo.address.street}, {orderInfo.address.city},{" "}
+              {orderInfo.address.state} - {orderInfo.address.pincode}
             </p>
-
-            <p className="success-address-phone">📞 {address.phone}</p>
+            <p className="success-address-phone">{orderInfo.address.phone}</p>
           </div>
         )}
 
-        <div className="success-next-box">
-          <h3>What happens next?</h3>
-
-          <div className="success-steps">
-            <div className="success-step-active">
-              <span>1</span>
-              <p>Order received</p>
-            </div>
-
-            <div>
-              <span>2</span>
-              <p>Preparing shake</p>
-            </div>
-
-            <div>
-              <span>3</span>
-              <p>Out for delivery</p>
-            </div>
-
-            <div>
-              <span>4</span>
-              <p>Delivered</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="success-help-box">
-          <span>💬</span>
-          <p>
-            Need to cancel or reorder later? Open the Orders page. Cancel option
-            is available only before preparation starts.
-          </p>
-        </div>
-
         <div className="success-actions">
-          <button onClick={() => setPage("orders")}>View Orders</button>
-
-          <button className="success-home-btn" onClick={() => setPage("home")}>
+          <button type="button" onClick={() => setPage("orders")}>
+            Track Order
+          </button>
+          <button
+            type="button"
+            className="success-home-btn"
+            onClick={() => setPage("home")}
+          >
             Continue Shopping
           </button>
+          <button
+            type="button"
+            className="success-whatsapp-btn"
+            onClick={openWhatsAppSupport}
+          >
+            WhatsApp Support
+          </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
