@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import "./Admin.css";
+import "../styles/admin-page.css";
 
 const ORDER_STATUSES = [
   "Pending",

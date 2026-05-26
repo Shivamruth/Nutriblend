@@ -1,42 +1,33 @@
-/* ===== PRODUCT DETAILS ===== */
-
+/* Product details */
 .product-details-page {
-  animation: rise-up 0.45s ease;
+  animation: rise-up 0.35s ease;
 }
 
 .product-details-card {
   display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
-  gap: 32px;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+  gap: 28px;
   padding: 28px;
-  background:
-    radial-gradient(circle at top left, rgba(124, 255, 107, 0.1), transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
-    var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.34);
-}
-
-.plan-details-card {
-  border-color: rgba(124, 255, 107, 0.28);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
 }
 
 .product-image-section {
   position: sticky;
-  top: 110px;
+  top: 92px;
   align-self: start;
-  border-radius: 24px;
   overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
 }
 
 .product-image-section img {
   width: 100%;
-  min-height: 420px;
-  max-height: 560px;
+  min-height: 520px;
+  max-height: 640px;
   object-fit: cover;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .product-plan-visual {
@@ -44,63 +35,55 @@
   display: grid;
   place-items: center;
   text-align: center;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top, rgba(124, 255, 107, 0.2), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.16), transparent 45%),
-    rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(124, 255, 107, 0.2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 
 .product-plan-visual span {
-  font-size: 7rem;
+  font-size: 5rem;
 }
 
 .product-plan-visual p {
-  margin-top: -80px;
-  color: #dfffd9;
+  margin: 0;
+  color: var(--accent);
   font-weight: 900;
-  font-size: 1.1rem;
+}
+
+.product-detail-tag,
+.product-info-section .category,
+.product-badges-row span,
+.product-stock-status {
+  width: fit-content;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .product-detail-tag {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  padding: 7px 15px;
-  border-radius: 999px;
-  background: rgba(124, 255, 107, 0.18);
-  color: #dfffd9;
-  font-size: 0.78rem;
-  font-weight: 900;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(124, 255, 107, 0.22);
+  top: 14px;
+  left: 14px;
 }
 
 .product-info-section {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
+  min-width: 0;
 }
 
 .product-info-section h2 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
+  color: var(--text);
+  font-size: clamp(2.2rem, 4vw, 3.25rem);
+  line-height: 1.04;
   font-weight: 950;
-  line-height: 1.05;
-}
-
-.product-info-section .category {
-  width: fit-content;
-  padding: 7px 12px;
-  border-radius: 999px;
-  color: #93c5fd;
-  background: rgba(96, 165, 250, 0.12);
-  border: 1px solid rgba(96, 165, 250, 0.24);
-  font-size: 0.78rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .product-badges-row {
@@ -110,72 +93,62 @@
 }
 
 .product-badges-row span {
-  padding: 9px 12px;
-  border-radius: 999px;
-  background: rgba(124, 255, 107, 0.12);
-  color: #dfffd9;
-  border: 1px solid rgba(124, 255, 107, 0.22);
-  font-weight: 900;
-  font-size: 0.84rem;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  color: var(--primary-dark);
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  text-transform: none;
 }
 
 .product-detail-desc {
+  margin: 0;
   color: var(--muted);
-  line-height: 1.75;
-  font-weight: 600;
+  line-height: 1.65;
+  font-weight: 650;
 }
 
 .product-price-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.product-price-row div {
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.product-price-row.single-price {
+  grid-template-columns: 1fr;
 }
 
-.product-price-row span,
-.product-business-box span {
-  display: block;
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.product-price-row h3 {
-  margin: 6px 0 0;
-  color: #ffffff;
-  font-size: 1.55rem;
-  font-weight: 950;
-}
-
+.product-price-row div,
 .product-best-box,
 .product-plan-box,
 .ingredients-section,
 .product-benefits-section,
 .product-business-box {
   padding: 18px;
-  border-radius: 20px;
-  background: rgba(15, 15, 15, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
 }
 
+.product-price-row span,
+.product-business-box span,
 .product-best-box strong {
-  color: var(--primary);
-  font-size: 0.85rem;
-  text-transform: uppercase;
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 950;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-price-row h3 {
+  margin: 8px 0 0;
+  color: var(--accent);
+  font-size: 1.6rem;
+  font-weight: 950;
 }
 
 .product-best-box p {
   margin: 8px 0 0;
-  color: #ffffff;
+  color: var(--text);
   line-height: 1.6;
   font-weight: 700;
 }
@@ -184,14 +157,16 @@
 .product-benefits-section h3,
 .product-plan-box h3 {
   margin: 0 0 14px;
-  color: #ffffff;
-  font-size: 1.08rem;
+  color: var(--text);
+  font-size: 1rem;
   font-weight: 950;
 }
 
 .ingredients-table {
-  display: grid;
-  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
 }
 
 .ingredients-head,
@@ -200,31 +175,31 @@
   grid-template-columns: 1.1fr 0.9fr 0.7fr;
   gap: 10px;
   align-items: center;
+  padding: 12px 14px;
 }
 
 .ingredients-head {
-  color: var(--primary);
-  font-size: 0.78rem;
+  background: var(--surface-2);
+  color: var(--primary-dark);
+  font-size: 0.76rem;
   font-weight: 950;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .ingredients-row {
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border-top: 1px solid var(--border);
 }
 
 .ingredients-row span {
-  color: #d1d5db;
-  font-weight: 700;
+  color: var(--text);
+  font-weight: 750;
   font-size: 0.9rem;
 }
 
 .ingredients-row span:last-child {
-  color: var(--primary);
+  color: var(--primary-dark);
   font-weight: 950;
 }
 
@@ -236,30 +211,31 @@
 
 .product-benefits-list span {
   padding: 8px 11px;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(124, 255, 107, 0.1);
-  color: #dfffd9;
-  border: 1px solid rgba(124, 255, 107, 0.2);
-  font-size: 0.8rem;
-  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 850;
 }
 
 .product-business-box {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
 .product-business-box div {
   padding: 12px;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
 }
 
 .product-business-box strong {
   display: block;
   margin-top: 6px;
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.05rem;
 }
 
@@ -269,66 +245,95 @@
   align-items: center;
   gap: 14px;
   padding: 8px 14px;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .qty-box span {
   min-width: 24px;
   text-align: center;
-  font-weight: 800;
-  font-size: 1.1rem;
+  color: var(--text);
+  font-weight: 900;
+  font-size: 1rem;
 }
 
 .qty-box button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--surface-soft);
-  color: var(--text);
+  background: var(--primary);
+  color: var(--surface);
   font-size: 1.1rem;
 }
 
 .product-detail-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.product-add-btn {
-  flex: 1;
+.product-add-btn,
+.product-detail-actions .buy-btn {
+  width: 100%;
   min-height: 50px;
+  margin-top: 0;
   padding: 14px;
-  border-radius: 15px;
-  font-weight: 900;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--surface);
+  border: 1px solid var(--primary-dark);
+  font-weight: 950;
+}
+
+.product-add-btn:hover,
+.product-detail-actions .buy-btn:hover {
+  background: var(--primary-dark);
 }
 
 .product-add-btn.added {
-  background: rgba(124, 255, 107, 0.15);
-  color: #dfffd9;
-  border-color: rgba(124, 255, 107, 0.25);
-}
-
-.product-detail-actions .buy-btn {
-  flex: 1;
-  margin-top: 0;
+  background: var(--success);
+  color: var(--surface);
+  border-color: var(--success);
 }
 
 .product-back-btn {
-  background: transparent;
-  color: var(--muted);
-  border: none;
-  padding: 10px 0;
-  font-weight: 700;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 850;
   text-align: left;
-  cursor: pointer;
 }
 
 .product-back-btn:hover {
-  color: var(--text);
+  background: var(--surface-2);
+}
+
+.product-stock-status.in-stock {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.product-stock-status.limited-stock {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.product-stock-status.out-of-stock {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.product-add-btn:disabled,
+.buy-btn:disabled,
+.qty-box button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 .product-not-found {
@@ -336,7 +341,7 @@
   padding: 60px 20px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   .product-details-card {
     grid-template-columns: 1fr;
   }
@@ -348,107 +353,30 @@
 
   .product-image-section img,
   .product-plan-visual {
-    min-height: 300px;
+    min-height: 320px;
+    max-height: 520px;
   }
 }
 
 @media (max-width: 720px) {
+  .product-details-card {
+    padding: 16px;
+    gap: 18px;
+    border-radius: 14px;
+  }
+
+  .product-info-section h2 {
+    font-size: clamp(1.9rem, 10vw, 2.45rem);
+  }
+
   .product-detail-actions,
   .product-price-row,
   .product-business-box {
     grid-template-columns: 1fr;
-    flex-direction: column;
   }
 
   .ingredients-head,
   .ingredients-row {
     grid-template-columns: 1fr;
   }
-}
-
-.product-price-row.single-price {
-  grid-template-columns: 1fr;
-}
-
-.product-price-row.single-price {
-  grid-template-columns: 1fr;
-}
-
-.ingredients-section > .product-detail-desc {
-  margin: 0;
-}
-
-.product-stock-status {
-  width: fit-content;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 900;
-  border: 1px solid transparent;
-}
-
-.product-stock-status.in-stock {
-  background: rgba(124, 255, 107, 0.14);
-  color: #dfffd9;
-  border-color: rgba(124, 255, 107, 0.25);
-}
-
-.product-stock-status.limited-stock {
-  background: rgba(250, 204, 21, 0.14);
-  color: #fff3b0;
-  border-color: rgba(250, 204, 21, 0.25);
-}
-
-.product-stock-status.out-of-stock {
-  background: rgba(255, 77, 77, 0.14);
-  color: #ffd6d6;
-  border-color: rgba(255, 77, 77, 0.25);
-}
-
-.product-add-btn:disabled,
-.buy-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* =========================
-   PRODUCT DETAILS POLISH
-========================= */
-
-.product-details-card,
-.ingredients-section,
-.product-business-box {
-  position: relative;
-  overflow: hidden;
-}
-
-.product-details-card::before,
-.ingredients-section::before,
-.product-business-box::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(124,255,107,0.05), transparent 34%, rgba(56,189,248,0.05));
-}
-
-.product-details-card > *,
-.ingredients-section > *,
-.product-business-box > * {
-  position: relative;
-  z-index: 1;
-}
-
-.product-image-section img {
-  transition: transform 0.35s ease, filter 0.25s ease;
-}
-
-.product-image-section:hover img {
-  transform: scale(1.025);
-}
-
-.product-stock-status,
-.product-detail-tag {
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }

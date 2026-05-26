@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import "./DeliveryPartner.css";
+import "../styles/delivery-partner.css";
 
 const formatOrderId = (id) => {
   if (!id) return "NB-000000";

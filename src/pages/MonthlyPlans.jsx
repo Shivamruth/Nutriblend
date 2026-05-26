@@ -1,5 +1,5 @@
 import { useNotification } from "../context/NotificationContext";
-import "./MonthlyPlans.css";
+import "../styles/monthly-plans.css";
 
 const monthlyPlans = [
   {

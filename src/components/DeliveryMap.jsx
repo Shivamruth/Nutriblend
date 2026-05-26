@@ -6,7 +6,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { KITCHEN_LOCATION } from "../config/location";
-import "./DeliveryMap.css";
+import "../styles/delivery-map.css";
 
 const defaultIcon = new L.Icon({
   iconUrl: markerIcon,

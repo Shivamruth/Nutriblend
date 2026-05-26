@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import "./Orders.css";
+import { fallbackProductImage, getProductImage } from "../utils/productImages";
+import "../styles/orders-page.css";
 
 const ORDER_STEPS = [
   "Pending",
@@ -136,6 +138,7 @@ export default function Orders({ setPage }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const fetchOrders = useCallback(
     async ({ silent = false } = {}) => {
@@ -277,11 +280,7 @@ export default function Orders({ setPage }) {
   if (loading) {
     return (
       <main className="orders-page">
-        <OrdersHero
-          orderCount={0}
-          refreshing={false}
-          onRefresh={() => fetchOrders({ silent: true })}
-        />
+        <OrdersHero />
 
         <section className="orders-loading" aria-label="Loading orders">
           {[1, 2, 3].map((item) => (
@@ -298,31 +297,30 @@ export default function Orders({ setPage }) {
 
   return (
     <main className="orders-page">
-      <OrdersHero
-        orderCount={orders.length}
-        refreshing={refreshing}
-        onRefresh={() => fetchOrders({ silent: true })}
-      />
+      <OrdersHero />
 
       {orders.length > 0 && (
         <section className="orders-toolbar" aria-label="Orders filters">
           <input
             type="search"
-            placeholder="Search order ID, item, address, payment..."
+            placeholder="Search your order here"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
 
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            {STATUS_FILTERS.map((status) => (
-              <option key={status} value={status}>
-                {status === "All" ? "All Status" : status}
-              </option>
-            ))}
-          </select>
+          <label className="orders-filter-select" aria-label="Filter orders by status">
+            <SlidersHorizontal size={18} />
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              {STATUS_FILTERS.map((status) => (
+                <option key={status} value={status}>
+                  {status === "All" ? "Filter" : status}
+                </option>
+              ))}
+            </select>
+          </label>
         </section>
       )}
 
@@ -351,43 +349,237 @@ export default function Orders({ setPage }) {
           }}
         />
       ) : (
-        <section className="orders-list" aria-label="Customer orders">
-          {filteredOrders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              currentStep={getStatusStep(order.status)}
-              onTrack={() => handleTrackOrder(order)}
-              onOrderAgain={() => handleOrderAgain(order)}
-              onSupport={() => handleContactSupport(order)}
-              onContinueShopping={() => setPage?.("home")}
-            />
-          ))}
-        </section>
+        selectedOrder ? (
+          <OrderDetailsView
+            order={selectedOrder}
+            currentStep={getStatusStep(selectedOrder.status)}
+            onBack={() => setSelectedOrder(null)}
+            onTrack={() => handleTrackOrder(selectedOrder)}
+            onOrderAgain={() => handleOrderAgain(selectedOrder)}
+            onSupport={() => handleContactSupport(selectedOrder)}
+            onContinueShopping={() => setPage?.("home")}
+          />
+        ) : (
+          <section className="orders-list" aria-label="Customer orders">
+            {filteredOrders.map((order) => (
+              <OrderListItem
+                key={order.id}
+                order={order}
+                onSelect={() => setSelectedOrder(order)}
+              />
+            ))}
+          </section>
+        )
       )}
     </main>
   );
 }
 
-function OrdersHero({ orderCount, refreshing, onRefresh }) {
+function OrdersHero() {
   return (
     <header className="orders-hero">
       <div>
-        <p className="orders-eyebrow">Order History</p>
-        <h2>Your Orders</h2>
-        <p>
-          Track current deliveries, review past nutrition orders, and reorder
-          your favorite NutriBlend stack.
-        </p>
-      </div>
-
-      <div className="orders-hero-actions">
-        <button type="button" onClick={onRefresh} disabled={refreshing}>
-          {refreshing ? "Refreshing..." : "Refresh"}
-        </button>
-        <span>{orderCount} order{orderCount === 1 ? "" : "s"}</span>
+        <h2>My Orders</h2>
+        <p>Track deliveries, reorder favorites, and view order details.</p>
       </div>
     </header>
+  );
+}
+
+function getOrderPreview(order) {
+  const items = getOrderItems(order);
+  const firstItem = items[0] || {};
+  const previewName = getItemName(firstItem);
+  return {
+    firstItem,
+    title: previewName,
+    subtitle:
+      items.length > 1
+        ? `${previewName} and ${items.length - 1} more item${items.length > 2 ? "s" : ""}`
+        : previewName,
+  };
+}
+
+function getStatusLine(order) {
+  const status = normalizeStatus(order.status);
+  const date = new Date(order.created_at).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  if (status === "Delivered") return `Delivered on ${date}`;
+  if (status === "Cancelled") return `Cancelled on ${date}`;
+  return `${status} on ${date}`;
+}
+
+function OrderListItem({ order, onSelect }) {
+  const { firstItem, subtitle } = getOrderPreview(order);
+  const status = normalizeStatus(order.status);
+
+  return (
+    <button type="button" className="order-list-item" onClick={onSelect}>
+      <div className="order-list-thumb">
+        <img
+          src={getProductImage(firstItem)}
+          alt=""
+          onError={(event) => {
+            event.currentTarget.src = fallbackProductImage;
+          }}
+        />
+      </div>
+
+      <div className="order-list-copy">
+        <strong className={`order-list-status status-text-${status.toLowerCase().replaceAll(" ", "-")}`}>
+          {getStatusLine(order)}
+        </strong>
+        <span>{subtitle}</span>
+        <small>{formatOrderId(order.id)} · {money(getOrderTotal(order))}</small>
+      </div>
+
+      <span className="order-list-arrow">›</span>
+    </button>
+  );
+}
+
+function OrderDetailsView({
+  order,
+  currentStep,
+  onBack,
+  onTrack,
+  onOrderAgain,
+  onSupport,
+  onContinueShopping,
+}) {
+  const address = safeObject(order.address);
+  const items = getOrderItems(order);
+  const { firstItem, title } = getOrderPreview(order);
+  const status = normalizeStatus(order.status);
+  const paymentStatus = normalizePaymentStatus(order.payment_status);
+  const paymentMethod = normalizePaymentMethod(order.payment_method);
+  const itemTotal = getOrderTotal(order);
+  const addressText = getAddressText(address) || "Delivery address not available";
+
+  return (
+    <section className="order-details-view">
+      <div className="order-details-topbar">
+        <button type="button" onClick={onBack} aria-label="Back to orders">
+          ←
+        </button>
+        <h2>Order Details</h2>
+        <button type="button" onClick={onSupport}>
+          Help
+        </button>
+      </div>
+
+      <div className="order-details-product">
+        <img
+          src={getProductImage(firstItem)}
+          alt=""
+          onError={(event) => {
+            event.currentTarget.src = fallbackProductImage;
+          }}
+        />
+        <div>
+          <h3>{title}</h3>
+          <p>{items.length} item{items.length === 1 ? "" : "s"} · {formatDateTime(order.created_at)}</p>
+        </div>
+      </div>
+
+      <div className="order-details-id">
+        <span>Order {formatOrderId(order.id)}</span>
+        <button
+          type="button"
+          onClick={() => navigator.clipboard?.writeText(formatOrderId(order.id))}
+        >
+          Copy
+        </button>
+      </div>
+
+      <div className={`order-status-card status-card-${status.toLowerCase().replaceAll(" ", "-")}`}>
+        <div>
+          <h3>{getStatusLine(order)}</h3>
+          <p>{status === "Cancelled" ? "This order was cancelled." : "Track live status from your orders."}</p>
+        </div>
+        <span>{status === "Delivered" ? "✓" : status === "Cancelled" ? "!" : currentStep + 1}</span>
+      </div>
+
+      {status !== "Cancelled" && (
+        <div className="order-detail-progress">
+          {ORDER_STEPS.map((step, index) => (
+            <div className={index <= currentStep ? "active" : ""} key={step}>
+              <span>{index + 1}</span>
+              <p>{step}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <section className="order-detail-section">
+        <h3>Items in this order</h3>
+        <div className="order-detail-items">
+          {items.map((item, index) => (
+            <div className="order-detail-item" key={item.id || `${order.id}-${index}`}>
+              <img
+                src={getProductImage(item)}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.src = fallbackProductImage;
+                }}
+              />
+              <div>
+                <strong>{getItemName(item)}</strong>
+                <p>Qty {getItemQty(item)} x {money(getItemPrice(item))}</p>
+              </div>
+              <span>{money(getItemSubtotal(item))}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="order-detail-section">
+        <h3>Delivery details</h3>
+        <div className="order-delivery-details">
+          <div>
+            <span>⌂</span>
+            <p><strong>{address.type || "Home"}</strong> {addressText}</p>
+          </div>
+          <div>
+            <span>☏</span>
+            <p><strong>{address.name || "Customer"}</strong> {address.phone || ""}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="order-detail-section">
+        <h3>Price details</h3>
+        <div className="order-price-card">
+          <PriceLine label="Items" value={money(itemTotal)} />
+          <PriceLine label="Delivery" value="FREE" />
+          <PriceLine label="Payment" value={paymentMethod} />
+          <PriceLine label="Payment status" value={paymentStatus} />
+          <div className="order-price-total">
+            <strong>Total amount</strong>
+            <strong>{money(itemTotal)}</strong>
+          </div>
+        </div>
+      </section>
+
+      <div className="order-detail-actions">
+        <button type="button" onClick={onTrack}>Track Order</button>
+        <button type="button" onClick={onOrderAgain}>Order Again</button>
+        <button type="button" onClick={onContinueShopping}>Shop More</button>
+      </div>
+    </section>
+  );
+}
+
+function PriceLine({ label, value }) {
+  return (
+    <div className="order-price-line">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

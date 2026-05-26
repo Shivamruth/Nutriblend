@@ -571,6 +571,34 @@ values
   '350ml',
   'In Stock',
   true
+),
+(
+  '40g Protein Shake',
+  '40g',
+  279,
+  'Premium',
+  'Premium high-protein shake for bulking, recovery, and serious gym users.',
+  '/products/40gProShake.png',
+  '[{"name":"Milk","qty":"250ml"},{"name":"Whey Protein","qty":"1 scoop"},{"name":"Peanut Butter","qty":"1 tbsp"},{"name":"Oats","qty":"20g"},{"name":"Almonds","qty":"5 pcs"}]'::jsonb,
+  '["40g protein","Whey plus natural ingredients","Good for bulking","Strong post-workout option"]'::jsonb,
+  '500-650 kcal',
+  '350ml',
+  'In Stock',
+  true
+),
+(
+  '50g Protein Shake',
+  '50g',
+  329,
+  'Premium',
+  'Heavy premium protein shake for high-calorie bulking and intense training routines.',
+  '/products/50gPro.png',
+  '[{"name":"Milk","qty":"300ml"},{"name":"Whey Protein","qty":"1.5 scoop"},{"name":"Peanut Butter","qty":"1 tbsp"},{"name":"Oats","qty":"20g"},{"name":"Almonds","qty":"5 pcs"}]'::jsonb,
+  '["50g protein","Premium gym option","Best for bulking","Strong calorie and protein support"]'::jsonb,
+  '650-800 kcal',
+  '400ml',
+  'In Stock',
+  true
 )
 on conflict do nothing;
 

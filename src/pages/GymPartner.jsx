@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNotification } from "../context/NotificationContext";
-import "./GymPartner.css";
+import "../styles/gym-partner.css";
 
 const benefits = [
   "Daily fresh shakes",

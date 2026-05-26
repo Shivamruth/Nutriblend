@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import DeliveryMap from "../components/DeliveryMap";
-import "./TrackOrder.css";
+import "../styles/track-order.css";
 
 const TRACK_STEPS = [
   "Pending",

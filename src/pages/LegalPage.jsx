@@ -1,4 +1,4 @@
-import "./LegalPage.css";
+import "../styles/legal-page.css";
 
 export default function LegalPage({ eyebrow, title, lead, sections }) {
   return (

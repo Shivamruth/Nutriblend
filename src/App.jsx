@@ -326,7 +326,7 @@ export default function App() {
         {isAccountPage && <AccountPage pageId={page} setPage={navigatePage} />}
       </div>
 
-      <Footer setPage={navigatePage} />
+      {page === "home" && <Footer setPage={navigatePage} />}
     </div>
   );
 }
