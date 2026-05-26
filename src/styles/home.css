@@ -693,3 +693,101 @@
 .product-img {
   transition: transform 0.35s ease, filter 0.25s ease, opacity 0.25s ease;
 }
+
+/* =========================
+   HOME TRUST SECTIONS
+========================= */
+
+.home-trust-section,
+.home-promise-support article {
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top left, rgba(172, 191, 105, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    #10100e;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.28);
+}
+
+.home-trust-section {
+  margin-top: 28px;
+  padding: 22px;
+}
+
+.home-trust-header p,
+.home-promise-support p {
+  margin: 0 0 8px;
+  color: #d4af37;
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.home-trust-header h2,
+.home-promise-support h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.home-trust-grid,
+.home-review-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.home-trust-grid article,
+.home-review-grid article {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: #080807;
+}
+
+.home-trust-grid h3,
+.home-review-grid strong {
+  display: block;
+  margin: 0;
+  color: #e8ffd0;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.home-trust-grid p,
+.home-review-grid p,
+.home-promise-support span {
+  display: block;
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.home-promise-support {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.home-promise-support article {
+  padding: 22px;
+}
+
+@media (max-width: 860px) {
+  .home-trust-grid,
+  .home-review-grid,
+  .home-promise-support {
+    grid-template-columns: 1fr;
+  }
+
+  .home-trust-section,
+  .home-promise-support article {
+    padding: 16px;
+  }
+}

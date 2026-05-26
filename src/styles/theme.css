@@ -1,0 +1,598 @@
+/* NutriBlend Cream + Sage + Terracotta theme: solid colors only. */
+:root {
+  --bg: #F7F1E3;
+  --surface: #FFF9EC;
+  --surface-2: #EFE4CF;
+  --primary: #5F7A61;
+  --primary-dark: #465B48;
+  --accent: #C96F4A;
+  --accent-dark: #A95535;
+  --text: #2F2A24;
+  --muted: #786E61;
+  --border: #D8CBB4;
+  --success: #4F8A5B;
+  --danger: #C94C4C;
+  --gold: var(--accent);
+  --bg-deep: var(--bg);
+  --surface-strong: var(--surface);
+  --surface-soft: var(--surface-2);
+  --glass: var(--surface);
+  --glass-border: var(--border);
+  --line: var(--border);
+  --line-strong: var(--accent);
+  --primary-deep: var(--primary-dark);
+  --primary-glow: transparent;
+  --secondary: var(--primary);
+  --secondary-glow: transparent;
+  --warning: var(--accent);
+  --brand-gold: var(--accent);
+  --brand-gold-soft: var(--primary);
+  --brand-olive: var(--primary);
+  --brand-olive-deep: var(--primary-dark);
+  --brand-purple: var(--primary);
+  --brand-purple-deep: var(--surface-2);
+  --gradient-primary: var(--primary);
+  --gradient-card: var(--surface);
+  --shadow-xl: none;
+  --shadow-lg: none;
+  --shadow-md: none;
+  --shadow-glow: none;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html,
+body,
+#root,
+.app,
+.login-page,
+.app-loading {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+body {
+  background: var(--bg) !important;
+}
+
+.page-container {
+  color: var(--text) !important;
+}
+
+.page,
+.home,
+.home-container,
+.cart-container,
+.orders-page,
+.orders-container,
+.profile-page,
+.address-page,
+.payment-page,
+.review-container,
+.admin-page,
+.success-page,
+.product-details-page,
+.plans-page,
+.monthly-plans-page,
+.account-page,
+.legal-page,
+.delivery-partner-page,
+.gym-partner-page,
+.track-order-page {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+.navbar,
+.nav-search-panel,
+.nav-drawer,
+.footer,
+.filter-panel,
+.home-container .card,
+.product-card,
+.product-details,
+.cart-card,
+.cart-summary,
+.cart-stat-card,
+.cart-empty,
+.cart-upsell-section,
+.cart-upsell-card,
+.address-card,
+.address-form-panel,
+.address-list-panel,
+.address-saved-card,
+.payment-card,
+.payment-summary,
+.payment-method-card,
+.success-box,
+.success-summary-card,
+.order-card,
+.orders-hero,
+.admin-shell,
+.admin-card,
+.admin-panel,
+.admin-stat-card,
+.modal,
+.confirm-modal,
+.home-empty,
+.home-skeleton-card,
+.monthly-plans-hero,
+.monthly-plan-card,
+.plans-hero,
+.plan-card,
+.home-trust-section,
+.home-promise-support article,
+.legal-page,
+.delivery-partner-page,
+.gym-partner-page,
+.track-order-page,
+.account-page-card,
+.profile-card,
+.login-card {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+[class*="card"],
+[class*="panel"],
+[class*="box"],
+[class*="modal"],
+[class*="summary"],
+[class*="drawer"],
+[class*="dropdown"],
+[class*="menu"],
+[class*="toast"],
+[class*="banner"],
+[class*="hero"],
+[class*="section"],
+[class*="table"],
+[class*="form"],
+[class*="list"],
+[class*="item"],
+[class*="row"] {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.navbar,
+.nav-search-panel,
+.footer {
+  background: var(--surface) !important;
+}
+
+.home-container .card,
+.product-card,
+.cart-card,
+.cart-summary,
+.cart-stat-card,
+.cart-empty,
+.cart-upsell-section,
+.address-card,
+.payment-card,
+.success-box,
+.order-card,
+.admin-card,
+.admin-panel,
+.monthly-plan-card,
+.plan-card,
+.login-card {
+  border-radius: 8px;
+}
+
+.nav-search-container,
+.nav-icon-btn,
+.nav-drawer-links button,
+.nav-account-menu button,
+.home-chip,
+.home-sort-btn,
+.filter-group button,
+.qty-controls,
+.qty-box,
+.plan-mini-list,
+.monthly-plan-price,
+.home-trust-grid article,
+.home-review-grid article,
+.cart-plan-icon,
+.plan-emoji-box,
+.cart-upsell-card,
+.payment-option,
+.payment-method,
+.address-option,
+.address-map-panel,
+.admin-table,
+.admin-form,
+.admin-tabs,
+.order-timeline,
+.success-detail-row {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+[class*="chip"],
+[class*="badge"],
+[class*="pill"],
+[class*="tag"],
+[class*="stat"],
+[class*="option"],
+[class*="control"],
+[class*="input"],
+[class*="field"],
+[class*="filter"],
+[class*="search"],
+[class*="tab"],
+[class*="timeline"],
+[class*="detail"],
+[class*="meta"],
+[class*="price"],
+[class*="total"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+input,
+textarea,
+select,
+.nav-search-input {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.nav-search-container:focus-within {
+  background: var(--surface-2) !important;
+  border-color: var(--primary) !important;
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted) !important;
+}
+
+button,
+.buy-btn,
+.pay-btn,
+.success-box button,
+.review-container .pay-btn,
+.home-container .card button,
+.order-card button,
+.navbar .logout-btn,
+.cart-btn,
+.cart-upsell-card button,
+.monthly-plan-actions button:last-child,
+.plan-home-card .card-footer button,
+.address-primary-btn,
+.payment-primary-btn,
+.admin-primary-btn,
+.profile-save-btn,
+.login-submit-btn {
+  background: var(--primary) !important;
+  color: var(--surface) !important;
+  border: 1px solid var(--primary-dark) !important;
+}
+
+button[class*="primary"],
+button[class*="submit"],
+button[class*="save"],
+button[class*="buy"],
+button[class*="pay"],
+button[class*="checkout"],
+button[class*="add"],
+a[class*="primary"],
+a[class*="button"] {
+  background: var(--primary) !important;
+  color: var(--surface) !important;
+  border: 1px solid var(--primary-dark) !important;
+}
+
+button:hover,
+.buy-btn:hover,
+.pay-btn:hover,
+.home-container .card button:hover,
+.order-card button:hover,
+.cart-btn:hover {
+  background: var(--primary-dark) !important;
+  color: var(--surface) !important;
+}
+
+.cart-continue-btn,
+.address-secondary-btn,
+.monthly-plan-actions button:first-child,
+.home-section-header button,
+.nav-clear-search,
+.cart-clear-btn,
+.admin-secondary-btn,
+.profile-cancel-btn,
+.logout-btn.secondary {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+button[class*="secondary"],
+button[class*="cancel"],
+button[class*="clear"],
+button[class*="remove"],
+button[class*="back"],
+button[class*="ghost"] {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.logo,
+.home-hero h1,
+.app-loading-content h2,
+.login-brand h1 {
+  background: transparent !important;
+  color: var(--text) !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+strong,
+.home-section-header h2,
+.cart-header h2,
+.cart-summary h3,
+.cart-upsell-head h3,
+.monthly-plans-hero h2,
+.home-trust-header h2,
+.home-promise-support h2,
+.admin-title,
+.order-title,
+.success-title {
+  color: var(--text) !important;
+}
+
+[class*="title"],
+[class*="heading"],
+[class*="name"],
+[class*="label"] {
+  color: var(--text) !important;
+}
+
+p,
+li,
+.home-hero-desc,
+.category,
+.home-results-count,
+.home-card-desc,
+.plan-best-for,
+.monthly-plans-hero p,
+.monthly-plan-head p,
+.home-trust-grid p,
+.home-review-grid p,
+.home-promise-support span,
+.cart-card p,
+.cart-summary-row,
+.cart-item-price,
+.cart-item-category,
+.cart-item-count,
+.cart-empty-subtitle,
+.address-subtext,
+.payment-subtext,
+.order-meta,
+.admin-muted,
+.text-muted {
+  color: var(--muted) !important;
+}
+
+[class*="subtitle"],
+[class*="subtext"],
+[class*="description"],
+[class*="desc"],
+[class*="muted"],
+[class*="eyebrow"],
+[class*="category"],
+[class*="count"],
+[class*="date"],
+[class*="note"],
+[class*="help"] {
+  color: var(--muted) !important;
+}
+
+.home-hero-eyebrow,
+.home-section-header p,
+.cart-eyebrow,
+.protein,
+.cart-item-protein,
+.cart-item-subtotal,
+.text-primary,
+.monthly-plans-eyebrow,
+.home-trust-header p,
+.home-promise-support p,
+.address-section-title,
+.payment-section-title,
+.success-check,
+.nav-drawer-eyebrow {
+  color: var(--gold) !important;
+}
+
+.card-price,
+.monthly-plan-head h3,
+.monthly-plan-price strong,
+.cart-summary-total,
+.cart-item-subtotal strong,
+.order-total,
+.payment-total,
+.admin-price,
+.price,
+.total {
+  color: var(--gold) !important;
+}
+
+[class*="price"],
+[class*="total"],
+[class*="amount"],
+[class*="subtotal"],
+[class*="premium"] {
+  color: var(--gold) !important;
+}
+
+.home-chip-active,
+.home-sort-btn.active,
+.nav-active,
+.card-tag,
+.stock-badge.in-stock,
+.home-stock-badge.in-stock,
+.cart-plan-badge,
+.cart-free-badge,
+.cart-plan-includes span,
+.monthly-plan-head span,
+.premium-badge,
+.plan-duration-pill {
+  background: var(--surface-2) !important;
+  color: var(--gold) !important;
+  border: 1px solid var(--gold) !important;
+}
+
+.stock-badge.limited-stock,
+.home-stock-badge.limited-stock,
+.cart-stock-badge.limited-stock,
+.cart-limited-warning {
+  background: var(--surface-2) !important;
+  color: var(--gold) !important;
+  border-color: var(--gold) !important;
+}
+
+.stock-badge.out-of-stock,
+.home-stock-badge.out-of-stock,
+.cart-stock-badge.out-of-stock,
+.cart-stock-warning,
+.cart-remove-btn,
+.cart-clear-btn {
+  background: var(--surface-2) !important;
+  color: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+
+.success,
+.success-state,
+.status-complete,
+.status-paid,
+.cart-stock-badge.in-stock {
+  color: var(--success) !important;
+  border-color: var(--success) !important;
+}
+
+.product-img,
+.cart-item-img,
+.home-product-image-wrap,
+.card-image-wrap {
+  background-color: var(--surface-2) !important;
+  border-color: var(--border) !important;
+}
+
+.navbar .logo,
+.navbar .logo:hover,
+.navbar .logo:focus,
+.navbar .logo:focus-visible,
+.navbar .nav-brand-mark {
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.nav-drawer-backdrop,
+.nav-drawer-backdrop:hover,
+.nav-drawer-backdrop:focus,
+.nav-drawer-backdrop:focus-visible {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000 !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.nav-drawer {
+  z-index: 1001 !important;
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.site-footer,
+.footer {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.site-footer-brand strong,
+.site-footer-links h3 {
+  color: var(--text) !important;
+}
+
+.site-footer-brand p {
+  color: var(--muted) !important;
+}
+
+.site-footer-brand img {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.site-footer-links button,
+.site-footer-links button:hover,
+.site-footer-links button:focus,
+.site-footer-links button:focus-visible {
+  min-height: auto !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  text-align: left !important;
+}
+
+.site-footer-links button:hover {
+  color: var(--primary-dark) !important;
+}
+
+table,
+th,
+td,
+hr,
+.cart-summary-divider,
+.filter-group + .filter-group,
+.nav-drawer-header {
+  border-color: var(--border) !important;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border: 2px solid var(--bg);
+}
+
+::selection {
+  color: var(--bg);
+  background: var(--primary);
+}

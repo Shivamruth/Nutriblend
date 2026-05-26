@@ -545,6 +545,7 @@ export default function Cart({ setPage }) {
                   <div className="qty-controls">
                     <button
                       type="button"
+                      aria-label={`Decrease quantity for ${getItemName(item)}`}
                       onClick={() => updateQty(item.id, -1)}
                       disabled={itemOutOfStock}
                     >
@@ -553,6 +554,7 @@ export default function Cart({ setPage }) {
                     <span>{item.qty || 1}</span>
                     <button
                       type="button"
+                      aria-label={`Increase quantity for ${getItemName(item)}`}
                       onClick={() => updateQty(item.id, 1)}
                       disabled={itemOutOfStock}
                     >

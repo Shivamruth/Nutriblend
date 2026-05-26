@@ -1,34 +1,43 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #060309;
-  --bg-deep: #010101;
-  --surface: rgba(13, 10, 20, 0.86);
-  --surface-strong: #130d1d;
-  --surface-soft: #231535;
-  --glass: rgba(255,255,255,0.04);
-  --glass-border: rgba(255,255,255,0.08);
-  --line: rgba(255,255,255,0.1);
-  --line-strong: rgba(230,184,85,0.28);
-  --text: #f8fbff;
-  --muted: #a99dbc;
-  --primary: #f0c66a;
-  --primary-deep: #b67820;
-  --primary-glow: rgba(240,198,106,0.2);
-  --secondary: #8b2ed4;
-  --secondary-glow: rgba(139,46,212,0.18);
-  --danger: #ff5d73;
-  --warning: #facc15;
-  --brand-gold: #f0c66a;
-  --brand-gold-soft: #fff0a8;
-  --brand-purple: #8b2ed4;
-  --brand-purple-deep: #2b0a55;
-  --gradient-primary: linear-gradient(135deg, #f0c66a 0%, #fff0a8 28%, #8b2ed4 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-  --shadow-xl: 0 32px 64px rgba(0,0,0,0.4);
-  --shadow-lg: 0 20px 40px rgba(0,0,0,0.3);
-  --shadow-md: 0 12px 24px rgba(0,0,0,0.2);
-  --shadow-glow: 0 0 40px var(--primary-glow);
+  --bg: #F7F1E3;
+  --surface: #FFF9EC;
+  --surface-2: #EFE4CF;
+  --primary: #5F7A61;
+  --primary-dark: #465B48;
+  --accent: #C96F4A;
+  --accent-dark: #A95535;
+  --text: #2F2A24;
+  --muted: #786E61;
+  --border: #D8CBB4;
+  --success: #4F8A5B;
+  --danger: #C94C4C;
+  --gold: var(--accent);
+  --bg-deep: #F7F1E3;
+  --surface-strong: #FFF9EC;
+  --surface-soft: #EFE4CF;
+  --glass: #FFF9EC;
+  --glass-border: var(--border);
+  --line: var(--border);
+  --line-strong: var(--accent);
+  --primary-deep: var(--primary-dark);
+  --primary-glow: transparent;
+  --secondary: var(--primary);
+  --secondary-glow: transparent;
+  --warning: var(--accent);
+  --brand-gold: var(--accent);
+  --brand-gold-soft: var(--primary);
+  --brand-olive: var(--primary);
+  --brand-olive-deep: var(--primary-dark);
+  --brand-purple: var(--primary);
+  --brand-purple-deep: var(--surface-2);
+  --gradient-primary: var(--primary);
+  --gradient-card: var(--surface);
+  --shadow-xl: none;
+  --shadow-lg: none;
+  --shadow-md: none;
+  --shadow-glow: none;
   --radius-2xl: 28px;
   --radius-xl: 22px;
   --radius-lg: 16px;
@@ -50,10 +59,7 @@ body {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
-  background-image:
-    radial-gradient(ellipse at 10% 0%, rgba(139,46,212,0.18) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 0%, rgba(240,198,106,0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(139,46,212,0.08) 0%, transparent 50%);
+  background-image: none;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
   overflow-x: hidden;
@@ -75,11 +81,11 @@ input, textarea, select {
 }
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--secondary);
-  background: rgba(255,255,255,0.07);
-  box-shadow: 0 0 0 3px var(--secondary-glow);
+  border-color: var(--primary);
+  background: var(--surface-2);
+  box-shadow: none;
 }
-input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.35); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
 
 button {
   border: none;
@@ -190,7 +196,7 @@ textarea {
 ========================= */
 
 ::selection {
-  color: #080404;
+  color: #0B0A08;
   background: var(--primary);
 }
 
@@ -200,39 +206,39 @@ textarea {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(2, 8, 23, 0.8);
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(240, 198, 106, 0.74), rgba(139, 46, 212, 0.7));
-  border: 2px solid rgba(2, 8, 23, 0.9);
+  background: var(--surface-2);
+  border: 2px solid var(--bg);
   border-radius: 999px;
 }
 
 :focus-visible {
-  outline: 3px solid rgba(56, 189, 248, 0.75);
+  outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
 
 button:focus-visible,
 a:focus-visible,
 label:focus-within {
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+  box-shadow: none;
 }
 
 select {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 option {
-  color: #f8fbff;
-  background: #0c1a30;
+  color: var(--text);
+  background: var(--surface);
 }
 
 .loading {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.13), rgba(255,255,255,0.05));
+  background: var(--surface-2);
   background-size: 220% 100%;
   animation: skeletonMove 1.25s ease-in-out infinite;
 }

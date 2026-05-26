@@ -27,6 +27,8 @@ const EMPTY_FORM = {
   deliveryTime: "Morning",
   customDeliveryTime: "",
   orderNote: "",
+  lat: null,
+  lng: null,
 };
 
 const normalize = (value) =>
@@ -66,9 +68,12 @@ export default function Addresses({ setPage, setAddress }) {
   const [showForm, setShowForm] = useState(true);
   const [pinStatus, setPinStatus] = useState({ state: "idle", message: "" });
   const [checkingPin, setCheckingPin] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("");
 
   const states = useMemo(() => Object.keys(indiaStatesDistricts), []);
   const districts = form.country === "India" && form.state ? indiaStatesDistricts[form.state] || [] : [];
+  const hasSavedAddresses = addresses.length > 0;
 
   useEffect(() => {
     const saved = readJson("savedAddresses", []);
@@ -133,7 +138,10 @@ export default function Addresses({ setPage, setAddress }) {
         );
       } catch (error) {
         if (error.name !== "AbortError") {
-          setPinStatus({ state: "error", message: "Could not verify PIN code. Try again." });
+          setPinStatus({
+            state: "verified",
+            message: "PIN format accepted. Live verification unavailable.",
+          });
         }
       } finally {
         setCheckingPin(false);
@@ -222,7 +230,66 @@ export default function Addresses({ setPage, setAddress }) {
     setForm(EMPTY_FORM);
     setEditingId("");
     setPinStatus({ state: "idle", message: "" });
+    setLocationStatus("");
     setShowForm(addresses.length === 0);
+  };
+
+  const saveCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      const message = "Location permission denied. You can continue with manual address.";
+      setLocationStatus(message);
+      notify(message, "error");
+      return;
+    }
+
+    setLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const coordinates = {
+          lat: coords.latitude,
+          lng: coords.longitude,
+        };
+        const targetId = editingId;
+
+        setForm((prev) => ({ ...prev, ...coordinates }));
+
+        if (targetId) {
+          const nextAddresses = addresses.map((address) =>
+            String(address.id) === String(targetId) ? { ...address, ...coordinates } : address
+          );
+          setAddresses(nextAddresses);
+          localStorage.setItem("savedAddresses", JSON.stringify(nextAddresses));
+
+          const updatedSelected = nextAddresses.find(
+            (address) => String(address.id) === String(selectedAddress?.id)
+          );
+
+          if (updatedSelected) {
+            const checkoutAddress = toCheckoutAddress(updatedSelected);
+            setSelectedAddress(checkoutAddress);
+            setAddress?.(checkoutAddress);
+            localStorage.setItem("selectedAddressId", checkoutAddress.id);
+            localStorage.setItem("selectedAddress", JSON.stringify(checkoutAddress));
+          }
+        }
+
+        setLocationStatus("Location added successfully");
+        notify("Location added successfully", "success");
+        setLocating(false);
+      },
+      (error) => {
+        const message =
+          error.code === error.PERMISSION_DENIED
+            ? "Location permission denied. You can continue with manual address."
+            : "Could not add location. You can continue with manual address.";
+
+        setLocationStatus(message);
+        notify(message, error.code === error.PERMISSION_DENIED ? "error" : "info");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
   };
 
   const saveAddress = () => {
@@ -289,6 +356,7 @@ export default function Addresses({ setPage, setAddress }) {
     }
 
     setDeleteTarget(null);
+    setShowForm(nextAddresses.length === 0);
     notify("Address deleted", "success");
   };
 
@@ -305,20 +373,24 @@ export default function Addresses({ setPage, setAddress }) {
   };
 
   return (
-    <div className="address-page">
+    <div className={`address-page ${hasSavedAddresses ? "address-page-select" : "address-page-add"}`}>
       <div className="address-shell">
         <header className="address-heading">
           <div>
             <p className="address-eyebrow">Checkout Address</p>
-            <h2>Delivery details</h2>
+            <h2>{hasSavedAddresses ? "Select delivery address" : "Add delivery address"}</h2>
             <p className="address-subtitle">
-              Add a verified delivery address for fresh NutriBlend orders. Your saved addresses stay on this device for fast checkout.
+              {hasSavedAddresses
+                ? "Choose one of your saved addresses to continue checkout."
+                : "Add a verified delivery address for fresh NutriBlend orders."}
             </p>
           </div>
 
-          <button type="button" className="address-add-top-btn" onClick={() => setShowForm(true)}>
-            Add New Address
-          </button>
+          {!hasSavedAddresses && !showForm && (
+            <button type="button" className="address-add-top-btn" onClick={() => setShowForm(true)}>
+              Add Address
+            </button>
+          )}
         </header>
 
         {selectedAddress && (
@@ -375,6 +447,22 @@ export default function Addresses({ setPage, setAddress }) {
 
             <div className={`pin-status ${pinStatus.state}`}>{checkingPin ? "Verifying PIN code..." : pinStatus.message || "PIN verification will run automatically"}</div>
 
+            <div className="address-location-box">
+              <div>
+                <p>GPS coordinates</p>
+                <span>
+                  {form.lat != null && form.lng != null
+                    ? `${Number(form.lat).toFixed(6)}, ${Number(form.lng).toFixed(6)}`
+                    : "Optional for delivery tracking"}
+                </span>
+              </div>
+              <button type="button" className="address-location-btn" onClick={saveCurrentLocation} disabled={locating}>
+                {locating ? "Getting Location..." : "Use Current Location"}
+              </button>
+            </div>
+
+            {locationStatus && <div className="address-location-status">{locationStatus}</div>}
+
             <div className="address-section-title">Full Address</div>
             <div className="address-form-grid">
               <label>House No / Flat No / Room No<input name="houseNo" value={form.houseNo} onChange={handleChange} placeholder="Flat 203 / Room 12" /></label>
@@ -413,20 +501,15 @@ export default function Addresses({ setPage, setAddress }) {
           </section>
         )}
 
-        <section className="address-book-section">
-          <div className="address-book-head">
-            <div>
-              <h3>Saved Addresses</h3>
-              <p>{addresses.length} address{addresses.length === 1 ? "" : "es"} saved</p>
+        {hasSavedAddresses && (
+          <section className="address-book-section">
+            <div className="address-book-head">
+              <div>
+                <h3>Saved Addresses</h3>
+                <p>Select an address for this order</p>
+              </div>
             </div>
-          </div>
 
-          {addresses.length === 0 ? (
-            <div className="address-empty-state">
-              <h3>No saved address yet</h3>
-              <p>Add a verified address to continue checkout.</p>
-            </div>
-          ) : (
             <div className="address-list">
               {addresses.map((address) => {
                 const isSelected = selectedAddress?.id === address.id;
@@ -458,18 +541,20 @@ export default function Addresses({ setPage, setAddress }) {
                 );
               })}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
-        <div className="address-bottom-bar">
-          <div>
-            <span>Checkout address</span>
-            <strong>{selectedAddress ? `${selectedAddress.name} - ${selectedAddress.pincode}` : "Save or select a valid address"}</strong>
+        {hasSavedAddresses && (
+          <div className="address-bottom-bar">
+            <div>
+              <span>Checkout address</span>
+              <strong>{selectedAddress ? `${selectedAddress.name} - ${selectedAddress.pincode}` : "Save or select a valid address"}</strong>
+            </div>
+            <button type="button" className="address-primary-btn address-continue-btn" onClick={continueToPayment} disabled={!selectedAddress}>
+              Continue to Payment
+            </button>
           </div>
-          <button type="button" className="address-primary-btn address-continue-btn" onClick={continueToPayment} disabled={!selectedAddress}>
-            Continue to Payment
-          </button>
-        </div>
+        )}
       </div>
 
       <ConfirmModal

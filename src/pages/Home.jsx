@@ -530,6 +530,62 @@ export default function Home({ search, setPage, setSelectedProduct }) {
           })}
         </div>
       )}
+
+      <section className="home-trust-section">
+        <div className="home-trust-header">
+          <p>Why Choose NutriBlend?</p>
+          <h2>Built for fitness customers who want fresh, simple nutrition</h2>
+        </div>
+
+        <div className="home-trust-grid">
+          <article>
+            <h3>Fresh Daily</h3>
+            <p>Protein shakes, pre-workout combos, and monthly plans made for practical fitness routines.</p>
+          </article>
+          <article>
+            <h3>Easy Tracking</h3>
+            <p>Order progress, delivery status, and live delivery updates are available from your orders.</p>
+          </article>
+          <article>
+            <h3>Gym Ready</h3>
+            <p>Bulk pricing, gym collaboration, and custom member plans help NutriBlend work beyond individual orders.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="home-trust-section">
+        <div className="home-trust-header">
+          <p>Customer Reviews</p>
+          <h2>What early customers like</h2>
+        </div>
+
+        <div className="home-review-grid">
+          {[
+            ["Perfect after workout", "Fresh taste and simple ordering make it easy to keep protein consistent."],
+            ["Good for hostel life", "Monthly shakes are useful when cooking or meal prep is hard."],
+            ["Gym-friendly idea", "The combo plans make sense for members who train every day."],
+          ].map(([title, text]) => (
+            <article key={title}>
+              <strong>{title}</strong>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-promise-support">
+        <article>
+          <p>Nutrition Promise</p>
+          <h2>General fitness nutrition, clearly presented</h2>
+          <span>NutriBlend focuses on everyday fitness products, transparent choices, and customer responsibility around allergies and dietary needs.</span>
+        </article>
+
+        <article>
+          <p>WhatsApp Support</p>
+          <h2>Help when an order needs attention</h2>
+          <span>Reach support for delivery, payment, subscription, refund, or gym collaboration questions.</span>
+        </article>
+      </section>
     </div>
   );
 }

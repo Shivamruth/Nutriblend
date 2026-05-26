@@ -1,0 +1,198 @@
+.gym-partner-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  color: #ffffff;
+  animation: rise-up 0.45s ease;
+}
+
+.gym-partner-hero,
+.gym-partner-panel,
+.gym-partner-form-card {
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top left, rgba(172, 191, 105, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    #10100e;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+}
+
+.gym-partner-hero {
+  padding: 28px;
+}
+
+.gym-partner-eyebrow {
+  margin: 0 0 8px;
+  color: #d4af37;
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.gym-partner-hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.gym-partner-hero p:last-child {
+  margin: 12px 0 0;
+  color: #e8ffd0;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  line-height: 1.45;
+  font-weight: 850;
+}
+
+.gym-partner-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.gym-partner-panel,
+.gym-partner-form-card {
+  padding: 20px;
+}
+
+.gym-partner-section-head h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.22rem;
+  font-weight: 950;
+}
+
+.gym-benefits-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.gym-benefit-card {
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: #080807;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 850;
+}
+
+.gym-steps-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.gym-step {
+  padding: 14px;
+  border: 1px solid rgba(172, 191, 105, 0.24);
+  border-radius: 8px;
+  background: rgba(172, 191, 105, 0.08);
+}
+
+.gym-step span {
+  display: block;
+  color: #d4af37;
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gym-step strong {
+  display: block;
+  margin-top: 6px;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.gym-partner-form-card {
+  margin-top: 18px;
+}
+
+.gym-partner-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.gym-partner-form label {
+  display: grid;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gym-partner-form input,
+.gym-partner-form textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #080807;
+  color: #ffffff;
+  outline: none;
+  font: inherit;
+  font-weight: 750;
+}
+
+.gym-partner-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.gym-partner-form input:focus,
+.gym-partner-form textarea:focus {
+  border-color: rgba(212, 175, 55, 0.75);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+}
+
+.gym-form-wide,
+.gym-partner-form button {
+  grid-column: 1 / -1;
+}
+
+.gym-partner-form button {
+  min-height: 46px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(172, 191, 105, 0.55);
+  background: #acbf69;
+  color: #080807;
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gym-partner-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(172, 191, 105, 0.18);
+}
+
+@media (max-width: 860px) {
+  .gym-partner-layout,
+  .gym-partner-form {
+    grid-template-columns: 1fr;
+  }
+
+  .gym-form-wide,
+  .gym-partner-form button {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .gym-partner-hero,
+  .gym-partner-panel,
+  .gym-partner-form-card {
+    padding: 16px;
+  }
+}

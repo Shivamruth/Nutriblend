@@ -12,22 +12,53 @@ import Address from "./pages/Address";
 import Payment from "./pages/Payment";
 import ReviewOrder from "./pages/ReviewOrder";
 import Success from "./pages/Success";
+import TrackOrder from "./pages/TrackOrder";
+import DeliveryPartner from "./pages/DeliveryPartner";
 import AdminLogin from "./pages/AdminLogin";
 import ProductDetails from "./pages/ProductDetails";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Plans from "./pages/Plans";
+import MonthlyPlans from "./pages/MonthlyPlans";
+import GymPartner from "./pages/GymPartner";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsConditions from "./pages/TermsConditions";
+import RefundPolicy from "./pages/RefundPolicy";
+import DeliveryPolicy from "./pages/DeliveryPolicy";
+import NutritionDisclaimer from "./pages/NutritionDisclaimer";
 import AccountPage, { ACCOUNT_PAGE_CONTENT } from "./pages/AccountPage";
 
 import "./styles/app.css";
 import "./styles/cart-feedback.css";
 
+const getInitialRoute = () => {
+  const trackMatch = window.location.pathname.match(/^\/track-order\/([^/]+)/);
+
+  if (trackMatch?.[1]) {
+    return {
+      page: "track-order",
+      orderId: decodeURIComponent(trackMatch[1]),
+    };
+  }
+
+  if (window.location.pathname === "/delivery-partner") {
+    return { page: "delivery-partner", orderId: "" };
+  }
+
+  return { page: "home", orderId: "" };
+};
+
 export default function App() {
+  const initialRoute = getInitialRoute();
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [profile, setProfile] = useState(null);
 
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(initialRoute.page);
+  const [trackOrderId, setTrackOrderId] = useState(initialRoute.orderId);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [, setAddress] = useState(null);
   const [payment, setPayment] = useState("");
@@ -113,20 +144,32 @@ export default function App() {
   }, [loadCart]);
 
   const navigatePage = useCallback((nextPage, options = {}) => {
-    const targetPage = nextPage === "login" ? "home" : nextPage;
+    const routeMatch = String(nextPage || "").match(/^track-order\/(.+)/);
+    const targetPage = routeMatch ? "track-order" : nextPage === "login" ? "home" : nextPage;
+    const nextOrderId = options.orderId || routeMatch?.[1] || "";
 
     setPage(targetPage);
+    setTrackOrderId(targetPage === "track-order" ? String(nextOrderId) : "");
 
     if (!historyReadyRef.current || !window.history?.pushState) return;
 
-    const state = { nutriblendPage: targetPage };
+    const state = {
+      nutriblendPage: targetPage,
+      orderId: targetPage === "track-order" ? String(nextOrderId) : "",
+    };
+    const url =
+      targetPage === "track-order" && nextOrderId
+        ? `/track-order/${encodeURIComponent(nextOrderId)}`
+        : targetPage === "delivery-partner"
+          ? "/delivery-partner"
+        : "/";
 
     if (options.replace) {
-      window.history.replaceState(state, "", window.location.href);
+      window.history.replaceState(state, "", url);
       return;
     }
 
-    window.history.pushState(state, "", window.location.href);
+    window.history.pushState(state, "", url);
   }, []);
 
   useEffect(() => {
@@ -136,21 +179,36 @@ export default function App() {
     }
 
     historyReadyRef.current = true;
-    window.history.replaceState({ nutriblendPage: page }, "", window.location.href);
+    const currentUrl =
+      page === "track-order" && trackOrderId
+        ? `/track-order/${encodeURIComponent(trackOrderId)}`
+        : page === "delivery-partner"
+          ? "/delivery-partner"
+        : window.location.pathname;
+
+    window.history.replaceState(
+      { nutriblendPage: page, orderId: trackOrderId },
+      "",
+      currentUrl
+    );
 
     const handlePopState = (event) => {
       const previousPage = event.state?.nutriblendPage;
 
       if (previousPage) {
         setPage(previousPage);
+        setTrackOrderId(
+          previousPage === "track-order" ? String(event.state?.orderId || "") : ""
+        );
         return;
       }
 
       setPage("home");
+      setTrackOrderId("");
       window.history.replaceState(
-        { nutriblendPage: "home" },
+        { nutriblendPage: "home", orderId: "" },
         "",
-        window.location.href
+        "/"
       );
     };
 
@@ -159,7 +217,7 @@ export default function App() {
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [hasProfile, loading, page, user]);
+  }, [hasProfile, loading, page, trackOrderId, user]);
 
   const logout = async () => {
     try {
@@ -224,8 +282,21 @@ export default function App() {
 
         {page === "cart" && <Cart setPage={navigatePage} />}
         {page === "orders" && <Orders setPage={navigatePage} />}
+        {page === "track-order" && (
+          <TrackOrder orderId={trackOrderId} setPage={navigatePage} />
+        )}
+        {page === "delivery-partner" && <DeliveryPartner setPage={navigatePage} />}
         {page === "profile" && <Profile setPage={navigatePage} />}
         {page === "plans" && <Plans setPage={navigatePage} />}
+        {page === "monthly-plans" && <MonthlyPlans setPage={navigatePage} />}
+        {page === "gym-partner" && <GymPartner />}
+        {page === "about" && <About />}
+        {page === "contact" && <Contact />}
+        {page === "privacy-policy" && <PrivacyPolicy />}
+        {page === "terms-conditions" && <TermsConditions />}
+        {page === "refund-policy" && <RefundPolicy />}
+        {page === "delivery-policy" && <DeliveryPolicy />}
+        {page === "nutrition-disclaimer" && <NutritionDisclaimer />}
 
         {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
         {page === "admin" && <Admin setPage={navigatePage} />}
@@ -254,6 +325,8 @@ export default function App() {
         {page === "success" && <Success setPage={navigatePage} />}
         {isAccountPage && <AccountPage pageId={page} setPage={navigatePage} />}
       </div>
+
+      <Footer setPage={navigatePage} />
     </div>
   );
 }

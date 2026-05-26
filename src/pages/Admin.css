@@ -162,7 +162,9 @@
 
 .admin-filters input,
 .admin-filters select,
-.admin-update-grid select {
+.admin-update-grid select,
+.admin-delivery-grid input,
+.admin-delivery-grid select {
   width: 100%;
   min-height: 46px;
   padding: 12px 13px;
@@ -177,13 +179,16 @@
 
 .admin-filters input:focus,
 .admin-filters select:focus,
-.admin-update-grid select:focus {
+.admin-update-grid select:focus,
+.admin-delivery-grid input:focus,
+.admin-delivery-grid select:focus {
   border-color: rgba(212, 175, 55, 0.75);
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
 }
 
 .admin-filters select option,
-.admin-update-grid select option {
+.admin-update-grid select option,
+.admin-delivery-grid select option {
   color: #111111;
 }
 
@@ -262,6 +267,7 @@
 }
 
 .status-preparing,
+.status-ready-for-pickup,
 .status-out-for-delivery {
   background: rgba(96, 165, 250, 0.13);
   color: #b9dcff;
@@ -327,7 +333,8 @@
 }
 
 .admin-order-items,
-.admin-address-box {
+.admin-address-box,
+.admin-delivery-controls {
   margin-top: 16px;
   padding: 16px;
   border-radius: 8px;
@@ -391,7 +398,14 @@
   margin-top: 16px;
 }
 
-.admin-update-grid label {
+.admin-delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-update-grid label,
+.admin-delivery-grid label {
   display: grid;
   gap: 7px;
   color: rgba(255, 255, 255, 0.72);
@@ -399,6 +413,32 @@
   font-weight: 950;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.admin-save-delivery-btn {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 14px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(172, 191, 105, 0.55);
+  background: #acbf69;
+  color: #080807;
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-save-delivery-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(172, 191, 105, 0.18);
+}
+
+.admin-save-delivery-btn:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .admin-state-box {
@@ -446,7 +486,8 @@
 
 @media (max-width: 1100px) {
   .admin-dashboard-grid,
-  .admin-order-grid {
+  .admin-order-grid,
+  .admin-delivery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -475,7 +516,8 @@
   .admin-dashboard-grid,
   .admin-filters,
   .admin-order-grid,
-  .admin-update-grid {
+  .admin-update-grid,
+  .admin-delivery-grid {
     grid-template-columns: 1fr;
   }
 

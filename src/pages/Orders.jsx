@@ -3,7 +3,13 @@ import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import "./Orders.css";
 
-const ORDER_STEPS = ["Pending", "Preparing", "Out for Delivery", "Delivered"];
+const ORDER_STEPS = [
+  "Pending",
+  "Preparing",
+  "Ready for Pickup",
+  "Out for Delivery",
+  "Delivered",
+];
 const STATUS_FILTERS = ["All", ...ORDER_STEPS, "Cancelled"];
 
 const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
@@ -23,6 +29,7 @@ const normalizeStatus = (status) => {
 
   if (value === "placed" || value === "pending") return "Pending";
   if (value === "preparing") return "Preparing";
+  if (value === "ready for pickup" || value === "ready") return "Ready for Pickup";
   if (value === "out for delivery") return "Out for Delivery";
   if (value === "delivered") return "Delivered";
   if (value === "cancelled" || value === "canceled") return "Cancelled";
@@ -221,7 +228,7 @@ export default function Orders({ setPage }) {
 
   const handleTrackOrder = (order) => {
     localStorage.setItem("trackOrderId", String(order.id));
-    notify("Track Order page is coming soon. Order ID saved.", "success");
+    setPage?.("track-order", { orderId: order.id });
   };
 
   const handleOrderAgain = (order) => {

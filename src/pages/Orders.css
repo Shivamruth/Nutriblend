@@ -250,6 +250,7 @@
 }
 
 .status-preparing,
+.status-ready-for-pickup,
 .status-out-for-delivery {
   background: rgba(96, 165, 250, 0.13);
   color: #b9dcff;

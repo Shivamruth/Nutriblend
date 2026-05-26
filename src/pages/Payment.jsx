@@ -823,7 +823,7 @@ export default function Payment({ setPage, setPayment }) {
         },
 
         theme: {
-          color: "#7cff6b",
+          color: "#5F7A61",
         },
 
         modal: {

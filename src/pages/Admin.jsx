@@ -6,11 +6,13 @@ import "./Admin.css";
 const ORDER_STATUSES = [
   "Pending",
   "Preparing",
+  "Ready for Pickup",
   "Out for Delivery",
   "Delivered",
   "Cancelled",
 ];
 
+const DELIVERY_STATUSES = ORDER_STATUSES;
 const PAYMENT_STATUSES = ["Pending", "Paid", "Failed", "Refunded"];
 const STATUS_FILTERS = ["All", ...ORDER_STATUSES];
 const PAYMENT_STATUS_FILTERS = ["All", ...PAYMENT_STATUSES];
@@ -77,6 +79,7 @@ const normalizeStatus = (status) => {
 
   if (value === "placed" || value === "pending") return "Pending";
   if (value === "preparing") return "Preparing";
+  if (value === "ready" || value === "ready for pickup") return "Ready for Pickup";
   if (value === "out for delivery") return "Out for Delivery";
   if (value === "delivered") return "Delivered";
   if (value === "cancelled" || value === "canceled") return "Cancelled";
@@ -141,6 +144,24 @@ const getStatusClass = (status) =>
 
 const getPaymentClass = (status) =>
   `admin-payment-status payment-${normalizePaymentStatus(status).toLowerCase()}`;
+
+const toCoordinate = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+const getCustomerCoordinates = (order, address) => {
+  const lat = toCoordinate(order.customer_lat ?? address.customer_lat ?? address.lat);
+  const lng = toCoordinate(order.customer_lng ?? address.customer_lng ?? address.lng);
+
+  return lat != null && lng != null ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : "Not added";
+};
+
+const getDeliveryStatusSync = (status) => {
+  const normalized = normalizeStatus(status);
+  const syncStatuses = ["Preparing", "Out for Delivery", "Delivered"];
+  return syncStatuses.includes(normalized) ? normalized : null;
+};
 
 export default function Admin({ setPage }) {
   const { notify } = useNotification();
@@ -294,14 +315,21 @@ export default function Admin({ setPage }) {
     });
   }, [orders, paymentMethodFilter, paymentStatusFilter, searchTerm, statusFilter]);
 
-  const updateOrderField = async (orderId, field, value) => {
-    const key = `${orderId}-${field}`;
+  const updateOrderFields = async (orderId, payload, keySuffix = "update") => {
+    const key = `${orderId}-${keySuffix}`;
     setUpdatingKey(key);
 
     try {
+      const cleanPayload = Object.fromEntries(
+        Object.entries(payload).map(([field, value]) => [
+          field,
+          typeof value === "string" ? value.trim() : value,
+        ])
+      );
+
       const { data, error } = await supabase
         .from("orders")
-        .update({ [field]: value })
+        .update(cleanPayload)
         .eq("id", orderId)
         .select("*")
         .single();
@@ -312,18 +340,24 @@ export default function Admin({ setPage }) {
         prev.map((order) => (order.id === orderId ? data : order))
       );
 
-      notify(
-        field === "status"
-          ? "Order status updated"
-          : "Payment status updated",
-        "success"
-      );
+      notify("Order updated", "success");
     } catch (error) {
       console.error("Admin update error:", error);
       notify(error.message || "Unable to update order", "error");
     } finally {
       setUpdatingKey("");
     }
+  };
+
+  const updateOrderField = async (orderId, field, value) => {
+    const payload = { [field]: value };
+
+    if (field === "status") {
+      const deliveryStatus = getDeliveryStatusSync(value);
+      if (deliveryStatus) payload.delivery_status = deliveryStatus;
+    }
+
+    await updateOrderFields(orderId, payload, field);
   };
 
   const resetFilters = () => {
@@ -475,6 +509,7 @@ export default function Admin({ setPage }) {
                 order={order}
                 updatingKey={updatingKey}
                 onUpdate={updateOrderField}
+                onUpdateFields={updateOrderFields}
               />
             ))}
           </div>
@@ -493,14 +528,57 @@ function MetricCard({ label, value }) {
   );
 }
 
-function AdminOrderCard({ order, updatingKey, onUpdate }) {
+function AdminOrderCard({ order, updatingKey, onUpdate, onUpdateFields }) {
   const address = safeObject(order.address);
   const items = getOrderItems(order);
   const orderStatus = normalizeStatus(order.status);
+  const deliveryStatus = normalizeStatus(order.delivery_status || order.status);
   const paymentMethod = normalizePaymentMethod(order.payment_method);
   const paymentStatus = normalizePaymentStatus(order.payment_status);
   const quantity = getOrderQty(order);
   const addressText = getAddressText(address) || "Address not available";
+  const customerCoordinates = getCustomerCoordinates(order, address);
+  const [deliveryForm, setDeliveryForm] = useState({
+    delivery_status: deliveryStatus,
+    delivery_partner_name: order.delivery_partner_name || "",
+    delivery_partner_phone: order.delivery_partner_phone || "",
+    estimated_delivery_time: order.estimated_delivery_time || "",
+    delivery_lat: order.delivery_lat ?? "",
+    delivery_lng: order.delivery_lng ?? "",
+  });
+
+  useEffect(() => {
+    setDeliveryForm({
+      delivery_status: deliveryStatus,
+      delivery_partner_name: order.delivery_partner_name || "",
+      delivery_partner_phone: order.delivery_partner_phone || "",
+      estimated_delivery_time: order.estimated_delivery_time || "",
+      delivery_lat: order.delivery_lat ?? "",
+      delivery_lng: order.delivery_lng ?? "",
+    });
+  }, [
+    deliveryStatus,
+    order.delivery_lat,
+    order.delivery_lng,
+    order.delivery_partner_name,
+    order.delivery_partner_phone,
+    order.estimated_delivery_time,
+  ]);
+
+  const updateDeliveryForm = (field, value) => {
+    setDeliveryForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveDeliveryDetails = () => {
+    onUpdateFields(order.id, {
+      delivery_status: deliveryForm.delivery_status,
+      delivery_partner_name: deliveryForm.delivery_partner_name,
+      delivery_partner_phone: deliveryForm.delivery_partner_phone,
+      estimated_delivery_time: deliveryForm.estimated_delivery_time,
+      delivery_lat: deliveryForm.delivery_lat === "" ? null : deliveryForm.delivery_lat,
+      delivery_lng: deliveryForm.delivery_lng === "" ? null : deliveryForm.delivery_lng,
+    }, "delivery-details");
+  };
 
   return (
     <article className="admin-order-card">
@@ -527,6 +605,11 @@ function AdminOrderCard({ order, updatingKey, onUpdate }) {
         <InfoBlock label="Payment Method" value={paymentMethod} />
         <InfoBlock label="Payment Status" value={paymentStatus} />
         <InfoBlock label="Order Status" value={orderStatus} />
+        <InfoBlock label="Delivery Status" value={deliveryStatus} />
+        <InfoBlock label="Delivery Partner Name" value={order.delivery_partner_name || "Not assigned"} />
+        <InfoBlock label="Delivery Partner Phone" value={order.delivery_partner_phone || "Not assigned"} />
+        <InfoBlock label="Estimated Delivery Time" value={order.estimated_delivery_time || "Not set"} />
+        <InfoBlock label="Customer Coordinates" value={customerCoordinates} />
         <InfoBlock label="Created Date" value={formatDateTime(order.created_at)} />
       </div>
 
@@ -555,6 +638,87 @@ function AdminOrderCard({ order, updatingKey, onUpdate }) {
         <p className="admin-order-label">Delivery Address</p>
         <strong>{address.name || "Customer"}</strong>
         <p>{addressText}</p>
+      </section>
+
+      <section className="admin-delivery-controls">
+        <div className="admin-order-section-head">
+          <h4>Delivery Controls</h4>
+          <span>Assign partner and tracking</span>
+        </div>
+
+        <div className="admin-delivery-grid">
+          <label>
+            Delivery Status
+            <select
+              value={deliveryForm.delivery_status}
+              onChange={(event) => updateDeliveryForm("delivery_status", event.target.value)}
+            >
+              {DELIVERY_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Delivery Partner Name
+            <input
+              value={deliveryForm.delivery_partner_name}
+              onChange={(event) => updateDeliveryForm("delivery_partner_name", event.target.value)}
+              placeholder="Delivery partner name"
+            />
+          </label>
+
+          <label>
+            Delivery Partner Phone
+            <input
+              value={deliveryForm.delivery_partner_phone}
+              onChange={(event) => updateDeliveryForm("delivery_partner_phone", event.target.value.replace(/\D/g, ""))}
+              inputMode="tel"
+              maxLength="15"
+              placeholder="Phone number"
+            />
+          </label>
+
+          <label>
+            Estimated Delivery Time
+            <input
+              value={deliveryForm.estimated_delivery_time}
+              onChange={(event) => updateDeliveryForm("estimated_delivery_time", event.target.value)}
+              placeholder="Example: 30-45 minutes"
+            />
+          </label>
+
+          <label>
+            Delivery Latitude
+            <input
+              value={deliveryForm.delivery_lat}
+              onChange={(event) => updateDeliveryForm("delivery_lat", event.target.value)}
+              inputMode="decimal"
+              placeholder="Optional"
+            />
+          </label>
+
+          <label>
+            Delivery Longitude
+            <input
+              value={deliveryForm.delivery_lng}
+              onChange={(event) => updateDeliveryForm("delivery_lng", event.target.value)}
+              inputMode="decimal"
+              placeholder="Optional"
+            />
+          </label>
+        </div>
+
+        <button
+          type="button"
+          className="admin-save-delivery-btn"
+          onClick={saveDeliveryDetails}
+          disabled={updatingKey === `${order.id}-delivery-details`}
+        >
+          {updatingKey === `${order.id}-delivery-details` ? "Saving..." : "Save Delivery Details"}
+        </button>
       </section>
 
       <div className="admin-update-grid">

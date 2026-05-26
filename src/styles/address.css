@@ -10,6 +10,14 @@
   padding: 8px 0 4px;
 }
 
+.address-page-add {
+  max-width: 980px;
+}
+
+.address-page-select .address-heading {
+  margin-bottom: 18px;
+}
+
 /* =========================
    HEADER
 ========================= */
@@ -51,6 +59,7 @@
 .address-primary-btn,
 .address-secondary-btn,
 .address-close-form-btn,
+.address-location-btn,
 .address-empty-state button,
 .selected-address-panel button,
 .address-actions button {
@@ -169,6 +178,7 @@
 
 .address-form-card {
   padding: 22px;
+  margin-bottom: 20px;
 }
 
 .address-form-full {
@@ -271,7 +281,18 @@
   grid-column: 1 / -1;
 }
 
+.address-section-title {
+  margin: 20px 0 12px;
+  color: #facc15;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .address-form-grid input,
+.address-form-grid select,
+.address-note-label textarea,
 .address-search-wrap input {
   width: 100%;
   padding: 13px 14px;
@@ -284,9 +305,113 @@
 }
 
 .address-form-grid input:focus,
+.address-form-grid select:focus,
+.address-note-label textarea:focus,
 .address-search-wrap input:focus {
   border-color: rgba(124, 255, 107, 0.42);
   box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.08);
+}
+
+.address-form-grid select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #acbf69 50%),
+    linear-gradient(135deg, #acbf69 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 52%,
+    calc(100% - 12px) 52%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+}
+
+.address-form-grid select option {
+  background: #071224;
+  color: #ffffff;
+}
+
+.address-note-label {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.address-note-label span,
+.address-form-grid label span {
+  color: #93a4b8;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.address-note-label textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.pin-status {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.pin-status.verified {
+  color: #dfffd9;
+  background: rgba(124, 255, 107, 0.1);
+  border-color: rgba(124, 255, 107, 0.24);
+}
+
+.pin-status.error {
+  color: #ffd7de;
+  background: rgba(255, 93, 115, 0.1);
+  border-color: rgba(255, 93, 115, 0.22);
+}
+
+.pin-status.checking {
+  color: #bae6fd;
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.22);
+}
+
+.address-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.delivery-time-grid {
+  margin-top: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.address-toggle-grid button {
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.045);
+  color: #d1d5db;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.22s ease;
+}
+
+.address-toggle-grid button:hover,
+.address-toggle-grid button.active {
+  transform: translateY(-1px);
+  color: #06111f;
+  background: #acbf69;
+  border-color: rgba(172, 191, 105, 0.7);
 }
 
 .default-check {
@@ -330,12 +455,64 @@
   transform: translateY(-2px);
 }
 
+.address-location-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 14px 0 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.address-location-box p {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 950;
+}
+
+.address-location-box span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.address-location-btn {
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+}
+
+.address-location-btn:hover {
+  border-color: rgba(124, 255, 107, 0.36);
+  color: #dfffd9;
+  transform: translateY(-2px);
+}
+
+.address-location-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.address-location-status {
+  margin: 8px 0 0;
+  color: #d1d5db;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 /* =========================
    ADDRESS BOOK
 ========================= */
 
 .address-book-section {
   padding: 22px;
+  margin-top: 18px;
 }
 
 .address-search-wrap {
@@ -350,8 +527,7 @@
 
 .address-item {
   position: relative;
-  display: flex;
-  gap: 12px;
+  display: block;
   padding: 16px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.035);
@@ -494,6 +670,12 @@
   border-color: rgba(124, 255, 107, 0.22);
 }
 
+.address-item.is-selected .address-actions button:first-child {
+  background: rgba(250, 204, 21, 0.14);
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.28);
+}
+
 .address-actions button:last-child {
   background: rgba(255, 93, 115, 0.12);
   color: #ffd7de;
@@ -587,7 +769,9 @@
   }
 
   .address-form-grid,
-  .address-type-selector {
+  .address-type-selector,
+  .address-toggle-grid,
+  .delivery-time-grid {
     grid-template-columns: 1fr;
   }
 
@@ -598,6 +782,7 @@
 
   .address-search-wrap,
   .address-add-top-btn,
+  .address-location-btn,
   .selected-address-panel button,
   .address-continue-btn {
     width: 100%;
@@ -609,6 +794,11 @@
 
   .address-chip-group {
     justify-content: flex-start;
+  }
+
+  .address-location-box {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
@@ -673,7 +863,9 @@
   }
 
   .address-form-grid,
-  .address-type-selector {
+  .address-type-selector,
+  .address-toggle-grid,
+  .delivery-time-grid {
     grid-template-columns: 1fr;
   }
 
@@ -684,6 +876,7 @@
 
   .address-search-wrap,
   .address-add-top-btn,
+  .address-location-btn,
   .selected-address-panel button,
   .address-continue-btn {
     width: 100%;
@@ -695,5 +888,10 @@
 
   .address-chip-group {
     justify-content: flex-start;
+  }
+
+  .address-location-box {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

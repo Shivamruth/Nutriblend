@@ -351,6 +351,16 @@ create table if not exists public.orders (
   subtotal numeric default 0,
   delivery_fee numeric default 0,
   delivery_option text,
+  delivery_status text default 'Pending',
+  delivery_partner_name text,
+  delivery_partner_phone text,
+  estimated_delivery_time text,
+  kitchen_lat numeric,
+  kitchen_lng numeric,
+  customer_lat numeric,
+  customer_lng numeric,
+  delivery_lat numeric,
+  delivery_lng numeric,
   payment_status text default 'Pending',
   payment_method text default 'COD',
   upi_id text,
@@ -394,6 +404,36 @@ add column if not exists delivery_fee numeric default 0;
 
 alter table public.orders
 add column if not exists delivery_option text;
+
+alter table public.orders
+add column if not exists delivery_status text default 'Pending';
+
+alter table public.orders
+add column if not exists delivery_partner_name text;
+
+alter table public.orders
+add column if not exists delivery_partner_phone text;
+
+alter table public.orders
+add column if not exists estimated_delivery_time text;
+
+alter table public.orders
+add column if not exists kitchen_lat numeric;
+
+alter table public.orders
+add column if not exists kitchen_lng numeric;
+
+alter table public.orders
+add column if not exists customer_lat numeric;
+
+alter table public.orders
+add column if not exists customer_lng numeric;
+
+alter table public.orders
+add column if not exists delivery_lat numeric;
+
+alter table public.orders
+add column if not exists delivery_lng numeric;
 
 alter table public.orders
 add column if not exists payment_status text default 'Pending';
@@ -481,6 +521,7 @@ using (public.is_admin(auth.uid()));
 create index if not exists orders_user_id_idx on public.orders(user_id);
 create index if not exists orders_created_at_idx on public.orders(created_at desc);
 create index if not exists orders_status_idx on public.orders(status);
+create index if not exists orders_delivery_status_idx on public.orders(delivery_status);
 create index if not exists orders_payment_method_idx on public.orders(payment_method);
 create index if not exists orders_razorpay_order_id_idx on public.orders(razorpay_order_id);
 

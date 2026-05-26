@@ -1,0 +1,184 @@
+.monthly-plans-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  color: #ffffff;
+  animation: rise-up 0.45s ease;
+}
+
+.monthly-plans-hero,
+.monthly-plan-card {
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top left, rgba(172, 191, 105, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    #10100e;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+}
+
+.monthly-plans-hero {
+  padding: 26px;
+}
+
+.monthly-plans-eyebrow {
+  margin: 0 0 8px;
+  color: #d4af37;
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.monthly-plans-hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.monthly-plans-hero p {
+  max-width: 680px;
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.6;
+  font-weight: 650;
+}
+
+.monthly-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.monthly-plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.monthly-plan-head span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 7px 11px;
+  border: 1px solid rgba(172, 191, 105, 0.32);
+  border-radius: 999px;
+  background: rgba(172, 191, 105, 0.12);
+  color: #e8ffd0;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.monthly-plan-head h3 {
+  margin: 14px 0 0;
+  color: #d4af37;
+  font-size: 1.22rem;
+  font-weight: 950;
+}
+
+.monthly-plan-head p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.monthly-plan-benefits {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monthly-plan-benefits li {
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.45;
+  font-weight: 750;
+}
+
+.monthly-plan-price {
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  border-radius: 8px;
+  background: #080807;
+}
+
+.monthly-plan-price span {
+  display: block;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.monthly-plan-price strong {
+  display: block;
+  margin-top: 7px;
+  color: #ffffff;
+  font-size: 1.08rem;
+  font-weight: 950;
+}
+
+.monthly-plan-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.monthly-plan-actions button {
+  min-height: 44px;
+  padding: 11px 13px;
+  border-radius: 8px;
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.monthly-plan-actions button:first-child {
+  border: 1px solid rgba(212, 175, 55, 0.34);
+  background: rgba(212, 175, 55, 0.12);
+  color: #ffe8a3;
+}
+
+.monthly-plan-actions button:last-child {
+  border: 1px solid rgba(172, 191, 105, 0.55);
+  background: #acbf69;
+  color: #080807;
+}
+
+.monthly-plan-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(172, 191, 105, 0.18);
+}
+
+@media (max-width: 1100px) {
+  .monthly-plans-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .monthly-plans-hero {
+    padding: 18px;
+  }
+
+  .monthly-plans-grid,
+  .monthly-plan-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-plan-card {
+    padding: 16px;
+  }
+}

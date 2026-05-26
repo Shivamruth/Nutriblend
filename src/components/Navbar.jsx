@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   ClipboardList,
+  CalendarDays,
   Home,
   LogOut,
   Menu,
+  Handshake,
   Search,
   Shield,
   ShoppingCart,
@@ -159,6 +161,24 @@ export default function Navbar({
           >
             <ClipboardList size={20} />
             <span>Orders</span>
+          </button>
+
+          <button
+            type="button"
+            className={page === "monthly-plans" ? "nav-active" : ""}
+            onClick={() => navigateTo("monthly-plans")}
+          >
+            <CalendarDays size={20} />
+            <span>Monthly Plans</span>
+          </button>
+
+          <button
+            type="button"
+            className={page === "gym-partner" ? "nav-active" : ""}
+            onClick={() => navigateTo("gym-partner")}
+          >
+            <Handshake size={20} />
+            <span>Gym Partner</span>
           </button>
 
           <div className="nav-account">
