@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import AdminProducts from "../components/AdminProducts";
+import AdminPlans from "../components/AdminPlans";
+import "../styles/admin.css";
 import "../styles/admin-page.css";
 
 const ORDER_STATUSES = [
@@ -17,6 +20,13 @@ const PAYMENT_STATUSES = ["Pending", "Paid", "Failed", "Refunded"];
 const STATUS_FILTERS = ["All", ...ORDER_STATUSES];
 const PAYMENT_STATUS_FILTERS = ["All", ...PAYMENT_STATUSES];
 const PAYMENT_METHOD_FILTERS = ["All", "COD", "UPI", "Razorpay", "Online"];
+const ADMIN_TABS = [
+  { id: "orders", label: "Orders" },
+  { id: "products", label: "Products" },
+  { id: "plans", label: "Plans" },
+  { id: "inquiries", label: "Inquiries" },
+  { id: "analytics", label: "Analytics" },
+];
 
 const money = (value) => `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
 
@@ -176,6 +186,16 @@ export default function Admin({ setPage }) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("All");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
+  const [activeTab, setActiveTab] = useState("orders");
+
+  // Inquiries state
+  const [gymInquiries, setGymInquiries]     = useState([]);
+  const [contactInquiries, setContactInquiries] = useState([]);
+  const [loadingInquiries, setLoadingInquiries] = useState(false);
+
+  // Delivery partners list
+  const [deliveryPartners, setDeliveryPartners] = useState([]);
+  const [assigningPartner, setAssigningPartner] = useState("");
 
   const fetchOrders = useCallback(
     async ({ silent = false } = {}) => {
@@ -246,6 +266,91 @@ export default function Admin({ setPage }) {
   useEffect(() => {
     checkAdmin();
   }, [checkAdmin]);
+
+  const fetchInquiries = useCallback(async () => {
+    setLoadingInquiries(true);
+    try {
+      const [gymRes, contactRes] = await Promise.all([
+        supabase.from("gym_partner_inquiries").select("*").order("created_at", { ascending: false }),
+        supabase.from("contact_inquiries").select("*").order("created_at", { ascending: false }),
+      ]);
+      setGymInquiries(gymRes.data || []);
+      setContactInquiries(contactRes.data || []);
+    } catch (err) {
+      console.error("Inquiries fetch error:", err);
+    } finally {
+      setLoadingInquiries(false);
+    }
+  }, []);
+
+  const fetchDeliveryPartners = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone, role")
+      .eq("role", "delivery_partner")
+      .order("full_name", { ascending: true });
+    setDeliveryPartners(data || []);
+  }, []);
+
+  useEffect(() => {
+    if (adminReady) {
+      fetchInquiries();
+      fetchDeliveryPartners();
+    }
+  }, [adminReady, fetchInquiries, fetchDeliveryPartners]);
+
+  // ── Realtime: auto-refresh orders when new orders arrive or statuses change ──
+  useEffect(() => {
+    if (!adminReady) return;
+
+    const channel = supabase
+      .channel("admin:orders-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          setOrders((prev) => [payload.new, ...prev]);
+          notify("New order received!", "success");
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          setOrders((prev) =>
+            prev.map((o) => (o.id === payload.new.id ? { ...o, ...payload.new } : o))
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [adminReady, notify]);
+
+  const assignPartner = async (orderId, partnerId) => {
+    const key = `${orderId}-assign`;
+    setAssigningPartner(key);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ delivery_partner_id: partnerId || null })
+        .eq("id", orderId);
+      if (error) throw error;
+      await supabase.from("delivery_tracking").insert([{
+        order_id: Number(orderId),
+        delivery_partner_id: partnerId || null,
+        status: "assigned",
+      }]);
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, delivery_partner_id: partnerId || null } : o));
+      notify(partnerId ? "Delivery partner assigned" : "Assignment cleared", "success");
+    } catch (err) {
+      notify(err.message || "Could not assign partner", "error");
+    } finally {
+      setAssigningPartner("");
+    }
+  };
 
   const dashboard = useMemo(() => {
     const totalOrders = orders.length;
@@ -399,10 +504,10 @@ export default function Admin({ setPage }) {
       <section className="admin-hero">
         <div>
           <p className="admin-eyebrow">NutriBlend Control Center</p>
-          <h2>Admin Orders Dashboard</h2>
+          <h2>Admin Dashboard</h2>
           <p>
-            Manage customer orders, update delivery flow, and keep payment
-            status accurate from one premium operations view.
+            Manage customer orders, product catalog, inventory, and subscription
+            plans from one Supabase-powered operations view.
           </p>
         </div>
 
@@ -410,9 +515,9 @@ export default function Admin({ setPage }) {
           <button
             type="button"
             onClick={() => fetchOrders({ silent: true })}
-            disabled={refreshing}
+            disabled={refreshing || activeTab !== "orders"}
           >
-            {refreshing ? "Refreshing..." : "Refresh Orders"}
+            {refreshing ? "Refreshing..." : activeTab === "orders" ? "Refresh Orders" : "Open Orders to Refresh"}
           </button>
           <button type="button" className="admin-logout-btn" onClick={logout}>
             Logout
@@ -422,18 +527,29 @@ export default function Admin({ setPage }) {
 
       <section className="admin-dashboard-grid" aria-label="Dashboard metrics">
         <MetricCard label="Total Orders" value={dashboard.totalOrders} />
-        <MetricCard label="Today Orders" value={dashboard.todayOrders} />
-        <MetricCard label="Today Revenue" value={money(dashboard.todayRevenue)} />
         <MetricCard label="Pending Orders" value={dashboard.pendingOrders} />
-        <MetricCard label="Preparing Orders" value={dashboard.preparingOrders} />
-        <MetricCard
-          label="Out for Delivery"
-          value={dashboard.outForDeliveryOrders}
-        />
         <MetricCard label="Delivered Orders" value={dashboard.deliveredOrders} />
         <MetricCard label="Total Revenue" value={money(dashboard.totalRevenue)} />
+        <MetricCard label="Today Orders" value={dashboard.todayOrders} />
+        <MetricCard label="Today Revenue" value={money(dashboard.todayRevenue)} />
+        <MetricCard label="Preparing Orders" value={dashboard.preparingOrders} />
+        <MetricCard label="Out for Delivery" value={dashboard.outForDeliveryOrders} />
       </section>
 
+      <nav className="admin-tabs" aria-label="Admin sections">
+        {ADMIN_TABS.map((tab) => (
+          <button
+            type="button"
+            key={tab.id}
+            className={activeTab === tab.id ? "active" : ""}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "orders" && (
       <section className="admin-orders-panel">
         <div className="admin-orders-head">
           <div>
@@ -510,11 +626,155 @@ export default function Admin({ setPage }) {
                 updatingKey={updatingKey}
                 onUpdate={updateOrderField}
                 onUpdateFields={updateOrderFields}
+                deliveryPartners={deliveryPartners}
+                assigningPartner={assigningPartner}
+                onAssignPartner={assignPartner}
               />
             ))}
           </div>
         )}
       </section>
+      )}
+
+      {activeTab === "products" && <AdminProducts notify={notify} />}
+
+      {activeTab === "plans" && <AdminPlans notify={notify} />}
+
+      {activeTab === "inquiries" && (
+        <section className="admin-section">
+          <div className="admin-section-head">
+            <h3>Gym Partner Inquiries ({gymInquiries.length})</h3>
+            <button type="button" onClick={fetchInquiries} disabled={loadingInquiries} style={{ fontSize: 13 }}>
+              {loadingInquiries ? "Loading…" : "⟳ Refresh"}
+            </button>
+          </div>
+          {gymInquiries.length === 0 ? (
+            <div className="admin-state-box"><p>No gym inquiries yet.</p></div>
+          ) : (
+            <div className="admin-order-list">
+              {gymInquiries.map((inq) => (
+                <article key={inq.id} className="admin-order-card" style={{ padding: "18px 20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: 15 }}>{inq.gym_name}</p>
+                      <p style={{ color: "var(--text-muted, #94a3b8)", fontSize: 13 }}>{inq.owner_name} · {inq.phone} · {inq.city}</p>
+                      {inq.expected_daily_orders && <p style={{ fontSize: 13, marginTop: 4 }}>Expected daily orders: <strong>{inq.expected_daily_orders}</strong></p>}
+                      {inq.notes && <p style={{ fontSize: 13, color: "var(--text-muted, #94a3b8)", marginTop: 4 }}>{inq.notes}</p>}
+                      <p style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 6 }}>{formatDateTime(inq.created_at)}</p>
+                    </div>
+                    <span className="admin-status-badge" style={{ background: inq.status === "reviewed" ? "rgba(132,204,22,0.15)" : "rgba(248,113,113,0.15)", color: inq.status === "reviewed" ? "#84cc16" : "#f87171" }}>
+                      {inq.status}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          <div className="admin-section-head" style={{ marginTop: 32 }}>
+            <h3>Contact Inquiries ({contactInquiries.length})</h3>
+          </div>
+          {contactInquiries.length === 0 ? (
+            <div className="admin-state-box"><p>No contact inquiries yet.</p></div>
+          ) : (
+            <div className="admin-order-list">
+              {contactInquiries.map((inq) => (
+                <article key={inq.id} className="admin-order-card" style={{ padding: "18px 20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: 15 }}>{inq.name} <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted, #94a3b8)" }}>{inq.email}</span></p>
+                      {inq.subject && <p style={{ fontSize: 13, marginTop: 4, fontWeight: 600 }}>{inq.subject}</p>}
+                      <p style={{ fontSize: 13, color: "var(--text-muted, #94a3b8)", marginTop: 4 }}>{inq.message}</p>
+                      <p style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 6 }}>{formatDateTime(inq.created_at)}</p>
+                    </div>
+                    <span className="admin-status-badge" style={{ background: inq.status === "reviewed" ? "rgba(132,204,22,0.15)" : "rgba(248,113,113,0.15)", color: inq.status === "reviewed" ? "#84cc16" : "#f87171" }}>
+                      {inq.status}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeTab === "analytics" && (
+        <section className="admin-section">
+          <div className="admin-section-head"><h3>Revenue & Order Analytics</h3></div>
+          <div className="admin-metrics-bar" style={{ marginBottom: 24 }}>
+            <MetricCard label="Total Revenue" value={money(dashboard.totalRevenue)} />
+            <MetricCard label="Today Revenue" value={money(dashboard.todayRevenue)} />
+            <MetricCard label="Total Orders" value={dashboard.totalOrders} />
+            <MetricCard label="Delivered" value={dashboard.deliveredOrders} />
+            <MetricCard label="Pending" value={dashboard.pendingOrders} />
+            <MetricCard label="Out for Delivery" value={dashboard.outForDeliveryOrders} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+              <p style={{ fontWeight: 700, marginBottom: 16 }}>Orders by Status</p>
+              {["Pending", "Preparing", "Ready for Pickup", "Out for Delivery", "Delivered", "Cancelled"].map((s) => {
+                const count = orders.filter((o) => normalizeStatus(o.status) === s).length;
+                const pct = dashboard.totalOrders > 0 ? Math.round((count / dashboard.totalOrders) * 100) : 0;
+                return (
+                  <div key={s} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                      <span>{s}</span><span style={{ fontWeight: 600 }}>{count} ({pct}%)</span>
+                    </div>
+                    <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: s === "Delivered" ? "#22c55e" : s === "Cancelled" ? "#ef4444" : s === "Out for Delivery" ? "#06b6d4" : "#84cc16", borderRadius: 999 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+              <p style={{ fontWeight: 700, marginBottom: 16 }}>Payment Methods</p>
+              {["COD", "Razorpay", "UPI", "Online"].map((m) => {
+                const count = orders.filter((o) => normalizePaymentMethod(o.payment_method).toLowerCase().includes(m.toLowerCase())).length;
+                const pct = dashboard.totalOrders > 0 ? Math.round((count / dashboard.totalOrders) * 100) : 0;
+                return (
+                  <div key={m} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                      <span>{m}</span><span style={{ fontWeight: 600 }}>{count} ({pct}%)</span>
+                    </div>
+                    <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: "#3b82f6", borderRadius: 999 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16, padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p style={{ fontWeight: 700, marginBottom: 16 }}>Revenue Breakdown (last 7 days)</p>
+            {(() => {
+              const days = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                return d.toDateString();
+              }).reverse();
+              const maxRev = Math.max(...days.map((d) => orders.filter((o) => new Date(o.created_at).toDateString() === d).reduce((s, o) => s + getOrderTotal(o), 0)), 1);
+              return days.map((d) => {
+                const dayOrders = orders.filter((o) => new Date(o.created_at).toDateString() === d);
+                const rev = dayOrders.reduce((s, o) => s + getOrderTotal(o), 0);
+                const pct = Math.round((rev / maxRev) * 100);
+                const label = new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+                return (
+                  <div key={d} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                    <span style={{ width: 60, fontSize: 12, color: "var(--text-muted, #94a3b8)", textAlign: "right" }}>{label}</span>
+                    <div style={{ flex: 1, height: 20, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#84cc16,#22c55e)", borderRadius: 6, transition: "width 0.5s" }} />
+                    </div>
+                    <span style={{ width: 80, fontSize: 12, fontWeight: 600 }}>{money(rev)}</span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -528,7 +788,7 @@ function MetricCard({ label, value }) {
   );
 }
 
-function AdminOrderCard({ order, updatingKey, onUpdate, onUpdateFields }) {
+function AdminOrderCard({ order, updatingKey, onUpdate, onUpdateFields, deliveryPartners = [], assigningPartner, onAssignPartner }) {
   const address = safeObject(order.address);
   const items = getOrderItems(order);
   const orderStatus = normalizeStatus(order.status);
@@ -647,6 +907,22 @@ function AdminOrderCard({ order, updatingKey, onUpdate, onUpdateFields }) {
         </div>
 
         <div className="admin-delivery-grid">
+          {deliveryPartners.length > 0 && (
+            <label>
+              Assign Delivery Partner
+              <select
+                value={order.delivery_partner_id || ""}
+                disabled={assigningPartner === `${order.id}-assign`}
+                onChange={(e) => onAssignPartner?.(order.id, e.target.value || null)}
+              >
+                <option value="">— Unassigned —</option>
+                {deliveryPartners.map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name || p.id} {p.phone ? `· ${p.phone}` : ""}</option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <label>
             Delivery Status
             <select

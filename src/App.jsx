@@ -28,10 +28,13 @@ import TermsConditions from "./pages/TermsConditions";
 import RefundPolicy from "./pages/RefundPolicy";
 import DeliveryPolicy from "./pages/DeliveryPolicy";
 import NutritionDisclaimer from "./pages/NutritionDisclaimer";
+import NotificationCenter from "./pages/NotificationCenter";
 import AccountPage, { ACCOUNT_PAGE_CONTENT } from "./pages/AccountPage";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import "./styles/app.css";
 import "./styles/cart-feedback.css";
+import "./styles/notifications.css";
 
 const getInitialRoute = () => {
   const trackMatch = window.location.pathname.match(/^\/track-order\/([^/]+)/);
@@ -240,6 +243,10 @@ export default function App() {
             className="app-loading-logo"
             src="/nutriblend-logo.svg"
             alt="NutriBlend"
+            decoding="async"
+            fetchPriority="high"
+            width="96"
+            height="96"
           />
           <h2>NUTRIBLEND</h2>
           <div className="app-loading-bar">
@@ -271,60 +278,63 @@ export default function App() {
         profile={profile}
       />
 
-      <div className="page-container" key={page}>
-        {page === "home" && (
-          <Home
-            search={search}
-            setPage={navigatePage}
-            setSelectedProduct={setSelectedProduct}
-          />
-        )}
+      <ErrorBoundary key={page}>
+        <div className="page-container" key={page}>
+          {page === "home" && (
+            <Home
+              search={search}
+              setPage={navigatePage}
+              setSelectedProduct={setSelectedProduct}
+            />
+          )}
 
-        {page === "cart" && <Cart setPage={navigatePage} />}
-        {page === "orders" && <Orders setPage={navigatePage} />}
-        {page === "track-order" && (
-          <TrackOrder orderId={trackOrderId} setPage={navigatePage} />
-        )}
-        {page === "delivery-partner" && <DeliveryPartner setPage={navigatePage} />}
-        {page === "profile" && <Profile setPage={navigatePage} />}
-        {page === "plans" && <Plans setPage={navigatePage} />}
-        {page === "monthly-plans" && <MonthlyPlans setPage={navigatePage} />}
-        {page === "gym-partner" && <GymPartner />}
-        {page === "about" && <About />}
-        {page === "contact" && <Contact />}
-        {page === "privacy-policy" && <PrivacyPolicy />}
-        {page === "terms-conditions" && <TermsConditions />}
-        {page === "refund-policy" && <RefundPolicy />}
-        {page === "delivery-policy" && <DeliveryPolicy />}
-        {page === "nutrition-disclaimer" && <NutritionDisclaimer />}
+          {page === "cart" && <Cart setPage={navigatePage} />}
+          {page === "orders" && <Orders setPage={navigatePage} />}
+          {page === "track-order" && (
+            <TrackOrder orderId={trackOrderId} setPage={navigatePage} />
+          )}
+          {page === "delivery-partner" && <DeliveryPartner setPage={navigatePage} />}
+          {page === "profile" && <Profile setPage={navigatePage} />}
+          {page === "plans" && <Plans setPage={navigatePage} />}
+          {page === "monthly-plans" && <MonthlyPlans setPage={navigatePage} />}
+          {page === "gym-partner" && <GymPartner />}
+          {page === "about" && <About />}
+          {page === "contact" && <Contact />}
+          {page === "privacy-policy" && <PrivacyPolicy />}
+          {page === "terms-conditions" && <TermsConditions />}
+          {page === "refund-policy" && <RefundPolicy />}
+          {page === "delivery-policy" && <DeliveryPolicy />}
+          {page === "nutrition-disclaimer" && <NutritionDisclaimer />}
+          {page === "notifications" && <NotificationCenter setPage={navigatePage} />}
 
-        {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
-        {page === "admin" && <Admin setPage={navigatePage} />}
+          {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
+          {page === "admin" && <Admin setPage={navigatePage} />}
 
-        {page === "product" && (
-          <ProductDetails product={selectedProduct} setPage={navigatePage} />
-        )}
+          {page === "product" && (
+            <ProductDetails product={selectedProduct} setPage={navigatePage} />
+          )}
 
-        {page === "address" && (
-          <Address setPage={navigatePage} setAddress={setAddress} />
-        )}
+          {page === "address" && (
+            <Address setPage={navigatePage} setAddress={setAddress} />
+          )}
 
-        {page === "payment" && (
-          <Payment setPage={navigatePage} setPayment={setPayment} />
-        )}
+          {page === "payment" && (
+            <Payment setPage={navigatePage} setPayment={setPayment} />
+          )}
 
-        {page === "review" && (
-          <ReviewOrder
-            cart={cart}
-            address={JSON.parse(localStorage.getItem("selectedAddress"))}
-            payment={payment}
-            setPage={navigatePage}
-          />
-        )}
+          {page === "review" && (
+            <ReviewOrder
+              cart={cart}
+              address={JSON.parse(localStorage.getItem("selectedAddress"))}
+              payment={payment}
+              setPage={navigatePage}
+            />
+          )}
 
-        {page === "success" && <Success setPage={navigatePage} />}
-        {isAccountPage && <AccountPage pageId={page} setPage={navigatePage} />}
-      </div>
+          {page === "success" && <Success setPage={navigatePage} />}
+          {isAccountPage && page !== "notifications" && <AccountPage pageId={page} setPage={navigatePage} />}
+        </div>
+      </ErrorBoundary>
 
       {page === "home" && <Footer setPage={navigatePage} />}
     </div>

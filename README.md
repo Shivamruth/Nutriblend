@@ -305,8 +305,8 @@ Product images live in `public/products/`. The helper `src/utils/productImages.j
 Use public paths such as:
 
 ```text
-/products/20gWhey.png
-/products/BasicPre.png
+/products/20gWhey.webp
+/products/BasicPre.webp
 ```
 
 ## Styling

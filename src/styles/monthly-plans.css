@@ -162,12 +162,6 @@
   box-shadow: 0 16px 36px rgba(172, 191, 105, 0.18);
 }
 
-@media (max-width: 1100px) {
-  .monthly-plans-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 640px) {
   .monthly-plans-hero {
     padding: 18px;
@@ -179,6 +173,280 @@
   }
 
   .monthly-plan-card {
+    padding: 16px;
+  }
+}
+
+/* Fix h1 selector from previous h2 */
+.monthly-plans-hero h1,
+.monthly-plans-hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+/* Plan emoji badge */
+.monthly-plan-emoji {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  min-height: unset !important;
+}
+
+/* =============================================
+   MY SUBSCRIPTIONS SECTION
+============================================= */
+
+.monthly-plans-subs-section {
+  margin-top: 24px;
+  padding: 24px;
+  background: rgba(212,175,55,0.04);
+  border: 1px solid rgba(212,175,55,0.16);
+  border-radius: 16px;
+}
+
+.monthly-plans-subs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monthly-plans-subs-head h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.monthly-plans-active-badge {
+  font-size: 12px;
+  background: rgba(132,204,22,0.15);
+  color: #84cc16;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.monthly-plans-refresh-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: background 0.2s;
+}
+
+.monthly-plans-refresh-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.monthly-plans-subs-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.monthly-plan-sub-skeleton {
+  height: 90px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.monthly-plans-no-subs {
+  text-align: center;
+  padding: 32px 20px;
+  color: #fff;
+}
+
+.monthly-plans-subs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.monthly-plan-sub-card {
+  padding: 18px 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  transition: border-color 0.2s;
+}
+
+.monthly-plan-sub-card:hover {
+  border-color: rgba(212,175,55,0.2);
+}
+
+.monthly-plan-sub-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.monthly-plan-sub-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  margin: 0 0 4px;
+}
+
+.monthly-plan-sub-meta {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin: 0 0 6px;
+}
+
+.monthly-plan-sub-dates {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+}
+
+.monthly-plan-sub-status {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.monthly-plan-sub-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.monthly-plan-cancel-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.2);
+  transition: background 0.2s;
+}
+
+.monthly-plan-cancel-btn:hover {
+  background: rgba(239,68,68,0.18);
+}
+
+.monthly-plan-orders-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(212,175,55,0.1);
+  color: #d4af37;
+  border: 1px solid rgba(212,175,55,0.2);
+  transition: background 0.2s;
+}
+
+.monthly-plan-orders-btn:hover {
+  background: rgba(212,175,55,0.18);
+}
+
+.monthly-plan-cancel-reason {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* =============================================
+   PLAN CATALOG SECTION
+============================================= */
+
+.monthly-plans-catalog {
+  margin-top: 32px;
+}
+
+.monthly-plans-catalog-head {
+  margin-bottom: 16px;
+}
+
+.monthly-plans-catalog-head h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* =============================================
+   TRUST SECTION
+============================================= */
+
+.monthly-plans-trust {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 24px;
+  padding-bottom: 40px;
+}
+
+.monthly-plans-trust-card {
+  text-align: center;
+  padding: 20px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+}
+
+.monthly-plans-trust-card span {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.monthly-plans-trust-card strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.monthly-plans-trust-card p {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 800px) {
+  .monthly-plans-trust {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .monthly-plans-trust {
+    grid-template-columns: 1fr;
+  }
+  .monthly-plans-subs-section {
     padding: 16px;
   }
 }

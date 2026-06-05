@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import { KITCHEN_LOCATION } from "../config/location";
+import { fallbackProductImage, getProductImage } from "../utils/productImages";
 import "../styles/payment.css";
 
 const DELIVERY_OPTIONS = [
@@ -1072,7 +1073,17 @@ export default function Payment({ setPage, setPayment }) {
                 <div className="payment-item" key={item.id || index}>
                   <div className="payment-item-thumb">
                     {item.image ? (
-                      <img src={item.image} alt={item.name || "Item"} />
+                      <img
+                        src={getProductImage(item)}
+                        alt={item.name || "Item"}
+                        loading="lazy"
+                        decoding="async"
+                        width="800"
+                        height="800"
+                        onError={(event) => {
+                          event.currentTarget.src = fallbackProductImage;
+                        }}
+                      />
                     ) : (
                       <span>{item.isPlan ? "📅" : "🥤"}</span>
                     )}

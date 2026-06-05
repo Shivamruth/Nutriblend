@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://nutriblend.in/sitemap.xml
+
+# Disallow admin and private pages
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /delivery-partner

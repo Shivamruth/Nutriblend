@@ -166,6 +166,10 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
             <img
               src={getProductImage(product)}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="800"
               onError={(e) => {
                 e.currentTarget.src = fallbackProductImage;
               }}

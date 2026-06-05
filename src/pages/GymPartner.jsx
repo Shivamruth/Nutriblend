@@ -2,19 +2,21 @@ import { useState } from "react";
 import { useNotification } from "../context/NotificationContext";
 import "../styles/gym-partner.css";
 
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
 const benefits = [
-  "Daily fresh shakes",
-  "Pre and post workout combos",
-  "Bulk pricing",
-  "Custom gym plans",
-  "Delivery to gym",
+  "Daily fresh protein shakes",
+  "Pre and post-workout combos",
+  "Bulk member pricing",
+  "Custom gym-branded plans",
+  "Direct delivery to gym",
 ];
 
 const steps = [
-  "Gym contacts NutriBlend",
-  "We understand daily demand",
-  "We set pricing and plans",
-  "We deliver daily or set up counter",
+  "Submit your gym details below",
+  "Our team understands your daily demand",
+  "We set customized pricing and plans",
+  "Daily delivery or on-site counter setup",
 ];
 
 const initialForm = {
@@ -29,6 +31,8 @@ const initialForm = {
 export default function GymPartner() {
   const { notify } = useNotification();
   const [form, setForm] = useState(initialForm);
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -36,22 +40,14 @@ export default function GymPartner() {
       name === "mobile" || name === "expectedDailyOrders"
         ? value.replace(/\D/g, "")
         : value;
-
     setForm((prev) => ({ ...prev, [name]: nextValue }));
   };
 
-  const saveRequest = (event) => {
+  const saveRequest = async (event) => {
     event.preventDefault();
 
-    const requiredFields = [
-      form.gymName,
-      form.ownerName,
-      form.mobile,
-      form.city,
-      form.expectedDailyOrders,
-    ];
-
-    if (requiredFields.some((value) => !String(value || "").trim())) {
+    const required = [form.gymName, form.ownerName, form.mobile, form.city, form.expectedDailyOrders];
+    if (required.some((v) => !String(v || "").trim())) {
       notify("Complete all required gym partner fields", "error");
       return;
     }
@@ -61,17 +57,61 @@ export default function GymPartner() {
       return;
     }
 
-    const savedRequests = JSON.parse(localStorage.getItem("gymPartnerRequests")) || [];
-    const request = {
-      ...form,
-      id: `gym-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
+    setLoading(true);
 
-    localStorage.setItem("gymPartnerRequests", JSON.stringify([request, ...savedRequests]));
-    setForm(initialForm);
-    notify("Gym partner request saved", "success");
+    try {
+      // Try backend API first (saves to Supabase)
+      const res = await fetch(`${API_BASE}/inquiries/gym`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          gymName: form.gymName,
+          ownerName: form.ownerName,
+          phone: form.mobile,
+          city: form.city,
+          expectedDailyOrders: form.expectedDailyOrders || null,
+          notes: form.message || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to submit inquiry");
+      }
+
+      setForm(initialForm);
+      setSubmitted(true);
+      notify("Gym partner request submitted!", "success");
+    } catch (err) {
+      console.error("Gym inquiry error:", err);
+      notify(err.message || "Could not submit request. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (submitted) {
+    return (
+      <main className="gym-partner-page">
+        <section className="gym-partner-hero" style={{ textAlign: "center", padding: "80px 20px" }}>
+          <p className="gym-partner-eyebrow">Request Received</p>
+          <h2>Thank You for Partnering! 🤝</h2>
+          <p style={{ maxWidth: 480, margin: "16px auto" }}>
+            We received your gym partner request. Our team will reach out within 24–48 hours to
+            discuss your requirements and customized plan.
+          </p>
+          <button
+            type="button"
+            style={{ marginTop: 24 }}
+            onClick={() => setSubmitted(false)}
+          >
+            Submit Another Request
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="gym-partner-page">
@@ -127,13 +167,13 @@ export default function GymPartner() {
           </label>
 
           <label>
-            Owner Name
+            Owner / Manager Name
             <input name="ownerName" value={form.ownerName} onChange={handleChange} placeholder="Owner or manager name" />
           </label>
 
           <label>
             Mobile Number
-            <input name="mobile" value={form.mobile} onChange={handleChange} inputMode="tel" maxLength="10" placeholder="10 digit mobile number" />
+            <input name="mobile" value={form.mobile} onChange={handleChange} inputMode="tel" maxLength="10" placeholder="10-digit mobile number" />
           </label>
 
           <label>
@@ -147,11 +187,13 @@ export default function GymPartner() {
           </label>
 
           <label className="gym-form-wide">
-            Message
-            <textarea name="message" value={form.message} onChange={handleChange} placeholder="Tell us about timing, member count, counter setup, or custom requirements" />
+            Message / Requirements <span style={{ opacity: 0.6 }}>Optional</span>
+            <textarea name="message" value={form.message} onChange={handleChange} placeholder="Timing, member count, counter setup, or custom requirements" />
           </label>
 
-          <button type="submit">Submit Partner Request</button>
+          <button type="submit" disabled={loading}>
+            {loading ? "Submitting…" : "Submit Partner Request"}
+          </button>
         </form>
       </section>
     </main>

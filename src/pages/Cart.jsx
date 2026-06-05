@@ -2,10 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import ConfirmModal from "../components/ConfirmModal";
+import { fallbackProductImage, getProductImage } from "../utils/productImages";
 import "../styles/cart.css";
-
-const fallbackProductImage =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' fill='%230c1a30'/%3E%3Ctext x='30' y='37' text-anchor='middle' fill='%237cff6b' font-family='Arial,sans-serif' font-size='24' font-weight='700'%3EN%3C/text%3E%3C/svg%3E";
 
 const normalizeStockStatus = (status) => {
   const value = String(status || "In Stock")
@@ -430,9 +428,13 @@ export default function Cart({ setPage }) {
                   ) : (
                     <div className="cart-img-wrap">
                       <img
-                        src={item.image || fallbackProductImage}
+                        src={getProductImage(item)}
                         alt={getItemName(item)}
                         className="cart-item-img"
+                        loading="lazy"
+                        decoding="async"
+                        width="800"
+                        height="800"
                         onError={(e) => {
                           e.currentTarget.src = fallbackProductImage;
                         }}

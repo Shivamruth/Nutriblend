@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ClipboardList,
   CalendarDays,
+  Bell,
   Home,
   LogOut,
   Menu,
@@ -13,6 +14,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
 import "../styles/navbar.css";
 
 export default function Navbar({
@@ -29,6 +31,7 @@ export default function Navbar({
   const [accountOpen, setAccountOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
+  const { unreadCount } = useNotification();
 
   useEffect(() => {
     if (searchOpen) {
@@ -51,14 +54,33 @@ export default function Navbar({
   return (
     <>
       <nav className="navbar">
-        <button
-          type="button"
-          className="nav-icon-btn nav-menu-btn"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open navigation menu"
-        >
-          <Menu size={24} />
-        </button>
+        <div className="nav-left-actions">
+          <button
+            type="button"
+            className="nav-icon-btn nav-menu-btn"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open navigation menu"
+          >
+            <Menu size={24} />
+          </button>
+
+          <div className="notification-wrapper nav-notification-wrapper">
+            <button
+              type="button"
+              id="notification-bell-btn"
+              className="notification-bell"
+              onClick={() => navigateTo("notifications")}
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+            >
+              <Bell size={18} />
+            </button>
+            {unreadCount > 0 && (
+              <span className="notification-badge">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </div>
+        </div>
 
         <button
           type="button"
@@ -66,7 +88,15 @@ export default function Navbar({
           onClick={() => navigateTo("home")}
           aria-label="Go to home"
         >
-          <img src="/nutriblend-logo.svg" alt="" className="nav-brand-mark" />
+          <img
+            src="/nutriblend-logo.svg"
+            alt=""
+            className="nav-brand-mark"
+            decoding="async"
+            fetchPriority="high"
+            width="36"
+            height="36"
+          />
           <span>NUTRIBLEND</span>
         </button>
 
@@ -117,7 +147,15 @@ export default function Navbar({
       <aside className={`nav-drawer ${drawerOpen ? "drawer-open" : ""}`}>
         <div className="nav-drawer-header">
           <div className="nav-drawer-brand">
-            <img src="/nutriblend-logo.svg" alt="" className="nav-drawer-logo" />
+            <img
+              src="/nutriblend-logo.svg"
+              alt=""
+              className="nav-drawer-logo"
+              loading="lazy"
+              decoding="async"
+              width="56"
+              height="56"
+            />
             <span className="nav-drawer-eyebrow">Menu</span>
             <strong>NutriBlend</strong>
           </div>
@@ -161,6 +199,19 @@ export default function Navbar({
           >
             <ClipboardList size={20} />
             <span>Orders</span>
+          </button>
+
+          <button
+            type="button"
+            className={page === "notifications" ? "nav-active" : ""}
+            onClick={() => navigateTo("notifications")}
+            style={{ position: "relative" }}
+          >
+            <Bell size={20} />
+            <span>Notifications</span>
+            {unreadCount > 0 && (
+              <span className="nav-cart-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+            )}
           </button>
 
           <button

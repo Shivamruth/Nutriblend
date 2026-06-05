@@ -102,6 +102,10 @@ export default function ProductCard({ item, onView }) {
           src={item.image || fallbackProductImage}
           alt={item.name}
           className="product-img"
+          loading="lazy"
+          decoding="async"
+          width="800"
+          height="800"
           onError={(e) => {
             e.currentTarget.src = fallbackProductImage;
           }}

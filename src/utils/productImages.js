@@ -1,47 +1,47 @@
 const productImageRules = [
   {
     matches: (name) => name.includes("10g") && name.includes("natural"),
-    image: "/products/10gNatural.png",
+    image: "/products/10gNatural.webp",
   },
   {
     matches: (name) => name.includes("10g") && name.includes("whey"),
-    image: "/products/WheyShake.png",
+    image: "/products/WheyShake.webp",
   },
   {
     matches: (name) => name.includes("20g") && name.includes("natural"),
-    image: "/products/20gNaturalShake.png",
+    image: "/products/20gNaturalShake.webp",
   },
   {
     matches: (name) => name.includes("20g") && name.includes("whey"),
-    image: "/products/20gWhey.png",
+    image: "/products/20gWhey.webp",
   },
   {
     matches: (name) => name.includes("30g") && name.includes("natural"),
-    image: "/products/30gNatural.png",
+    image: "/products/30gNatural.webp",
   },
   {
     matches: (name) => name.includes("30g") && name.includes("whey"),
-    image: "/products/30gWhey.png",
+    image: "/products/30gWhey.webp",
   },
   {
     matches: (name) => name.includes("40g") && name.includes("protein"),
-    image: "/products/40gProShake.png",
+    image: "/products/40gProShake.webp",
   },
   {
     matches: (name) => name.includes("50g") && name.includes("protein"),
-    image: "/products/50gPro.png",
+    image: "/products/50gPro.webp",
   },
   {
     matches: (name) => name.includes("basic") && name.includes("pre"),
-    image: "/products/BasicPre.png",
+    image: "/products/BasicPre.webp",
   },
   {
     matches: (name) => name.includes("standard") && name.includes("pre"),
-    image: "/products/StandardPre.png",
+    image: "/products/StandardPre.webp",
   },
   {
     matches: (name) => name.includes("premium") && name.includes("pre"),
-    image: "/products/PremiumWork.png",
+    image: "/products/PremiumWork.webp",
   },
 ];
 

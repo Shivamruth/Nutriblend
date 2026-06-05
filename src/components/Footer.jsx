@@ -32,7 +32,14 @@ export default function Footer({ setPage }) {
   return (
     <footer className="site-footer">
       <div className="site-footer-brand">
-        <img src="/nutriblend-logo.svg" alt="" />
+        <img
+          src="/nutriblend-logo.svg"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width="72"
+          height="72"
+        />
         <div>
           <strong>NUTRIBLEND</strong>
           <p>Fresh fitness nutrition, subscriptions, delivery tracking, and gym partnerships.</p>

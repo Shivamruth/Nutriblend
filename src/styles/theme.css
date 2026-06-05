@@ -40,6 +40,23 @@
   color-scheme: light;
 }
 
+img {
+  max-width: 100%;
+}
+
+.product-img,
+.cart-item-img,
+.payment-item-thumb img,
+.order-list-thumb img,
+.order-details-product img,
+.order-detail-item img,
+.modal-img,
+.product-image-section img,
+.admin-image-preview-card img {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
 *,
 *::before,
 *::after {
@@ -523,6 +540,25 @@ li,
   border: 0 !important;
   outline: 0 !important;
   box-shadow: none !important;
+}
+
+.nav-left-actions {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.navbar .nav-icon-btn,
+.navbar .notification-bell,
+.navbar .notification-bell:hover,
+.navbar .notification-bell:focus,
+.navbar .notification-bell:focus-visible {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.navbar .notification-bell {
+  border-radius: 12px !important;
 }
 
 .nav-drawer-backdrop,

@@ -18,7 +18,20 @@ const emptyForm = {
 
 const categories = ["All", "Natural", "Whey", "Preworkout", "Premium"];
 const statusFilters = ["All", "Active", "Inactive"];
-const stockStatuses = ["In Stock", "Limited Stock", "Out of Stock"];
+const stockStatuses = ["In Stock", "Low Stock", "Limited Stock", "Out of Stock"];
+
+const normalizeStockStatus = (status) => {
+  const value = String(status || "In Stock")
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .trim();
+
+  if (value === "low stock") return "Low Stock";
+  if (value === "limited stock") return "Limited Stock";
+  if (value === "out of stock") return "Out of Stock";
+  return "In Stock";
+};
 
 const getImagePreview = (image) => {
   if (!image) return "";
@@ -33,6 +46,7 @@ export default function AdminProducts({ notify }) {
   const [editingId, setEditingId] = useState(null);
 
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -43,6 +57,7 @@ export default function AdminProducts({ notify }) {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
+    setErrorMessage("");
 
     const { data, error } = await supabase
       .from("products")
@@ -51,6 +66,7 @@ export default function AdminProducts({ notify }) {
 
     if (error) {
       console.error("Fetch products error:", error);
+      setErrorMessage(error.message || "Failed to load products.");
       notify?.("Failed to load products", "error");
     } else {
       setProducts(data || []);
@@ -68,7 +84,7 @@ export default function AdminProducts({ notify }) {
 
     return products.filter((product) => {
       const isActive = product.is_active !== false;
-      const stockStatus = product.stock_status || "In Stock";
+      const stockStatus = normalizeStockStatus(product.stock_status);
 
       const matchesCategory =
         categoryFilter === "All" || product.category === categoryFilter;
@@ -99,9 +115,10 @@ export default function AdminProducts({ notify }) {
       total: products.length,
       active: products.filter((p) => p.is_active !== false).length,
       inactive: products.filter((p) => p.is_active === false).length,
-      inStock: products.filter((p) => (p.stock_status || "In Stock") === "In Stock").length,
-      limited: products.filter((p) => p.stock_status === "Limited Stock").length,
-      outOfStock: products.filter((p) => p.stock_status === "Out of Stock").length,
+      inStock: products.filter((p) => normalizeStockStatus(p.stock_status) === "In Stock").length,
+      lowStock: products.filter((p) => normalizeStockStatus(p.stock_status) === "Low Stock").length,
+      limited: products.filter((p) => normalizeStockStatus(p.stock_status) === "Limited Stock").length,
+      outOfStock: products.filter((p) => normalizeStockStatus(p.stock_status) === "Out of Stock").length,
     };
   }, [products]);
 
@@ -322,6 +339,11 @@ export default function AdminProducts({ notify }) {
         <ProductStat icon="🔴" label="Out" value={productStats.outOfStock} />
       </div>
 
+      <div className="admin-inventory-alerts">
+        <span>Low stock warnings: {productStats.lowStock + productStats.limited}</span>
+        <span>Out of stock products: {productStats.outOfStock}</span>
+      </div>
+
       <form className="admin-product-form" onSubmit={saveProduct}>
         <div className="admin-product-form-head">
           <div>
@@ -417,7 +439,7 @@ export default function AdminProducts({ notify }) {
             <input
               className="admin-form-wide"
               name="image"
-              placeholder="Image URL or image path e.g. /products/shake.png"
+              placeholder="Image URL or image path e.g. /products/shake.webp"
               value={form.image}
               onChange={handleChange}
             />
@@ -467,6 +489,10 @@ export default function AdminProducts({ notify }) {
               <img
                 src={previewImage}
                 alt="Product preview"
+                loading="lazy"
+                decoding="async"
+                width="800"
+                height="800"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
@@ -480,7 +506,7 @@ export default function AdminProducts({ notify }) {
 
             <p>
               Use image URL or public path like{" "}
-              <code>/products/product-name.png</code>
+              <code>/products/product-name.webp</code>
             </p>
           </div>
         </div>
@@ -561,7 +587,12 @@ export default function AdminProducts({ notify }) {
       </div>
 
       <div className="admin-products-table-wrap">
-        {loading && products.length === 0 ? (
+        {errorMessage ? (
+          <div className="admin-empty admin-error-state">
+            <p>{errorMessage}</p>
+            <button type="button" onClick={fetchProducts}>Try Again</button>
+          </div>
+        ) : loading && products.length === 0 ? (
           <div className="admin-empty">
             <p>Loading products...</p>
           </div>

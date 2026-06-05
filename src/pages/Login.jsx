@@ -100,7 +100,15 @@ export default function Login() {
       <div className="login-container">
         <section className="login-panel" aria-label="NutriBlend overview">
           <div className="login-panel-header">
-            <img src="/nutriblend-logo.svg" alt="" className="login-panel-logo" />
+            <img
+              src="/nutriblend-logo.svg"
+              alt=""
+              className="login-panel-logo"
+              decoding="async"
+              fetchPriority="high"
+              width="64"
+              height="64"
+            />
             <div>
               <p className="login-panel-brand">NUTRIBLEND</p>
               <span>Premium fitness nutrition</span>

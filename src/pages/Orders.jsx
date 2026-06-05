@@ -134,7 +134,6 @@ export default function Orders({ setPage }) {
   const { notify } = useNotification();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -143,7 +142,7 @@ export default function Orders({ setPage }) {
   const fetchOrders = useCallback(
     async ({ silent = false } = {}) => {
       if (silent) {
-        setRefreshing(true);
+        setLoading(false);
       } else {
         setLoading(true);
       }
@@ -180,7 +179,6 @@ export default function Orders({ setPage }) {
         notify(error.message || "Unable to fetch your orders", "error");
       } finally {
         setLoading(false);
-        setRefreshing(false);
       }
     },
     [notify]
@@ -423,6 +421,10 @@ function OrderListItem({ order, onSelect }) {
         <img
           src={getProductImage(firstItem)}
           alt=""
+          loading="lazy"
+          decoding="async"
+          width="800"
+          height="800"
           onError={(event) => {
             event.currentTarget.src = fallbackProductImage;
           }}
@@ -476,6 +478,10 @@ function OrderDetailsView({
         <img
           src={getProductImage(firstItem)}
           alt=""
+          loading="lazy"
+          decoding="async"
+          width="800"
+          height="800"
           onError={(event) => {
             event.currentTarget.src = fallbackProductImage;
           }}
@@ -523,6 +529,10 @@ function OrderDetailsView({
               <img
                 src={getProductImage(item)}
                 alt=""
+                loading="lazy"
+                decoding="async"
+                width="800"
+                height="800"
                 onError={(event) => {
                   event.currentTarget.src = fallbackProductImage;
                 }}

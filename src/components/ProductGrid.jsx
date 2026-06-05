@@ -1,6 +1,6 @@
 import ProductCard from "./ProductCard";
 import { useState } from "react";
-import { getProductImage, withProductImage } from "../utils/productImages";
+import { fallbackProductImage, getProductImage, withProductImage } from "../utils/productImages";
 
 export default function ProductGrid({ products = [] }) {
   const [selected, setSelected] = useState(null);
@@ -38,7 +38,18 @@ export default function ProductGrid({ products = [] }) {
               ✕
             </button>
 
-            <img src={getProductImage(selected)} alt={selected.name} className="modal-img" />
+            <img
+              src={getProductImage(selected)}
+              alt={selected.name}
+              className="modal-img"
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="800"
+              onError={(event) => {
+                event.currentTarget.src = fallbackProductImage;
+              }}
+            />
 
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>

@@ -117,3 +117,215 @@
 .notification-badge {
   box-shadow: 0 8px 18px rgba(239, 68, 68, 0.3);
 }
+
+/* =========================
+   NOTIFICATION CENTER PAGE
+========================= */
+
+.notification-center-page {
+  min-height: 80vh;
+  padding: 24px 16px 80px;
+}
+
+.notification-center-shell {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.notification-center-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.notification-center-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #84cc16;
+  margin-bottom: 4px;
+}
+
+.notification-center-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.notification-center-mark-btn,
+.notification-center-back-btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notification-center-mark-btn {
+  background: rgba(132, 204, 22, 0.12);
+  color: #84cc16;
+  border: 1px solid rgba(132, 204, 22, 0.25);
+}
+
+.notification-center-mark-btn:hover {
+  background: rgba(132, 204, 22, 0.2);
+}
+
+.notification-center-back-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification-center-back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-center-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.notification-center-filter-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted, #94a3b8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+}
+
+.notification-center-filter-btn.active {
+  background: #84cc16;
+  color: #0f172a;
+  border-color: transparent;
+}
+
+.notification-center-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text);
+}
+
+.notification-center-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-center-date-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  padding: 12px 0 6px;
+}
+
+.notification-center-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background 0.2s, transform 0.15s;
+  margin-bottom: 6px;
+}
+
+.notification-center-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateX(2px);
+}
+
+.notification-center-item-unread {
+  background: rgba(132, 204, 22, 0.06);
+  border-color: rgba(132, 204, 22, 0.18);
+}
+
+.notification-center-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.notification-center-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-center-item-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.notification-center-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #84cc16;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(132, 204, 22, 0.6);
+}
+
+.notification-center-item-message {
+  font-size: 13px;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.notification-center-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+}
+
+.notification-center-order-link {
+  background: transparent;
+  color: #84cc16;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.notification-center-order-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .notification-center-title {
+    font-size: 22px;
+  }
+  .notification-center-item {
+    padding: 12px;
+  }
+  .notification-center-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 16px;
+  }
+}

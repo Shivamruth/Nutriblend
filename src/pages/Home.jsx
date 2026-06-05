@@ -264,6 +264,10 @@ export default function Home({ search, setPage, setSelectedProduct }) {
               src={item.image || fallbackProductImage}
               className="product-img"
               alt={item.name}
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="800"
               onError={(e) => {
                 e.currentTarget.src = fallbackProductImage;
               }}
@@ -352,7 +356,14 @@ export default function Home({ search, setPage, setSelectedProduct }) {
 
         <div className="home-hero-actions">
           <div className="home-brand-orbit">
-            <img src="/nutriblend-logo.svg" alt="NutriBlend" />
+            <img
+              src="/nutriblend-logo.svg"
+              alt="NutriBlend"
+              decoding="async"
+              fetchPriority="high"
+              width="96"
+              height="96"
+            />
           </div>
 
           <button
