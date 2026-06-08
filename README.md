@@ -7,8 +7,10 @@ NutriBlend is a React, Vite, Supabase, Express, and Razorpay nutrition ordering 
 Latest local audit:
 
 - Frontend lint passes with `npm run lint`.
+- Backend lint can be run from `backend/` with `npm run lint`.
 - Production frontend build passes with `npm run build`.
 - Local frontend responds at `http://127.0.0.1:5173`.
+- Live deployment: `https://nutriblend-1ur614igw-aipo-shivamruth.vercel.app/`.
 - Full browser checkout testing still requires valid Supabase users, database tables, and Razorpay test credentials.
 
 ## What Was Updated
@@ -59,6 +61,7 @@ Latest local audit:
 - Customer order history with filters, search, reorder, cancellation before preparation, and PDF invoice download.
 - Admin login and admin dashboard with revenue/order analytics, filters, CSV export, status updates, product management, plan management, stock control, and active/hidden toggles.
 - Express backend with Helmet, CORS, Morgan logging, rate limiting, auth middleware, admin middleware, Razorpay helper service, and Supabase service access.
+- Lazy-loaded app pages with Vite vendor chunk splitting for smaller production route bundles.
 
 ## Project Structure
 
@@ -199,9 +202,8 @@ Backend scripts from `backend/`:
 ```bash
 npm start
 npm run dev
+npm run lint
 ```
-
-The backend package currently has no lint script.
 
 ## Frontend Flow
 
@@ -342,11 +344,17 @@ npm run preview
 Current build note:
 
 - The build succeeds.
-- Vite reports a large JavaScript chunk warning. This is not a build failure. Future optimization can split heavier modules such as charts and PDF generation with dynamic imports.
+- Production pages are lazy-loaded and vendor libraries are split into dedicated chunks for React, Supabase, charts, PDFs, maps, and icons.
 
 ## Deployment
 
 The repository includes `vercel.json`.
+
+Live URL:
+
+```text
+https://nutriblend-1ur614igw-aipo-shivamruth.vercel.app/
+```
 
 The frontend is built as a static Vite app:
 
@@ -403,10 +411,9 @@ Then start both servers and test:
 ## Known Follow-Ups
 
 - Add automated tests for cart, checkout, payment verification, and admin authorization.
-- Add code splitting for large production chunks.
 - Replace browser `alert` calls with the app notification system for a smoother UX.
 - Add a formal Supabase migration or schema SQL file to version database structure.
-- Add backend lint and test scripts.
+- Add backend test scripts.
 - Add a server-side webhook path for Razorpay payment events if production payment reconciliation is required.
 
 ## Security Notes

@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
+import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import "../styles/plans.css";
 
-const plans = [
+const DEFAULT_PLANS = [
   {
     id: "weekly-natural",
     name: "Weekly Natural Shake Plan",
@@ -106,8 +108,53 @@ const plans = [
   },
 ];
 
+const formatDbPlan = (plan) => ({
+  id: plan.id,
+  name: plan.name,
+  badge: plan.tag || "Subscription",
+  protein: plan.protein || "N/A",
+  duration: plan.duration || "N/A",
+  price: Number(plan.price || 0),
+  category: plan.category || "Subscription",
+  image: plan.image || "📅",
+  bestFor: plan.best_for || plan.description || "",
+  includes: Array.isArray(plan.includes)
+    ? plan.includes
+    : typeof plan.includes === "string"
+    ? plan.includes.split(",").map(i => i.trim()).filter(Boolean)
+    : [],
+});
+
 export default function Plans({ setPage }) {
   const { notify } = useNotification();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("plans")
+          .select("*")
+          .eq("is_active", true);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setPlans(data.map(formatDbPlan));
+        } else {
+          setPlans(DEFAULT_PLANS);
+        }
+      } catch (err) {
+        console.error("Fetch plans error:", err);
+        setPlans(DEFAULT_PLANS);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   const addPlanToCart = (e, plan) => {
     e.preventDefault();
@@ -160,44 +207,51 @@ export default function Plans({ setPage }) {
         </p>
       </section>
 
-      <div className="plans-grid">
-        {plans.map((plan) => (
-          <div className="plan-card" key={plan.id}>
-            <div className="plan-top">
-              <span className="plan-image">{plan.image}</span>
-              <span className="plan-badge">{plan.badge}</span>
-            </div>
-
-            <h3>{plan.name}</h3>
-
-            <div className="plan-meta">
-              <span>{plan.protein}</span>
-              <span>{plan.duration}</span>
-            </div>
-
-            <p className="plan-best">
-              <strong>Best for:</strong> {plan.bestFor}
-            </p>
-
-            <ul className="plan-includes">
-              {plan.includes.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-
-            <div className="plan-footer">
-              <div>
-                <span className="plan-price-label">Plan Price</span>
-                <h4>₹{plan.price}</h4>
+      {loading ? (
+        <div className="plans-loading">
+          <div className="plans-spinner" />
+          <p>Loading active plans...</p>
+        </div>
+      ) : (
+        <div className="plans-grid">
+          {plans.map((plan) => (
+            <div className="plan-card" key={plan.id}>
+              <div className="plan-top">
+                <span className="plan-image">{plan.image}</span>
+                {plan.badge && <span className="plan-badge">{plan.badge}</span>}
               </div>
 
-              <button type="button" onClick={(e) => addPlanToCart(e, plan)}>
-                Add Plan
-              </button>
+              <h3>{plan.name}</h3>
+
+              <div className="plan-meta">
+                <span>{plan.protein}</span>
+                <span>{plan.duration}</span>
+              </div>
+
+              <p className="plan-best">
+                <strong>Best for:</strong> {plan.bestFor}
+              </p>
+
+              <ul className="plan-includes">
+                {plan.includes.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+
+              <div className="plan-footer">
+                <div>
+                  <span className="plan-price-label">Plan Price</span>
+                  <h4>₹{plan.price}</h4>
+                </div>
+
+                <button type="button" onClick={(e) => addPlanToCart(e, plan)}>
+                  Add Plan
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { supabase } from "../supabase/Client";
+import { useNotification } from "../context/NotificationContext";
 import "../styles/profile.css";
 
 const FITNESS_LEVELS = [
@@ -53,6 +54,7 @@ const getInitials = (name, email) => {
 };
 
 export default function Profile({ setPage }) {
+  const { notify } = useNotification();
   const [profile, setProfile] = useState(null);
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -269,12 +271,12 @@ export default function Profile({ setPage }) {
     if (!user) return;
 
     if (!form.full_name.trim()) {
-      alert("Full name is required");
+      notify("Full name is required", "error");
       return;
     }
 
     if (form.phone && !/^[6-9]\d{9}$/.test(form.phone)) {
-      alert("Enter a valid 10-digit Indian phone number");
+      notify("Enter a valid 10-digit Indian phone number", "error");
       return;
     }
 
@@ -297,16 +299,16 @@ export default function Profile({ setPage }) {
         .single();
 
       if (error) {
-        alert(error.message || "Failed to update profile");
+        notify(error.message || "Failed to update profile", "error");
         return;
       }
 
       setProfile(data);
       setEditing(false);
-      alert("Profile updated successfully");
+      notify("Profile updated successfully ✅", "success");
     } catch (error) {
       console.error("Save profile error:", error);
-      alert("Something went wrong");
+      notify("Something went wrong", "error");
     } finally {
       setSaving(false);
     }

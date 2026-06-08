@@ -1,40 +1,73 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase/Client";
 
-import Login from "./pages/Login";
-import CompleteProfile from "./pages/CompleteProfile";
-import Home from "./pages/Home";
-import Cart from "./pages/Cart";
-import Orders from "./pages/Orders";
-import Admin from "./pages/Admin";
-import Profile from "./pages/Profile";
-import Address from "./pages/Address";
-import Payment from "./pages/Payment";
-import ReviewOrder from "./pages/ReviewOrder";
-import Success from "./pages/Success";
-import TrackOrder from "./pages/TrackOrder";
-import DeliveryPartner from "./pages/DeliveryPartner";
-import AdminLogin from "./pages/AdminLogin";
-import ProductDetails from "./pages/ProductDetails";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Plans from "./pages/Plans";
-import MonthlyPlans from "./pages/MonthlyPlans";
-import GymPartner from "./pages/GymPartner";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsConditions from "./pages/TermsConditions";
-import RefundPolicy from "./pages/RefundPolicy";
-import DeliveryPolicy from "./pages/DeliveryPolicy";
-import NutritionDisclaimer from "./pages/NutritionDisclaimer";
-import NotificationCenter from "./pages/NotificationCenter";
-import AccountPage, { ACCOUNT_PAGE_CONTENT } from "./pages/AccountPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 import "./styles/app.css";
 import "./styles/cart-feedback.css";
 import "./styles/notifications.css";
+
+const Login = lazy(() => import("./pages/Login"));
+const CompleteProfile = lazy(() => import("./pages/CompleteProfile"));
+const Home = lazy(() => import("./pages/Home"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Address = lazy(() => import("./pages/Address"));
+const Payment = lazy(() => import("./pages/Payment"));
+const ReviewOrder = lazy(() => import("./pages/ReviewOrder"));
+const Success = lazy(() => import("./pages/Success"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder"));
+const DeliveryPartner = lazy(() => import("./pages/DeliveryPartner"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const ProductDetails = lazy(() => import("./pages/ProductDetails"));
+const Plans = lazy(() => import("./pages/Plans"));
+const MonthlyPlans = lazy(() => import("./pages/MonthlyPlans"));
+const GymPartner = lazy(() => import("./pages/GymPartner"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsConditions = lazy(() => import("./pages/TermsConditions"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const DeliveryPolicy = lazy(() => import("./pages/DeliveryPolicy"));
+const NutritionDisclaimer = lazy(() => import("./pages/NutritionDisclaimer"));
+const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
+const AccountPage = lazy(() => import("./pages/AccountPage"));
+
+const ACCOUNT_PAGE_IDS = new Set([
+  "customer-care",
+  "invite-friends",
+  "saved-cards",
+  "return-demo",
+  "how-to-return",
+  "promotion-terms",
+  "refund-policy",
+  "fees-payments",
+  "who-we-are",
+]);
+
+const LoadingScreen = () => (
+  <div className="app-loading">
+    <div className="app-loading-content">
+      <img
+        className="app-loading-logo"
+        src="/nutriblend-logo.svg"
+        alt="NutriBlend"
+        decoding="async"
+        fetchPriority="high"
+        width="96"
+        height="96"
+      />
+      <h2>NUTRIBLEND</h2>
+      <div className="app-loading-bar">
+        <div className="app-loading-bar-fill" />
+      </div>
+    </div>
+  </div>
+);
 
 const getInitialRoute = () => {
   const trackMatch = window.location.pathname.match(/^\/track-order\/([^/]+)/);
@@ -236,35 +269,30 @@ export default function App() {
   };
 
   if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
     return (
-      <div className="app-loading">
-        <div className="app-loading-content">
-          <img
-            className="app-loading-logo"
-            src="/nutriblend-logo.svg"
-            alt="NutriBlend"
-            decoding="async"
-            fetchPriority="high"
-            width="96"
-            height="96"
-          />
-          <h2>NUTRIBLEND</h2>
-          <div className="app-loading-bar">
-            <div className="app-loading-bar-fill" />
-          </div>
-        </div>
-      </div>
+      <Suspense fallback={<LoadingScreen />}>
+        <Login />
+      </Suspense>
     );
   }
 
-  if (!user) return <Login />;
-  if (!hasProfile) return <CompleteProfile />;
+  if (!hasProfile) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <CompleteProfile />
+      </Suspense>
+    );
+  }
 
   const cartItemCount = cart.reduce(
     (sum, item) => sum + Number(item.qty || 1),
     0
   );
-  const isAccountPage = Object.keys(ACCOUNT_PAGE_CONTENT).includes(page);
+  const isAccountPage = ACCOUNT_PAGE_IDS.has(page);
 
   return (
     <div className="app">
@@ -279,61 +307,65 @@ export default function App() {
       />
 
       <ErrorBoundary key={page}>
-        <div className="page-container" key={page}>
-          {page === "home" && (
-            <Home
-              search={search}
-              setPage={navigatePage}
-              setSelectedProduct={setSelectedProduct}
-            />
-          )}
+        <Suspense fallback={<LoadingScreen />}>
+          <div className="page-container" key={page}>
+            {page === "home" && (
+              <Home
+                search={search}
+                setPage={navigatePage}
+                setSelectedProduct={setSelectedProduct}
+              />
+            )}
 
-          {page === "cart" && <Cart setPage={navigatePage} />}
-          {page === "orders" && <Orders setPage={navigatePage} />}
-          {page === "track-order" && (
-            <TrackOrder orderId={trackOrderId} setPage={navigatePage} />
-          )}
-          {page === "delivery-partner" && <DeliveryPartner setPage={navigatePage} />}
-          {page === "profile" && <Profile setPage={navigatePage} />}
-          {page === "plans" && <Plans setPage={navigatePage} />}
-          {page === "monthly-plans" && <MonthlyPlans setPage={navigatePage} />}
-          {page === "gym-partner" && <GymPartner />}
-          {page === "about" && <About />}
-          {page === "contact" && <Contact />}
-          {page === "privacy-policy" && <PrivacyPolicy />}
-          {page === "terms-conditions" && <TermsConditions />}
-          {page === "refund-policy" && <RefundPolicy />}
-          {page === "delivery-policy" && <DeliveryPolicy />}
-          {page === "nutrition-disclaimer" && <NutritionDisclaimer />}
-          {page === "notifications" && <NotificationCenter setPage={navigatePage} />}
+            {page === "cart" && <Cart setPage={navigatePage} />}
+            {page === "orders" && <Orders setPage={navigatePage} />}
+            {page === "track-order" && (
+              <TrackOrder orderId={trackOrderId} setPage={navigatePage} />
+            )}
+            {page === "delivery-partner" && <DeliveryPartner setPage={navigatePage} />}
+            {page === "profile" && <Profile setPage={navigatePage} />}
+            {page === "plans" && <Plans setPage={navigatePage} />}
+            {page === "monthly-plans" && <MonthlyPlans setPage={navigatePage} />}
+            {page === "gym-partner" && <GymPartner />}
+            {page === "about" && <About />}
+            {page === "contact" && <Contact />}
+            {page === "privacy-policy" && <PrivacyPolicy />}
+            {page === "terms-conditions" && <TermsConditions />}
+            {page === "refund-policy" && <RefundPolicy />}
+            {page === "delivery-policy" && <DeliveryPolicy />}
+            {page === "nutrition-disclaimer" && <NutritionDisclaimer />}
+            {page === "notifications" && <NotificationCenter setPage={navigatePage} />}
 
-          {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
-          {page === "admin" && <Admin setPage={navigatePage} />}
+            {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
+            {page === "admin" && <Admin setPage={navigatePage} />}
 
-          {page === "product" && (
-            <ProductDetails product={selectedProduct} setPage={navigatePage} />
-          )}
+            {page === "product" && (
+              <ProductDetails product={selectedProduct} setPage={navigatePage} />
+            )}
 
-          {page === "address" && (
-            <Address setPage={navigatePage} setAddress={setAddress} />
-          )}
+            {page === "address" && (
+              <Address setPage={navigatePage} setAddress={setAddress} />
+            )}
 
-          {page === "payment" && (
-            <Payment setPage={navigatePage} setPayment={setPayment} />
-          )}
+            {page === "payment" && (
+              <Payment setPage={navigatePage} setPayment={setPayment} />
+            )}
 
-          {page === "review" && (
-            <ReviewOrder
-              cart={cart}
-              address={JSON.parse(localStorage.getItem("selectedAddress"))}
-              payment={payment}
-              setPage={navigatePage}
-            />
-          )}
+            {page === "review" && (
+              <ReviewOrder
+                cart={cart}
+                address={JSON.parse(localStorage.getItem("selectedAddress"))}
+                payment={payment}
+                setPage={navigatePage}
+              />
+            )}
 
-          {page === "success" && <Success setPage={navigatePage} />}
-          {isAccountPage && page !== "notifications" && <AccountPage pageId={page} setPage={navigatePage} />}
-        </div>
+            {page === "success" && <Success setPage={navigatePage} />}
+            {isAccountPage && page !== "notifications" && (
+              <AccountPage pageId={page} setPage={navigatePage} />
+            )}
+          </div>
+        </Suspense>
       </ErrorBoundary>
 
       {page === "home" && <Footer setPage={navigatePage} />}

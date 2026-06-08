@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
+import ConfirmModal from "./ConfirmModal";
 
 const emptyForm = {
   name: "",
@@ -44,6 +45,7 @@ export default function AdminProducts({ notify }) {
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [deleteTargetProduct, setDeleteTargetProduct] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -281,13 +283,10 @@ export default function AdminProducts({ notify }) {
     setLoading(false);
   };
 
-  const deleteProduct = async (product) => {
-    const confirmDelete = window.confirm(
-      `Delete "${product.name}" permanently?\n\nRecommended: use Hide instead of Delete.`
-    );
-
-    if (!confirmDelete) return;
-
+  const confirmDeleteProduct = async () => {
+    if (!deleteTargetProduct) return;
+    const product = deleteTargetProduct;
+    setDeleteTargetProduct(null);
     setLoading(true);
 
     const { error } = await supabase
@@ -687,7 +686,7 @@ export default function AdminProducts({ notify }) {
 
                         <button
                           className="danger"
-                          onClick={() => deleteProduct(product)}
+                          onClick={() => setDeleteTargetProduct(product)}
                         >
                           Delete
                         </button>
@@ -700,6 +699,17 @@ export default function AdminProducts({ notify }) {
           </table>
         )}
       </div>
+
+      <ConfirmModal
+        open={!!deleteTargetProduct}
+        title="Delete Product?"
+        message={deleteTargetProduct ? `Are you sure you want to delete "${deleteTargetProduct.name}" permanently? It is recommended to use "Hide" instead.` : ""}
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger
+        onCancel={() => setDeleteTargetProduct(null)}
+        onConfirm={confirmDeleteProduct}
+      />
     </section>
   );
 }

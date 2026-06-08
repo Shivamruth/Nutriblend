@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaApple, FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { useNotification } from "../context/NotificationContext";
 
 import { supabase } from "../supabase/Client";
 
@@ -18,6 +19,7 @@ const features = [
 ];
 
 export default function Login() {
+  const { notify } = useNotification();
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +37,7 @@ export default function Login() {
 
   const handleEmailAuth = async () => {
     if (!form.email.trim() || !form.password.trim()) {
-      alert("Enter email and password");
+      notify("Enter email and password", "error");
       return;
     }
 
@@ -49,11 +51,11 @@ export default function Login() {
         });
 
         if (error) {
-          alert(error.message);
+          notify(error.message, "error");
           return;
         }
 
-        alert("Signup successful! Please login now.");
+        notify("Signup successful! Please login now. ✅", "success");
         setIsSignup(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -62,12 +64,12 @@ export default function Login() {
         });
 
         if (error) {
-          alert(error.message);
+          notify(error.message, "error");
         }
       }
     } catch (error) {
       console.error("Login error:", error);
-      alert("Something went wrong. Please try again.");
+      notify("Something went wrong. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -85,11 +87,11 @@ export default function Login() {
       });
 
       if (error) {
-        alert(error.message);
+        notify(error.message, "error");
       }
     } catch (error) {
       console.error(`${label} login error:`, error);
-      alert(`${label} login failed. Please try again.`);
+      notify(`${label} login failed. Please try again.`, "error");
     } finally {
       setLoading(false);
     }
@@ -168,7 +170,7 @@ export default function Login() {
                   <button
                     type="button"
                     className="login-forgot-btn"
-                    onClick={() => alert("Password reset will be available soon.")}
+                    onClick={() => notify("Password reset will be available soon.", "info")}
                   >
                     Forgot password?
                   </button>

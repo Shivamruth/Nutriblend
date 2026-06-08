@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import ConfirmModal from "../components/ConfirmModal";
 import "../styles/monthly-plans.css";
 
-const monthlyPlans = [
+const DEFAULT_MONTHLY_PLANS = [
   {
     id: "monthly-basic",
     name: "Basic Plan",
@@ -58,6 +59,20 @@ const monthlyPlans = [
   },
 ];
 
+const formatDbMonthlyPlan = (plan) => ({
+  id: plan.id,
+  name: plan.name,
+  quantity: plan.duration || "Monthly Plan",
+  bestFor: plan.best_for || plan.description || "",
+  price: plan.price ? `₹${plan.price}` : "Price coming soon",
+  emoji: plan.image || "📅",
+  benefits: Array.isArray(plan.includes)
+    ? plan.includes
+    : typeof plan.includes === "string"
+    ? plan.includes.split(",").map(i => i.trim()).filter(Boolean)
+    : [],
+});
+
 const formatDate = (ts) => {
   if (!ts) return "—";
   return new Date(ts).toLocaleDateString("en-IN", {
@@ -79,6 +94,9 @@ export default function MonthlyPlans({ setPage }) {
   const [loadingSubs, setLoadingSubs]       = useState(true);
   const [cancellingId, setCancellingId]     = useState(null);
   const [userId, setUserId]                 = useState(null);
+  const [cancelTargetId, setCancelTargetId] = useState(null);
+  const [catalogPlans, setCatalogPlans]     = useState([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
 
   // ── Load subscriptions ──────────────────────────────────────────────
   const loadSubscriptions = useCallback(async (uid) => {
@@ -105,9 +123,45 @@ export default function MonthlyPlans({ setPage }) {
     });
   }, [loadSubscriptions]);
 
+  useEffect(() => {
+    const fetchCatalog = async () => {
+      setLoadingCatalog(true);
+      try {
+        const { data, error } = await supabase
+          .from("plans")
+          .select("*")
+          .eq("is_active", true);
+
+        if (error) throw error;
+
+        // Filter plans for monthly duration/categories
+        const dbMonthly = (data || []).filter(plan =>
+          String(plan.name).toLowerCase().includes("monthly") ||
+          String(plan.duration).toLowerCase().includes("30") ||
+          String(plan.duration).toLowerCase().includes("26") ||
+          String(plan.category).toLowerCase().includes("monthly")
+        );
+
+        if (dbMonthly.length > 0) {
+          setCatalogPlans(dbMonthly.map(formatDbMonthlyPlan));
+        } else {
+          setCatalogPlans(DEFAULT_MONTHLY_PLANS);
+        }
+      } catch (err) {
+        console.error("Fetch monthly catalog error:", err);
+        setCatalogPlans(DEFAULT_MONTHLY_PLANS);
+      } finally {
+        setLoadingCatalog(false);
+      }
+    };
+    fetchCatalog();
+  }, []);
+
   // ── Cancel subscription ─────────────────────────────────────────────
-  const cancelSubscription = async (subId) => {
-    if (!window.confirm("Cancel this subscription?")) return;
+  const confirmCancelSubscription = async () => {
+    if (!cancelTargetId) return;
+    const subId = cancelTargetId;
+    setCancelTargetId(null);
     setCancellingId(subId);
     const { error } = await supabase
       .from("monthly_subscriptions")
@@ -127,16 +181,25 @@ export default function MonthlyPlans({ setPage }) {
   // ── Add to cart ─────────────────────────────────────────────────────
   const addToCart = (plan, goToCart = false) => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    
+    let numericPrice = 0;
+    if (typeof plan.price === "number") {
+      numericPrice = plan.price;
+    } else if (typeof plan.price === "string") {
+      const match = plan.price.match(/\d+/);
+      if (match) numericPrice = parseInt(match[0], 10);
+    }
+
     const planItem = {
       id: plan.id,
       name: plan.name,
-      price: 0,
+      price: numericPrice,
       qty: 1,
       category: "Monthly Subscription",
       protein: plan.quantity,
       description: plan.bestFor,
       isPlan: true,
-      priceLabel: plan.price,
+      priceLabel: typeof plan.price === "number" ? `₹${plan.price}` : plan.price,
     };
 
     const existingIndex = cart.findIndex((item) => item.id === plan.id);
@@ -240,7 +303,7 @@ export default function MonthlyPlans({ setPage }) {
                         <button
                           type="button"
                           className="monthly-plan-cancel-btn"
-                          onClick={() => cancelSubscription(sub.id)}
+                          onClick={() => setCancelTargetId(sub.id)}
                           disabled={cancellingId === sub.id}
                         >
                           {cancellingId === sub.id ? "Cancelling…" : "Cancel Subscription"}
@@ -278,7 +341,7 @@ export default function MonthlyPlans({ setPage }) {
         </div>
 
         <div className="monthly-plans-grid" aria-label="Monthly subscription plans">
-          {monthlyPlans.map((plan) => (
+          {(loadingCatalog ? DEFAULT_MONTHLY_PLANS : catalogPlans).map((plan) => (
             <article className="monthly-plan-card" key={plan.id}>
               <div className="monthly-plan-head">
                 <span className="monthly-plan-emoji">{plan.emoji}</span>
@@ -326,6 +389,17 @@ export default function MonthlyPlans({ setPage }) {
           </div>
         ))}
       </section>
+
+      <ConfirmModal
+        open={!!cancelTargetId}
+        title="Cancel Subscription?"
+        message="Are you sure you want to cancel this subscription? This will stop daily deliveries."
+        confirmText="Cancel"
+        cancelText="Keep"
+        danger
+        onCancel={() => setCancelTargetId(null)}
+        onConfirm={confirmCancelSubscription}
+      />
     </main>
   );
 }

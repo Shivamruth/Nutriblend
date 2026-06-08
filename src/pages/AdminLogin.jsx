@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { supabase } from "../supabase/Client";
+import { useNotification } from "../context/NotificationContext";
 
 export default function AdminLogin({ setPage }) {
+  const { notify } = useNotification();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) { alert("Enter credentials"); return; }
+    if (!email || !password) { notify("Enter credentials", "error"); return; }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      alert("Invalid credentials");
+      notify("Invalid credentials", "error");
     } else {
+      notify("Welcome to Admin Dashboard! ✅", "success");
       setPage("admin");
     }
     setLoading(false);

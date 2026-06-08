@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
+import ConfirmModal from "./ConfirmModal";
 
 const emptyForm = {
   name: "",
@@ -25,6 +26,7 @@ export default function AdminPlans({ notify }) {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [deleteTargetPlan, setDeleteTargetPlan] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -182,13 +184,10 @@ export default function AdminPlans({ notify }) {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const deletePlan = async (plan) => {
-    const confirmDelete = window.confirm(
-      `Delete "${plan.name}"?\n\nThis plan will be removed from the store.`
-    );
-
-    if (!confirmDelete) return;
-
+  const confirmDeletePlan = async () => {
+    if (!deleteTargetPlan) return;
+    const plan = deleteTargetPlan;
+    setDeleteTargetPlan(null);
     setLoading(true);
 
     const { error } = await supabase.from("plans").delete().eq("id", plan.id);
@@ -452,7 +451,7 @@ export default function AdminPlans({ notify }) {
                       <button onClick={() => editPlan(plan)}>Edit</button>
                       <button
                         className="danger"
-                        onClick={() => deletePlan(plan)}
+                        onClick={() => setDeleteTargetPlan(plan)}
                       >
                         Delete
                       </button>
@@ -464,6 +463,17 @@ export default function AdminPlans({ notify }) {
           </table>
         )}
       </div>
+
+      <ConfirmModal
+        open={!!deleteTargetPlan}
+        title="Delete Plan?"
+        message={deleteTargetPlan ? `Are you sure you want to delete the plan "${deleteTargetPlan.name}" permanently?` : ""}
+        confirmText="Delete"
+        cancelText="Cancel"
+        danger
+        onCancel={() => setDeleteTargetPlan(null)}
+        onConfirm={confirmDeletePlan}
+      />
     </section>
   );
 }

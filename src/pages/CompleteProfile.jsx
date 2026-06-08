@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase/Client";
+import { useNotification } from "../context/NotificationContext";
 
 export default function CompleteProfile() {
+  const { notify } = useNotification();
   const [user, setUser] = useState(null);
   const [checkingUser, setCheckingUser] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -45,17 +47,17 @@ export default function CompleteProfile() {
 
   const handleSubmit = async () => {
     if (!user) {
-      alert("User not found. Please login again.");
+      notify("User not found. Please login again.", "error");
       return;
     }
 
     if (!form.full_name.trim() || !form.phone.trim()) {
-      alert("Fill all fields");
+      notify("Fill all fields", "error");
       return;
     }
 
     if (form.phone.trim().length < 10) {
-      alert("Enter a valid phone number");
+      notify("Enter a valid phone number", "error");
       return;
     }
 
@@ -78,14 +80,14 @@ export default function CompleteProfile() {
       );
 
       if (error) {
-        alert(error.message);
+        notify(error.message, "error");
         return;
       }
 
       window.location.href = "/";
     } catch (error) {
       console.error("Profile save error:", error);
-      alert("Could not save profile. Please try again.");
+      notify("Could not save profile. Please try again.", "error");
     } finally {
       setLoading(false);
     }
