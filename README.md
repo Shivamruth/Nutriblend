@@ -411,10 +411,9 @@ Then start both servers and test:
 ## Known Follow-Ups
 
 - Add automated tests for cart, checkout, payment verification, and admin authorization.
-- Replace browser `alert` calls with the app notification system for a smoother UX.
-- Add a formal Supabase migration or schema SQL file to version database structure.
 - Add backend test scripts.
-- Add a server-side webhook path for Razorpay payment events if production payment reconciliation is required.
+- Improve checkout loading and failure states with spinner overlays and clearer error prompts.
+- Create an asset guideline document with recommended dimensions and optimization techniques for product images.
 
 ## Security Notes
 
