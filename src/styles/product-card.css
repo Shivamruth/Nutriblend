@@ -1,151 +1,32 @@
-/* Add-to-cart feedback: src/pages/Home.jsx, src/pages/ProductDetails.jsx, src/components/ProductCard.jsx */
+/* ═══════════════════════════════════════════════
+   Product Card — Shared card styles
+   ═══════════════════════════════════════════════ */
+
+/* ── Cart button ─────────────────────────────── */
 .cart-btn {
   padding: 10px 16px;
-  background: linear-gradient(135deg, #6cff8f, #4fd1ff);
-  border: none;
+  background: var(--primary);
+  border: 1px solid var(--primary-dark);
   border-radius: 10px;
-  color: #000;
+  color: #FFFFFF;
   cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s var(--ease);
 }
 
 .cart-btn:hover {
-  transform: scale(1.04);
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
+  background: var(--primary-dark);
+  box-shadow: var(--shadow-md);
 }
+
+.cart-btn:active { transform: scale(0.97); }
 
 .cart-btn.added {
-  background: #00ff88;
-  color: #000;
-  transform: scale(1.05);
-  animation: pop 0.25s ease;
-}
-
-.fly-img {
-  position: fixed !important;
-  z-index: 9999999 !important;
-  object-fit: cover;
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  pointer-events: none;
-}
-
-.card-image-wrap {
-  position: relative;
-  overflow: hidden;
-  border-radius: 18px;
-}
-
-.product-card .product-img,
-.card-image-wrap .product-img {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  display: block;
-  border-radius: 18px;
-}
-
-.stock-badge {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 3;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 900;
-  backdrop-filter: blur(10px);
-  border: 1px solid transparent;
-}
-
-.stock-badge.in-stock {
-  background: rgba(124, 255, 107, 0.16);
-  color: #dfffd9;
-  border-color: rgba(124, 255, 107, 0.25);
-}
-
-.stock-badge.limited-stock {
-  background: rgb(244, 196, 6);
-  color: #ffd900;
-  border-color: rgb(250, 204, 21);
-}
-
-.stock-badge.out-of-stock {
-  background: rgba(255, 77, 77, 0.16);
-  color: #ffd6d6;
-  border-color: rgba(255, 77, 77, 0.25);
-}
-
-.cart-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* =========================
-   PRODUCT STOCK BADGE
-========================= */
-
-.stock-badge {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 6;
-  padding: 7px 11px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 950;
-  backdrop-filter: blur(10px);
-  border: 1px solid transparent;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-}
-
-.stock-badge.in-stock {
-  background: rgba(124, 255, 107, 0.18);
-  color: #dfffd9;
-  border-color: rgba(124, 255, 107, 0.3);
-}
-
-.stock-badge.limited-stock {
-  background: rgb(255, 225, 0);
-  color: #fff3b0;
-  border-color: rgb(250, 204, 21);
-}
-
-.stock-badge.out-of-stock {
-  background: rgba(255, 77, 77, 0.22);
-  color: #ffd6d6;
-  border-color: rgba(255, 77, 77, 0.4);
-}
-
-.out-of-stock-card {
-  opacity: 0.9;
-}
-
-.out-of-stock-card .product-img {
-  filter: grayscale(0.75);
-  opacity: 0.72;
-}
-
-.out-of-stock-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(1px);
-}
-
-.out-of-stock-overlay span {
-  padding: 9px 14px;
-  border-radius: 999px;
-  background: rgba(255, 77, 77, 0.22);
-  color: #ffffff;
-  border: 1px solid rgba(255, 77, 77, 0.35);
-  font-size: 0.78rem;
-  font-weight: 950;
+  background: var(--success);
+  border-color: var(--success);
+  color: #FFFFFF;
+  animation: pop 0.25s var(--ease-bounce);
 }
 
 .cart-btn:disabled {
@@ -155,45 +36,105 @@
   box-shadow: none !important;
 }
 
-/* =========================
-   PRODUCT CARD POLISH
-========================= */
+/* ── Image wrap ──────────────────────────────── */
+.card-image-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+}
 
+.product-card .product-img,
+.card-image-wrap .product-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+  border-radius: 14px;
+  transition: transform 0.4s var(--ease);
+}
+
+/* ── Stock badges ────────────────────────────── */
+.stock-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 950;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.stock-badge.in-stock {
+  background: rgba(79, 138, 91, 0.12);
+  color: var(--success);
+  border-color: rgba(79, 138, 91, 0.25);
+}
+
+.stock-badge.limited-stock {
+  background: rgba(201, 111, 74, 0.12);
+  color: var(--accent-dark);
+  border-color: rgba(201, 111, 74, 0.25);
+}
+
+.stock-badge.out-of-stock {
+  background: rgba(201, 76, 76, 0.12);
+  color: var(--danger);
+  border-color: rgba(201, 76, 76, 0.3);
+}
+
+.out-of-stock-card { opacity: 0.85; }
+
+.out-of-stock-card .product-img {
+  filter: grayscale(0.65);
+  opacity: 0.72;
+}
+
+.out-of-stock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(47, 42, 36, 0.28);
+  backdrop-filter: blur(2px);
+}
+
+.out-of-stock-overlay span {
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(201, 76, 76, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(201, 76, 76, 0.3);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+/* ── Card base ───────────────────────────────── */
 .card {
   position: relative;
   overflow: hidden;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(124,255,107,0.045), transparent 40%, rgba(56,189,248,0.045));
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-
-.card:hover::before {
-  opacity: 1;
+  transition: transform 0.3s var(--ease-bounce),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
 }
 
 .card:hover {
-  border-color: rgba(124, 255, 107, 0.24);
+  border-color: var(--primary);
 }
 
 .card:hover .product-img {
   transform: scale(1.04);
 }
 
-.card-badge,
-.stock-badge {
-  box-shadow: 0 10px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.1);
-}
-
-.stock-badge.limited-stock {
-  background: rgba(250, 204, 21, 0.2);
-  color: #fff3b0;
-  border-color: rgba(250, 204, 21, 0.38);
+.fly-img {
+  position: fixed !important;
+  z-index: 9999999 !important;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--border);
+  pointer-events: none;
 }

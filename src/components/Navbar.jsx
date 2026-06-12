@@ -68,7 +68,7 @@ export default function Navbar({
             <button
               type="button"
               id="notification-bell-btn"
-              className="notification-bell"
+              className={`notification-bell${unreadCount > 0 ? " notification-bell-pulse" : ""}`}
               onClick={() => navigateTo("notifications")}
               aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
             >

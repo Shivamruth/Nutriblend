@@ -14,7 +14,7 @@
   margin-top: 14px;
   padding: 18px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, var(--surface-2), transparent),
     var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -31,7 +31,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  border-bottom: 1px dashed var(--surface-2);
 }
 
 .review-item:last-child {
@@ -70,7 +70,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(124,255,107,0.05), transparent 40%, rgba(56,189,248,0.05));
+  background: linear-gradient(135deg, rgba(95, 122, 97,0.05), transparent 40%, rgba(95, 122, 97,0.05));
 }
 
 .review-container .section > * {

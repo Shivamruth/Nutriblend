@@ -21,8 +21,8 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
     rgba(7, 18, 36, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--surface-2);
+  box-shadow: 0 18px 38px rgba(47, 42, 36, 0.28);
   backdrop-filter: blur(12px);
 }
 
@@ -41,7 +41,7 @@
 
 .payment-eyebrow {
   margin: 0 0 5px;
-  color: var(--secondary, #9be15d);
+  color: var(--secondary, var(--primary));
   font-size: 0.72rem;
   font-weight: 950;
   text-transform: uppercase;
@@ -50,7 +50,7 @@
 
 .checkout-block h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.18rem;
   font-weight: 950;
 }
@@ -59,7 +59,7 @@
 .delivery-instruction-link {
   border: none;
   background: transparent;
-  color: #93c5fd;
+  color: var(--primary);
   font-weight: 900;
   cursor: pointer;
 }
@@ -89,8 +89,8 @@
   padding: 13px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--text);
   outline: none;
   resize: none;
 }
@@ -101,9 +101,9 @@
   min-height: 40px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(124, 255, 107, 0.12);
-  color: #dfffd9;
-  border: 1px solid rgba(124, 255, 107, 0.25);
+  background: rgba(95, 122, 97, 0.12);
+  color: var(--primary-dark);
+  border: 1px solid rgba(95, 122, 97, 0.25);
   font-weight: 900;
   cursor: pointer;
 }
@@ -114,9 +114,9 @@
   margin-top: 12px;
   padding: 14px;
   border-radius: 15px;
-  background: rgba(255, 77, 77, 0.12);
-  border: 1px solid rgba(255, 77, 77, 0.26);
-  color: #ffd6d6;
+  background: rgba(201, 76, 76, 0.12);
+  border: 1px solid rgba(201, 76, 76, 0.26);
+  color: var(--danger);
 }
 
 .payment-warning-box strong {
@@ -131,8 +131,8 @@
   min-height: 38px;
   padding: 9px 13px;
   border-radius: 11px;
-  background: #ff4d4d;
-  color: #ffffff;
+  background: var(--danger);
+  color: var(--text);
   border: none;
   font-weight: 900;
   cursor: pointer;
@@ -152,29 +152,29 @@
   gap: 12px;
   padding: 15px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-2);
   cursor: pointer;
   transition: 0.22s ease;
 }
 
 .payment-method-row:hover,
 .delivery-option:hover {
-  border-color: rgba(124, 255, 107, 0.24);
-  background: rgba(124, 255, 107, 0.055);
+  border-color: rgba(95, 122, 97, 0.24);
+  background: rgba(95, 122, 97, 0.055);
 }
 
 .payment-method-row.selected,
 .delivery-option.selected {
-  border-color: rgba(124, 255, 107, 0.42);
-  background: rgba(124, 255, 107, 0.08);
-  box-shadow: 0 12px 28px rgba(124, 255, 107, 0.07);
+  border-color: rgba(95, 122, 97, 0.42);
+  background: rgba(95, 122, 97, 0.08);
+  box-shadow: 0 12px 28px rgba(95, 122, 97, 0.07);
 }
 
 .payment-method-row input,
 .delivery-option input {
   margin-top: 5px;
-  accent-color: #9be15d;
+  accent-color: var(--primary);
 }
 
 .payment-method-icon {
@@ -184,13 +184,13 @@
   place-items: center;
   flex-shrink: 0;
   border-radius: 13px;
-  background: rgba(124, 255, 107, 0.1);
-  border: 1px solid rgba(124, 255, 107, 0.18);
+  background: rgba(95, 122, 97, 0.1);
+  border: 1px solid rgba(95, 122, 97, 0.18);
 }
 
 .payment-method-row strong,
 .delivery-option strong {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 950;
 }
 
@@ -222,9 +222,9 @@
   padding: 16px;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(250, 204, 21, 0.08), rgba(250, 204, 21, 0.035)),
+    linear-gradient(180deg, rgba(201, 111, 74, 0.08), rgba(201, 111, 74, 0.035)),
     rgba(7, 18, 36, 0.86);
-  border-color: rgba(250, 204, 21, 0.28);
+  border-color: rgba(201, 111, 74, 0.28);
 }
 
 .checkout-alert > span {
@@ -234,7 +234,7 @@
   place-items: center;
   flex-shrink: 0;
   border-radius: 12px;
-  background: rgba(250, 204, 21, 0.12);
+  background: rgba(201, 111, 74, 0.12);
 }
 
 .checkout-alert strong {
@@ -243,7 +243,7 @@
 
 .checkout-alert p {
   margin: 6px 0 0;
-  color: #fff3b0;
+  color: var(--accent);
   line-height: 1.5;
   font-weight: 650;
 }
@@ -270,7 +270,7 @@
   align-items: center;
   padding: 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-2);
   border: 1px solid rgba(255, 255, 255, 0.075);
 }
 
@@ -281,8 +281,8 @@
   place-items: center;
   overflow: hidden;
   border-radius: 15px;
-  background: rgba(124, 255, 107, 0.1);
-  border: 1px solid rgba(124, 255, 107, 0.18);
+  background: rgba(95, 122, 97, 0.1);
+  border: 1px solid rgba(95, 122, 97, 0.18);
 }
 
 .payment-item-thumb img {
@@ -296,7 +296,7 @@
 }
 
 .payment-item-main strong {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 950;
 }
 
@@ -315,13 +315,13 @@
 }
 
 .payment-item-main em {
-  color: #93c5fd;
+  color: var(--primary);
   font-style: normal;
   font-weight: 850;
 }
 
 .payment-item-price {
-  color: #9be15d;
+  color: var(--primary);
   font-weight: 950;
   white-space: nowrap;
 }
@@ -347,7 +347,7 @@
 }
 
 .checkout-place-bottom > div strong {
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.05rem;
 }
 
@@ -374,8 +374,8 @@
   padding: 12px 18px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ffd84d, #9be15d);
-  color: #06111f;
+  background: linear-gradient(135deg, #ffd84d, var(--primary));
+  color: var(--surface);
   font-weight: 950;
   cursor: pointer;
   transition: 0.25s ease;
@@ -404,7 +404,7 @@
 .sidebar-divider {
   height: 1px;
   margin: 16px 0;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border);
 }
 
 .summary-line,
@@ -419,12 +419,12 @@
 }
 
 .summary-line strong {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .saving-line span,
 .saving-line strong {
-  color: #9be15d;
+  color: var(--primary);
 }
 
 .summary-total {
@@ -433,7 +433,7 @@
 
 .summary-total span,
 .summary-total strong {
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.22rem;
   font-weight: 950;
 }
@@ -541,7 +541,7 @@
 
 .payment-processing-text {
   margin: 10px 0 0;
-  color: #9be15d;
+  color: var(--primary);
   font-weight: 800;
   font-size: 0.86rem;
   text-align: center;
@@ -569,7 +569,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(124, 255, 107, 0.08), transparent 28%, rgba(56, 189, 248, 0.07));
+  background: linear-gradient(135deg, rgba(95, 122, 97, 0.08), transparent 28%, rgba(95, 122, 97, 0.07));
   opacity: 0.8;
 }
 
@@ -612,18 +612,18 @@
 
 .payment-method-row.selected::before,
 .delivery-option.selected::before {
-  border-color: #7cff6b;
-  background: #7cff6b;
-  box-shadow: inset 0 0 0 5px #071224, 0 0 0 5px rgba(124, 255, 107, 0.12);
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: inset 0 0 0 5px var(--surface), 0 0 0 5px rgba(95, 122, 97, 0.12);
 }
 
 .payment-method-row.selected,
 .delivery-option.selected {
-  border-color: rgba(124, 255, 107, 0.68);
+  border-color: rgba(95, 122, 97, 0.68);
   background:
-    linear-gradient(135deg, rgba(124, 255, 107, 0.14), rgba(56, 189, 248, 0.08)),
+    linear-gradient(135deg, rgba(95, 122, 97, 0.14), rgba(95, 122, 97, 0.08)),
     rgba(255, 255, 255, 0.055);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(124, 255, 107, 0.12);
+  box-shadow: 0 18px 42px rgba(47, 42, 36, 0.28), 0 0 0 1px rgba(95, 122, 97, 0.12);
 }
 
 .payment-method-row.selected::after,
@@ -635,7 +635,7 @@
   padding: 5px 9px;
   border-radius: 999px;
   color: #04111f;
-  background: linear-gradient(135deg, #7cff6b, #b8ff70);
+  background: linear-gradient(135deg, var(--primary), #b8ff70);
   font-size: 0.68rem;
   font-weight: 950;
 }
@@ -648,7 +648,7 @@
 
 .payment-method-icon {
   font-size: 1.15rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 var(--surface-2);
 }
 
 .payment-method-row > div,
@@ -661,8 +661,8 @@
 .delivery-instruction-box button,
 .payment-warning-box button,
 .payment-empty-cart button {
-  background: linear-gradient(135deg, rgba(124, 255, 107, 0.18), rgba(56, 189, 248, 0.12));
-  border: 1px solid rgba(124, 255, 107, 0.35);
+  background: linear-gradient(135deg, rgba(95, 122, 97, 0.18), rgba(95, 122, 97, 0.12));
+  border: 1px solid rgba(95, 122, 97, 0.35);
   color: #f4fff1;
 }
 
@@ -670,27 +670,27 @@
 .delivery-instruction-box button:hover,
 .payment-warning-box button:hover,
 .payment-empty-cart button:hover {
-  border-color: rgba(124, 255, 107, 0.58);
-  box-shadow: 0 12px 28px rgba(124, 255, 107, 0.12);
+  border-color: rgba(95, 122, 97, 0.58);
+  box-shadow: 0 12px 28px rgba(95, 122, 97, 0.12);
 }
 
 .place-order-btn {
   min-height: 52px;
-  box-shadow: 0 18px 40px rgba(124, 255, 107, 0.2), inset 0 1px 0 rgba(255,255,255,0.36);
+  box-shadow: 0 18px 40px rgba(95, 122, 97, 0.2), inset 0 1px 0 rgba(255,255,255,0.36);
 }
 
 .summary-total {
   padding: 14px;
   border-radius: 16px;
-  background: rgba(124, 255, 107, 0.09);
-  border: 1px solid rgba(124, 255, 107, 0.18);
+  background: rgba(95, 122, 97, 0.09);
+  border: 1px solid rgba(95, 122, 97, 0.18);
 }
 
 .payment-processing-text {
   padding: 10px 12px;
   border-radius: 999px;
-  background: rgba(124, 255, 107, 0.09);
-  border: 1px solid rgba(124, 255, 107, 0.18);
+  background: rgba(95, 122, 97, 0.09);
+  border: 1px solid rgba(95, 122, 97, 0.18);
 }
 
 @media (max-width: 650px) {
@@ -720,8 +720,8 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
     rgba(7, 18, 36, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--surface-2);
+  box-shadow: 0 18px 38px rgba(47, 42, 36, 0.28);
   backdrop-filter: blur(12px);
 }
 
@@ -734,7 +734,7 @@
 
 .payment-hero h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: clamp(1.8rem, 3vw, 2.5rem);
   line-height: 1.08;
   font-weight: 950;
@@ -746,17 +746,17 @@
   min-height: 42px;
   padding: 10px 14px;
   border-radius: 999px;
-  background: rgba(124, 255, 107, 0.12);
-  color: #dfffd9;
-  border: 1px solid rgba(124, 255, 107, 0.25);
+  background: rgba(95, 122, 97, 0.12);
+  color: var(--primary-dark);
+  border: 1px solid rgba(95, 122, 97, 0.25);
   font-weight: 900;
   white-space: nowrap;
 }
 
 .payment-error-box {
-  border-color: rgba(255, 77, 77, 0.26);
+  border-color: rgba(201, 76, 76, 0.26);
   background:
-    linear-gradient(180deg, rgba(255, 77, 77, 0.12), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(201, 76, 76, 0.12), transparent),
     rgba(7, 18, 36, 0.86);
 }
 
@@ -766,7 +766,7 @@
 
 .payment-error-box p {
   margin: 6px 0 0;
-  color: #ffd6d6;
+  color: var(--danger);
 }
 
 @media (max-width: 650px) {

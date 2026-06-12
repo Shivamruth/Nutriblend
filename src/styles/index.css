@@ -22,53 +22,58 @@
   --line: var(--border);
   --line-strong: var(--accent);
   --primary-deep: var(--primary-dark);
-  --primary-glow: transparent;
+  --primary-glow: rgba(95, 122, 97, 0.18);
   --secondary: var(--primary);
-  --secondary-glow: transparent;
+  --secondary-glow: rgba(95, 122, 97, 0.12);
   --warning: var(--accent);
   --brand-gold: var(--accent);
   --brand-gold-soft: var(--primary);
   --brand-olive: var(--primary);
   --brand-olive-deep: var(--primary-dark);
-  --brand-purple: var(--primary);
-  --brand-purple-deep: var(--surface-2);
-  --gradient-primary: var(--primary);
-  --gradient-card: var(--surface);
-  --shadow-xl: none;
-  --shadow-lg: none;
-  --shadow-md: none;
-  --shadow-glow: none;
+
+  /* Radii */
   --radius-2xl: 28px;
   --radius-xl: 22px;
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
   --radius-full: 999px;
+
+  /* Animation */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --speed-fast: 0.15s;
   --speed: 0.25s;
   --speed-slow: 0.4s;
 }
 
-* { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior: smooth; }
-html, body, #root { min-height:100vh; }
+/* ═══════════════════════════════════════════════
+   RESETS
+   ═══════════════════════════════════════════════ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; width: 100%; overflow-x: hidden; }
+html, body, #root { min-height: 100vh; }
 
 body {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   color: var(--text);
   background: var(--bg);
-  background-image: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+  width: 100%;
   overflow-x: hidden;
 }
 
-img { display:block; max-width:100%; height:auto; }
+img, video { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; }
-
 button, input, textarea, select { font: inherit; }
+
+/* ═══════════════════════════════════════════════
+   FORM ELEMENTS
+   ═══════════════════════════════════════════════ */
 
 input, textarea, select {
   width: 100%;
@@ -77,176 +82,237 @@ input, textarea, select {
   border-radius: var(--radius-md);
   background: var(--glass);
   color: var(--text);
-  transition: all var(--speed) var(--ease);
+  transition: border-color var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease),
+              background var(--speed) var(--ease);
 }
+
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--primary);
-  background: var(--surface-2);
-  box-shadow: none;
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(95, 122, 97, 0.12);
 }
+
 input::placeholder, textarea::placeholder { color: var(--muted); }
+
+/* ═══════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════ */
 
 button {
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
-  transition: all var(--speed) var(--ease);
+  transition: transform var(--speed) var(--ease-bounce),
+              background var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease),
+              border-color var(--speed) var(--ease);
 }
+
 button:hover { transform: translateY(-2px); }
-button:active { transform: translateY(0); }
+button:active { transform: translateY(0) scale(0.97); }
 button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* =========================
-   GLOBAL RESPONSIVE FIXES
-========================= */
+/* ═══════════════════════════════════════════════
+   RESPONSIVE CONTAINERS
+   ═══════════════════════════════════════════════ */
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  width: 100%;
-  overflow-x: hidden;
-}
-
-body {
-  width: 100%;
-  overflow-x: hidden;
-}
-
-img,
-video {
-  max-width: 100%;
-  height: auto;
-}
-
-button,
-input,
-select,
-textarea {
-  font-family: inherit;
-}
-
-.page,
-.home,
-.cart-page,
-.orders-page,
-.profile-page,
-.address-page,
-.payment-page,
-.admin-page {
+.page, .home, .cart-page, .orders-page,
+.profile-page, .address-page, .payment-page, .admin-page {
   width: min(100%, 1200px);
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Mobile spacing */
 @media (max-width: 768px) {
-  body {
-    font-size: 14px;
-  }
+  body { font-size: 14px; }
 
-  .page,
-  .home,
-  .cart-page,
-  .orders-page,
-  .profile-page,
-  .address-page,
-  .payment-page {
+  .page, .home, .cart-page, .orders-page,
+  .profile-page, .address-page, .payment-page {
     width: 100%;
     padding-left: 14px;
     padding-right: 14px;
   }
 
-  h1 {
-    font-size: clamp(2rem, 8vw, 3rem);
-  }
-
-  h2 {
-    font-size: clamp(1.6rem, 6vw, 2.2rem);
-  }
-
-  h3 {
-    font-size: 1.1rem;
-  }
-
-  button {
-    min-height: 44px;
-  }
+  h1 { font-size: clamp(2rem, 8vw, 3rem); }
+  h2 { font-size: clamp(1.6rem, 6vw, 2.2rem); }
+  h3 { font-size: 1.1rem; }
+  button { min-height: 44px; }
 }
 
-/* Very small mobiles */
 @media (max-width: 420px) {
-  .page,
-  .home,
-  .cart-page,
-  .orders-page,
-  .profile-page,
-  .address-page,
-  .payment-page {
+  .page, .home, .cart-page, .orders-page,
+  .profile-page, .address-page, .payment-page {
     padding-left: 10px;
     padding-right: 10px;
   }
 }
 
-/* =========================
-   2026 UI POLISH FOUNDATION
-========================= */
+/* ═══════════════════════════════════════════════
+   POLISH & ACCESSIBILITY
+   ═══════════════════════════════════════════════ */
 
 ::selection {
-  color: #0B0A08;
+  color: #FFFFFF;
   background: var(--primary);
 }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb {
   background: var(--surface-2);
   border: 2px solid var(--bg);
   border-radius: 999px;
 }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
 
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
 
-button:focus-visible,
-a:focus-visible,
-label:focus-within {
-  box-shadow: none;
+button:focus-visible, a:focus-visible { box-shadow: 0 0 0 3px rgba(95, 122, 97, 0.2); }
+
+select { color-scheme: light; }
+option { color: var(--text); background: var(--surface); }
+
+/* ═══════════════════════════════════════════════
+   ANIMATION KEYFRAMES
+   ═══════════════════════════════════════════════ */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-select {
-  color-scheme: light;
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-option {
-  color: var(--text);
-  background: var(--surface);
+@keyframes fade-in-scale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes rise-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-out-right {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(60px); }
+}
+
+@keyframes pop {
+  0% { opacity: 0; transform: scale(0.78); }
+  70% { transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.85); }
+  50% { transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cart-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes loading-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes check-draw {
+  0% { stroke-dashoffset: 48; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility animation classes */
+.animate-fade-in { animation: fade-in 0.5s var(--ease) both; }
+.animate-fade-in-up { animation: fade-in-up 0.6s var(--ease) both; }
+.animate-pop { animation: pop 0.5s var(--ease-bounce) both; }
+.animate-slide-in { animation: slide-in-right 0.4s var(--ease) both; }
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Skeleton loading */
 .loading {
   position: relative;
   overflow: hidden;
-  background: var(--surface-2);
-  background-size: 220% 100%;
-  animation: skeletonMove 1.25s ease-in-out infinite;
+  background: linear-gradient(90deg,
+    var(--surface-2) 25%,
+    var(--surface) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
+/* ═══════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;

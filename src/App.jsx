@@ -116,33 +116,42 @@ export default function App() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.auth.getUser();
+      // Safety timeout — never hang on loading screen longer than 6s
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Auth check timed out")), 6000)
+      );
 
-      if (error || !data?.user) {
-        console.error("Auth user error:", error?.message);
-        setUser(null);
-        setHasProfile(false);
-        setProfile(null);
-        return;
-      }
+      const authCheck = async () => {
+        const { data, error } = await supabase.auth.getUser();
 
-      setUser(data.user);
+        if (error || !data?.user) {
+          console.error("Auth user error:", error?.message);
+          setUser(null);
+          setHasProfile(false);
+          setProfile(null);
+          return;
+        }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", data.user.id)
-        .maybeSingle();
+        setUser(data.user);
 
-      if (profileError) {
-        console.error("Profile fetch error:", profileError.message);
-        setHasProfile(false);
-        setProfile(null);
-        return;
-      }
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", data.user.id)
+          .maybeSingle();
 
-      setHasProfile(!!profileData);
-      setProfile(profileData || null);
+        if (profileError) {
+          console.error("Profile fetch error:", profileError.message);
+          setHasProfile(false);
+          setProfile(null);
+          return;
+        }
+
+        setHasProfile(!!profileData);
+        setProfile(profileData || null);
+      };
+
+      await Promise.race([authCheck(), timeout]);
     } catch (err) {
       console.error("checkUser failed:", err);
       setUser(null);

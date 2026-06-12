@@ -172,12 +172,29 @@ Why it matters:
 
 Anyone opening the repository can quickly find and test the live app.
 
-## Suggested Next Order
+## Resolved Updates Summary & Status
 
-1. Add Supabase schema and RLS policies.
-2. Add Razorpay webhook reconciliation.
-3. Move `Plans.jsx` to Supabase data.
-4. Replace alerts/confirms with app modals and notifications.
-5. Add automated tests.
-6. Add code splitting for heavy pages and libraries.
+| Step | Recommendation | Status | Notes |
+|:---:|:---|:---:|:---|
+| 1 | Supabase schema / migrations | **Completed** | Scripts placed under root `supabase/schema.sql` and `supabase/seed.sql` |
+| 2 | RLS policy documentation | **Completed** | Policies documented and scripted under root `supabase/rls_policies.sql` |
+| 3 | Replace alerts/confirms | **Completed** | Custom `ConfirmModal` used across customer and admin views |
+| 4 | Backend payment reconciliation | **Completed** | Webhook controller and route fully implemented in the backend |
+| 5 | Automated tests | **Pending** | Skipped for separate testing efforts |
+| 6 | Split large production chunks | **Completed** | Rollup manualChunks configuration and route-level lazy loading implemented |
+| 7 | Backend lint script | **Completed** | ESLint script added in `backend/package.json` |
+| 8 | Move plans data to Supabase | **Completed** | `Plans.jsx` and `MonthlyPlans.jsx` fetch active plans dynamically |
+| 9 | Checkout loading/failure states | **Completed** | Polished with loading overlays and clear failure states |
+| 10 | Error boundary | **Completed** | React `ErrorBoundary` wrapper wrapped around main page container |
+| 11 | Image & asset guidelines | **Completed** | Asset specification created at `public/products/README.md` |
+| 12 | README with live URL | **Completed** | Main project README updated with the Vercel deployment URL |
+
+---
+
+## Additional Resolved Issues
+
+### Missing Auth Headers on Inquiries
+- **Issue**: The `Contact.jsx` and `GymPartner.jsx` forms were failing with 401 Unauthorized errors because they called routes protected by `authMiddleware` without sending the `Authorization: Bearer <token>` header.
+- **Resolution**: Updated both components to retrieve the active session token using the Supabase client and append it to the fetch headers.
+
 

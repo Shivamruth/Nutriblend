@@ -1,20 +1,20 @@
 .gym-partner-page {
   width: min(100%, 1180px);
   margin: 0 auto;
-  color: #ffffff;
+  color: var(--text);
   animation: rise-up 0.45s ease;
 }
 
 .gym-partner-hero,
 .gym-partner-panel,
 .gym-partner-form-card {
-  border: 1px solid rgba(212, 175, 55, 0.28);
+  border: 1px solid rgba(201, 111, 74, 0.28);
   border-radius: 8px;
   background:
     radial-gradient(circle at top left, rgba(172, 191, 105, 0.13), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
-    #10100e;
-  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+    var(--surface-2);
+  box-shadow: 0 22px 54px rgba(47, 42, 36, 0.34);
 }
 
 .gym-partner-hero {
@@ -23,7 +23,7 @@
 
 .gym-partner-eyebrow {
   margin: 0 0 8px;
-  color: #d4af37;
+  color: var(--accent);
   font-size: 0.74rem;
   font-weight: 950;
   letter-spacing: 0.14em;
@@ -32,7 +32,7 @@
 
 .gym-partner-hero h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: clamp(2rem, 4vw, 3.35rem);
   line-height: 1;
   font-weight: 950;
@@ -40,7 +40,7 @@
 
 .gym-partner-hero p:last-child {
   margin: 12px 0 0;
-  color: #e8ffd0;
+  color: var(--primary-dark);
   font-size: clamp(1rem, 2vw, 1.35rem);
   line-height: 1.45;
   font-weight: 850;
@@ -60,7 +60,7 @@
 
 .gym-partner-section-head h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.22rem;
   font-weight: 950;
 }
@@ -73,9 +73,9 @@
 
 .gym-benefit-card {
   padding: 13px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--surface-2);
   border-radius: 8px;
-  background: #080807;
+  background: var(--surface-2);
   color: rgba(255, 255, 255, 0.78);
   font-weight: 850;
 }
@@ -95,7 +95,7 @@
 
 .gym-step span {
   display: block;
-  color: #d4af37;
+  color: var(--accent);
   font-size: 0.74rem;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -105,7 +105,7 @@
 .gym-step strong {
   display: block;
   margin-top: 6px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 900;
 }
 
@@ -136,9 +136,9 @@
   min-height: 46px;
   padding: 12px 13px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #080807;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
   outline: none;
   font: inherit;
   font-weight: 750;
@@ -151,8 +151,8 @@
 
 .gym-partner-form input:focus,
 .gym-partner-form textarea:focus {
-  border-color: rgba(212, 175, 55, 0.75);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+  border-color: rgba(201, 111, 74, 0.75);
+  box-shadow: 0 0 0 3px rgba(201, 111, 74, 0.12);
 }
 
 .gym-form-wide,
@@ -166,7 +166,7 @@
   border-radius: 8px;
   border: 1px solid rgba(172, 191, 105, 0.55);
   background: #acbf69;
-  color: #080807;
+  color: var(--surface-2);
   font-weight: 950;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;

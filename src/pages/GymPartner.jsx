@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import "../styles/gym-partner.css";
 
@@ -61,9 +62,13 @@ export default function GymPartner() {
 
     try {
       // Try backend API first (saves to Supabase)
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_BASE}/inquiries/gym`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || ""}`,
+        },
         credentials: "include",
         body: JSON.stringify({
           gymName: form.gymName,

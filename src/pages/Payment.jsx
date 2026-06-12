@@ -222,6 +222,34 @@ export default function Payment({ setPage, setPayment }) {
     );
   };
 
+  const loadRazorpayScript = () => {
+    const scriptSrc = "https://checkout.razorpay.com/v1/checkout.js";
+
+    if (window.Razorpay) {
+      return Promise.resolve(window.Razorpay);
+    }
+
+    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
+    if (existingScript) {
+      return new Promise((resolve, reject) => {
+        existingScript.addEventListener("load", () => resolve(window.Razorpay));
+        existingScript.addEventListener("error", () =>
+          reject(new Error("Failed to load Razorpay checkout script"))
+        );
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = scriptSrc;
+      script.async = true;
+      script.onload = () => resolve(window.Razorpay);
+      script.onerror = () =>
+        reject(new Error("Failed to load Razorpay checkout script"));
+      document.body.appendChild(script);
+    });
+  };
+
   const fetchLatestOrderId = async (userId) => {
     const { data, error } = await supabase
       .from("orders")
@@ -719,6 +747,8 @@ export default function Payment({ setPage, setPayment }) {
         notify("Unable to create Razorpay order ❌", "error");
         return;
       }
+
+      await loadRazorpayScript();
 
       if (!window.Razorpay) {
         setPaymentError("Razorpay SDK is not loaded.");

@@ -120,7 +120,7 @@
 }
 
 .profile-edit-panel select option {
-  color: #000000;
+  color: #FFFFFF;
 }
 
 .profile-edit-panel input:focus,
@@ -247,7 +247,7 @@
 
 .profile-account-logout:hover {
   background: var(--danger) !important;
-  color: #ffffff !important;
+  color: var(--text) !important;
 }
 
 .profile-account-logout-wrap p {

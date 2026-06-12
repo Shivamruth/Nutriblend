@@ -82,6 +82,7 @@ nutriblend/
     server.js
   public/
     products/
+      README.md
     favicon.svg
     icons.svg
   src/
@@ -95,6 +96,10 @@ nutriblend/
     App.jsx
     index.css
     main.jsx
+  supabase/
+    schema.sql
+    rls_policies.sql
+    seed.sql
   dist/
   index.html
   package.json
@@ -221,16 +226,36 @@ npm run lint
 
 All main API routes are mounted under `/api`.
 
+**Payments & Webhooks:**
 ```text
-POST  /api/create-order
-POST  /api/verify-payment
-GET   /api/my-orders
-GET   /api/admin/orders
-PATCH /api/admin/orders/:id/status
+POST  /api/create-order     - Create new COD or online Razorpay payment order
+POST  /api/verify-payment   - Verify signature of successful Razorpay payments
+POST  /api/webhook          - Server-to-server Razorpay webhook listener
 ```
 
-Other backend route:
+**Customer Orders & Inquiries:**
+```text
+GET   /api/my-orders        - List order history for the current user
+POST  /api/inquiries/gym    - Submit gym partner collaboration inquiry
+POST  /api/inquiries/contact- Submit customer service inquiry
+```
 
+**Delivery Partner Routes:**
+```text
+GET   /api/delivery/my-assignments              - List delivery assignments
+POST  /api/delivery/tracking                   - Push current GPS coordinates
+PATCH /api/delivery/assignments/:orderId/status - Update delivery status
+```
+
+**Admin Control Panel:**
+```text
+GET   /api/admin/orders                         - List all orders
+PATCH /api/admin/orders/:id/status              - Update preparation/delivery status
+PATCH /api/admin/orders/:id/assign-partner      - Assign delivery partner to order
+GET   /api/admin/delivery-partners              - List registered delivery partners
+```
+
+**Health check:**
 ```text
 GET /health
 ```
@@ -241,28 +266,20 @@ Authenticated routes require a Supabase access token in the `Authorization` head
 Authorization: Bearer <supabase_access_token>
 ```
 
-Admin routes also require the authenticated user's profile role to be `admin`.
+Admin and delivery partner routes also require the authenticated user's profile role to match `admin` or `delivery_partner` respectively.
 
-## Database Expectations
+## Database Setup & Expectations
 
-The app expects Supabase tables similar to these logical models:
+The root-level `supabase/` directory contains all SQL scripts required to instantiate and populate the Supabase database instance:
 
-- `profiles`
-  User profile records keyed by Supabase auth user ID. Used for profile completion and admin role checks.
+1. **`supabase/schema.sql`**: Creates the 12 tables used by the application, setups indexes, and attaches real-time event triggers for customer notifications.
+2. **`supabase/rls_policies.sql`**: Hardens access control. Customers can only read/write their own records, delivery partners can view/update assigned orders, and admins hold full CRUD privileges.
+3. **`supabase/seed.sql`**: Loads default products and subscription plans matching public images and tags.
 
-- `products`
-  Store products with name, protein, price, category, image, description, stock status, active flag, calories, quantity, benefits, and ingredients.
-
-- `plans`
-  Subscription plans with name, price, protein, duration, tag, image, description, best-for text, includes text, active flag, and timestamps.
-
-- `addresses`
-  Customer delivery addresses keyed by user ID, with default address support.
-
-- `orders`
-  Order records with user ID, email, product summary, total, subtotal, delivery fee, items JSON, address JSON, payment method, payment status, order status, Razorpay IDs, cancellation data, and timestamps.
-
-Supabase Row Level Security should be configured so customers can only access their own profiles, addresses, and orders, while admins can access the admin dashboard data.
+To apply these scripts:
+- Open your Supabase Dashboard.
+- Navigate to the **SQL Editor** tab.
+- Copy and run the contents of `supabase/schema.sql`, `supabase/rls_policies.sql`, and `supabase/seed.sql` in that order.
 
 ## Payment Flow
 
@@ -412,8 +429,6 @@ Then start both servers and test:
 
 - Add automated tests for cart, checkout, payment verification, and admin authorization.
 - Add backend test scripts.
-- Improve checkout loading and failure states with spinner overlays and clearer error prompts.
-- Create an asset guideline document with recommended dimensions and optimization techniques for product images.
 
 ## Security Notes
 

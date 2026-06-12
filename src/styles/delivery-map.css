@@ -1,11 +1,11 @@
 .delivery-map-card {
   margin-top: 18px;
   padding: 16px;
-  border: 1px solid rgba(212, 175, 55, 0.28);
+  border: 1px solid rgba(201, 111, 74, 0.28);
   border-radius: 8px;
   background:
     radial-gradient(circle at top left, rgba(172, 191, 105, 0.12), transparent 34%),
-    #080807;
+    var(--surface-2);
 }
 
 .delivery-map-head {
@@ -18,7 +18,7 @@
 
 .delivery-map-head p {
   margin: 0 0 6px;
-  color: #d4af37;
+  color: var(--accent);
   font-size: 0.72rem;
   font-weight: 950;
   letter-spacing: 0.14em;
@@ -27,7 +27,7 @@
 
 .delivery-map-head h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.08rem;
   font-weight: 950;
 }
@@ -35,10 +35,10 @@
 .delivery-map-head span {
   max-width: 360px;
   padding: 9px 11px;
-  border: 1px solid rgba(212, 175, 55, 0.24);
+  border: 1px solid rgba(201, 111, 74, 0.24);
   border-radius: 8px;
-  background: rgba(212, 175, 55, 0.1);
-  color: #ffe8a3;
+  background: rgba(201, 111, 74, 0.1);
+  color: var(--accent);
   font-size: 0.84rem;
   font-weight: 850;
   line-height: 1.45;
@@ -47,9 +47,9 @@
 .delivery-map-frame {
   overflow: hidden;
   min-height: 360px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #10100e;
+  background: var(--surface-2);
 }
 
 .delivery-map {
@@ -64,9 +64,9 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  border: 1px dashed rgba(212, 175, 55, 0.32);
+  border: 1px dashed rgba(201, 111, 74, 0.32);
   border-radius: 8px;
-  background: #080807;
+  background: var(--surface-2);
   text-align: center;
 }
 
@@ -82,13 +82,13 @@
 
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: #10100e;
-  color: #ffffff;
-  border: 1px solid rgba(212, 175, 55, 0.24);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid rgba(201, 111, 74, 0.24);
 }
 
 .leaflet-popup-content strong {
-  color: #d4af37;
+  color: var(--accent);
 }
 
 @media (max-width: 720px) {

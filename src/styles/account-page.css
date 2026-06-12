@@ -15,10 +15,10 @@
   gap: 9px;
   margin-bottom: 16px;
   padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background: var(--surface-2);
+  color: var(--text);
   cursor: pointer;
   font-weight: 850;
 }
@@ -26,10 +26,10 @@
 .account-info-hero {
   padding: 26px;
   background:
-    radial-gradient(circle at top right, rgba(240, 198, 106, 0.14), transparent 34%),
-    radial-gradient(circle at top left, rgba(139, 46, 212, 0.16), transparent 38%),
+    radial-gradient(circle at top right, rgba(201, 111, 74, 0.14), transparent 34%),
+    radial-gradient(circle at top left, rgba(95, 122, 97, 0.16), transparent 38%),
     #17111f;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--surface-2);
   border-radius: 18px;
 }
 
@@ -47,9 +47,9 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: rgba(240, 198, 106, 0.12);
+  background: rgba(201, 111, 74, 0.12);
   color: var(--primary);
-  border: 1px solid rgba(240, 198, 106, 0.26);
+  border: 1px solid rgba(201, 111, 74, 0.26);
 }
 
 .account-info-badge {
@@ -58,16 +58,16 @@
   align-items: center;
   padding: 7px 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-2);
   color: var(--primary);
-  border: 1px solid rgba(240, 198, 106, 0.2);
+  border: 1px solid rgba(201, 111, 74, 0.2);
   font-size: 0.78rem;
   font-weight: 950;
 }
 
 .account-info-hero h1 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: clamp(1.65rem, 6vw, 2.45rem);
   line-height: 1.08;
   font-weight: 950;
@@ -94,8 +94,8 @@
   gap: 8px;
   padding: 14px;
   border-radius: 14px;
-  background: #050308;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
 }
 
 .account-info-stat span {
@@ -107,7 +107,7 @@
 }
 
 .account-info-stat strong {
-  color: #ffffff;
+  color: var(--text);
   font-size: 0.95rem;
   line-height: 1.35;
   font-weight: 900;
@@ -121,14 +121,14 @@
 
 .account-info-card {
   padding: 22px;
-  background: #050308;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
   border-radius: 16px;
 }
 
 .account-info-card h2 {
   margin: 0 0 14px;
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.08rem;
   font-weight: 900;
 }
@@ -155,8 +155,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), #fff0a8);
-  color: #080404;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #FFFFFF;
   font-size: 0.88rem;
   font-weight: 950;
 }
@@ -199,15 +199,15 @@
   margin-top: 18px;
   border: 2px solid var(--primary);
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary), #fff0a8);
-  color: #080404;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #FFFFFF;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 950;
 }
 
 .account-info-action:hover {
-  box-shadow: 0 14px 34px rgba(240, 198, 106, 0.16);
+  box-shadow: 0 14px 34px rgba(201, 111, 74, 0.16);
 }
 
 @media (min-width: 900px) {

@@ -1,19 +1,19 @@
 .delivery-partner-page {
   width: min(100%, 980px);
   margin: 0 auto;
-  color: #ffffff;
+  color: var(--text);
   animation: rise-up 0.45s ease;
 }
 
 .delivery-partner-hero,
 .delivery-partner-card {
-  border: 1px solid rgba(212, 175, 55, 0.28);
+  border: 1px solid rgba(201, 111, 74, 0.28);
   border-radius: 8px;
   background:
     radial-gradient(circle at top left, rgba(172, 191, 105, 0.13), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
-    #10100e;
-  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+    var(--surface-2);
+  box-shadow: 0 22px 54px rgba(47, 42, 36, 0.34);
 }
 
 .delivery-partner-hero {
@@ -26,7 +26,7 @@
 
 .delivery-partner-eyebrow {
   margin: 0 0 8px;
-  color: #d4af37;
+  color: var(--accent);
   font-size: 0.74rem;
   font-weight: 950;
   letter-spacing: 0.14em;
@@ -35,7 +35,7 @@
 
 .delivery-partner-hero h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: clamp(2rem, 4vw, 3.2rem);
   line-height: 1;
   font-weight: 950;
@@ -67,13 +67,13 @@
 .delivery-partner-actions button:last-child {
   border: 1px solid rgba(172, 191, 105, 0.55);
   background: #acbf69;
-  color: #080807;
+  color: var(--surface-2);
 }
 
 .delivery-partner-actions button:nth-child(3) {
-  border: 1px solid rgba(212, 175, 55, 0.34);
-  background: rgba(212, 175, 55, 0.12);
-  color: #ffe8a3;
+  border: 1px solid rgba(201, 111, 74, 0.34);
+  background: rgba(201, 111, 74, 0.12);
+  color: var(--accent);
 }
 
 .delivery-partner-hero button:hover,
@@ -119,17 +119,17 @@
   min-height: 46px;
   padding: 12px 13px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #080807;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
   outline: none;
   font: inherit;
   font-weight: 750;
 }
 
 .delivery-partner-search input:focus {
-  border-color: rgba(212, 175, 55, 0.75);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+  border-color: rgba(201, 111, 74, 0.75);
+  box-shadow: 0 0 0 3px rgba(201, 111, 74, 0.12);
 }
 
 .delivery-partner-message,
@@ -137,9 +137,9 @@
   margin: 14px 0 0;
   padding: 11px 12px;
   border-radius: 8px;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.24);
-  color: #ffe8a3;
+  background: rgba(201, 111, 74, 0.1);
+  border: 1px solid rgba(201, 111, 74, 0.24);
+  color: var(--accent);
   font-weight: 850;
   line-height: 1.45;
 }
@@ -154,9 +154,9 @@
 .delivery-info-block,
 .delivery-partner-address {
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #080807;
+  background: var(--surface-2);
 }
 
 .delivery-info-block span {
@@ -171,7 +171,7 @@
 .delivery-info-block strong {
   display: block;
   margin-top: 7px;
-  color: #ffffff;
+  color: var(--text);
   font-size: 0.95rem;
   font-weight: 900;
   overflow-wrap: anywhere;
@@ -183,7 +183,7 @@
 
 .delivery-partner-address h3 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 1.1rem;
   font-weight: 950;
 }
