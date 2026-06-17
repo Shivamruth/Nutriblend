@@ -12,6 +12,7 @@ const DEFAULT_MONTHLY_PLANS = [
     bestFor: "Best for students & beginners",
     price: "Price coming soon",
     emoji: "🌱",
+    tag: null,
     benefits: [
       "Simple monthly protein routine",
       "Flexible shake selection",
@@ -25,6 +26,7 @@ const DEFAULT_MONTHLY_PLANS = [
     bestFor: "Best for regular gym users",
     price: "Price coming soon",
     emoji: "💪",
+    tag: "Most Popular",
     benefits: [
       "Consistent post-workout support",
       "More servings for active schedules",
@@ -38,6 +40,7 @@ const DEFAULT_MONTHLY_PLANS = [
     bestFor: "Best for serious fitness users",
     price: "Price coming soon",
     emoji: "🔥",
+    tag: null,
     benefits: [
       "Daily shake coverage",
       "Built for strict training routines",
@@ -51,6 +54,7 @@ const DEFAULT_MONTHLY_PLANS = [
     bestFor: "Best for performance and muscle gain",
     price: "Price coming soon",
     emoji: "⚡",
+    tag: "Best Value",
     benefits: [
       "Energy support before training",
       "Recovery shake after workout",
@@ -66,6 +70,7 @@ const formatDbMonthlyPlan = (plan) => ({
   bestFor: plan.best_for || plan.description || "",
   price: plan.price ? `₹${plan.price}` : "Price coming soon",
   emoji: plan.image || "📅",
+  tag: plan.tag || null,
   benefits: Array.isArray(plan.includes)
     ? plan.includes
     : typeof plan.includes === "string"
@@ -87,6 +92,19 @@ const STATUS_COLORS = {
   cancelled: { bg: "rgba(239,68,68,0.12)",  color: "#ef4444" },
   expired:   { bg: "rgba(100,116,139,0.12)", color: "#64748b" },
 };
+
+const STATUS_ICONS = {
+  active: "✓",
+  cancelled: "✕",
+  expired: "—",
+};
+
+const trustFeatures = [
+  { icon: "🚴", label: "Daily Delivery", desc: "Fresh to your door every morning" },
+  { icon: "🔄", label: "Flexible Cancel", desc: "Cancel anytime from your dashboard" },
+  { icon: "🥛", label: "Fresh Ingredients", desc: "No preservatives, made fresh daily" },
+  { icon: "📞", label: "WhatsApp Support", desc: "Help whenever you need it" },
+];
 
 export default function MonthlyPlans({ setPage }) {
   const { notify } = useNotification();
@@ -221,35 +239,58 @@ export default function MonthlyPlans({ setPage }) {
   };
 
   const activeCount = subscriptions.filter((s) => s.status === "active").length;
+  const displayPlans = loadingCatalog ? DEFAULT_MONTHLY_PLANS : catalogPlans;
 
   return (
-    <main className="monthly-plans-page">
-      <section className="monthly-plans-hero">
-        <p className="monthly-plans-eyebrow">Monthly Plans</p>
-        <h1>NutriBlend Subscription Plans</h1>
-        <p>
-          Build consistency with monthly shake plans for students, gym users,
-          and performance-focused fitness routines.
+    <main className="mp-page">
+      {/* ── Hero ──────────────────────────────────────────── */}
+      <section className="mp-hero">
+        <div className="mp-hero-glow" />
+        <div className="mp-hero-badge">
+          <span>📅</span>
+          <span>Monthly Subscription</span>
+        </div>
+        <h1>
+          Build <span className="mp-hero-accent">Consistency</span> With Monthly Plans
+        </h1>
+        <p className="mp-hero-subtitle">
+          Fresh protein shakes delivered daily — designed for students, gym users,
+          and serious fitness routines.
         </p>
+        <div className="mp-hero-stats">
+          {[
+            { val: "10–30", unit: "Shakes/Mo" },
+            { val: "Fresh", unit: "Daily Made" },
+            { val: "Cancel", unit: "Anytime" },
+          ].map((s) => (
+            <div key={s.unit} className="mp-hero-stat">
+              <strong>{s.val}</strong>
+              <span>{s.unit}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* ── My Subscriptions ──────────────────────────────────── */}
+      {/* ── My Subscriptions ──────────────────────────────── */}
       {userId && (
-        <section className="monthly-plans-subs-section">
-          <div className="monthly-plans-subs-head">
+        <section className="mp-subs-section">
+          <div className="mp-subs-header">
             <div>
-              <p className="monthly-plans-eyebrow">My Account</p>
-              <h2>
+              <p className="mp-eyebrow">My Account</p>
+              <h2 className="mp-subs-title">
                 My Subscriptions
                 {activeCount > 0 && (
-                  <span className="monthly-plans-active-badge">{activeCount} Active</span>
+                  <span className="mp-active-badge">
+                    <span className="mp-active-dot" />
+                    {activeCount} Active
+                  </span>
                 )}
               </h2>
             </div>
             {subscriptions.length > 0 && (
               <button
                 type="button"
-                className="monthly-plans-refresh-btn"
+                className="mp-refresh-btn"
                 onClick={() => loadSubscriptions(userId)}
                 disabled={loadingSubs}
               >
@@ -259,50 +300,51 @@ export default function MonthlyPlans({ setPage }) {
           </div>
 
           {loadingSubs ? (
-            <div className="monthly-plans-subs-loading">
+            <div className="mp-subs-loading">
               {[1, 2].map((n) => (
-                <div key={n} className="monthly-plan-sub-skeleton" />
+                <div key={n} className="mp-sub-skeleton loading" />
               ))}
             </div>
           ) : subscriptions.length === 0 ? (
-            <div className="monthly-plans-no-subs">
-              <p style={{ fontSize: 36 }}>📋</p>
-              <p style={{ fontWeight: 700, marginTop: 8 }}>No active subscriptions</p>
-              <p style={{ color: "var(--text-muted, #94a3b8)", fontSize: 14, marginTop: 6 }}>
-                Subscribe to a plan below. Your subscriptions will appear here after your order is confirmed.
+            <div className="mp-empty-subs">
+              <div className="mp-empty-icon">📋</div>
+              <h3>No active subscriptions</h3>
+              <p>
+                Subscribe to a plan below. Your subscriptions will appear here after order confirmation.
               </p>
             </div>
           ) : (
-            <div className="monthly-plans-subs-list">
+            <div className="mp-subs-list">
               {subscriptions.map((sub) => {
                 const colors = STATUS_COLORS[sub.status] || STATUS_COLORS.expired;
+                const icon = STATUS_ICONS[sub.status] || "—";
                 return (
-                  <article key={sub.id} className="monthly-plan-sub-card">
-                    <div className="monthly-plan-sub-top">
-                      <div>
-                        <p className="monthly-plan-sub-name">{sub.plan_name || "Monthly Plan"}</p>
+                  <article key={sub.id} className="mp-sub-card">
+                    <div className="mp-sub-top">
+                      <div className="mp-sub-info">
+                        <h4 className="mp-sub-name">{sub.plan_name || "Monthly Plan"}</h4>
                         {sub.plan_protein && (
-                          <p className="monthly-plan-sub-meta">{sub.plan_protein}</p>
+                          <p className="mp-sub-protein">{sub.plan_protein}</p>
                         )}
-                        <div className="monthly-plan-sub-dates">
-                          <span>Start: {formatDate(sub.start_date)}</span>
+                        <div className="mp-sub-dates">
+                          <span>📅 Start: {formatDate(sub.start_date)}</span>
                           {sub.end_date && <span> · End: {formatDate(sub.end_date)}</span>}
                           {sub.cancelled_at && <span> · Cancelled: {formatDate(sub.cancelled_at)}</span>}
                         </div>
                       </div>
                       <span
-                        className="monthly-plan-sub-status"
+                        className="mp-sub-status"
                         style={{ background: colors.bg, color: colors.color }}
                       >
-                        {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+                        {icon} {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
                       </span>
                     </div>
 
                     {sub.status === "active" && (
-                      <div className="monthly-plan-sub-actions">
+                      <div className="mp-sub-actions">
                         <button
                           type="button"
-                          className="monthly-plan-cancel-btn"
+                          className="mp-btn-cancel"
                           onClick={() => setCancelTargetId(sub.id)}
                           disabled={cancellingId === sub.id}
                         >
@@ -311,7 +353,7 @@ export default function MonthlyPlans({ setPage }) {
                         {sub.order_id && (
                           <button
                             type="button"
-                            className="monthly-plan-orders-btn"
+                            className="mp-btn-view-order"
                             onClick={() => setPage?.("orders")}
                           >
                             View Order →
@@ -321,7 +363,7 @@ export default function MonthlyPlans({ setPage }) {
                     )}
 
                     {sub.cancel_reason && (
-                      <p className="monthly-plan-cancel-reason">
+                      <p className="mp-cancel-reason">
                         Reason: {sub.cancel_reason}
                       </p>
                     )}
@@ -333,40 +375,63 @@ export default function MonthlyPlans({ setPage }) {
         </section>
       )}
 
-      {/* ── Plan Catalog ─────────────────────────────────────── */}
-      <section className="monthly-plans-catalog">
-        <div className="monthly-plans-catalog-head">
-          <p className="monthly-plans-eyebrow">Plans</p>
+      {/* ── Plan Catalog ──────────────────────────────────── */}
+      <section className="mp-catalog">
+        <div className="mp-catalog-head">
+          <p className="mp-eyebrow">Plans</p>
           <h2>Choose Your Plan</h2>
+          <p className="mp-catalog-desc">
+            Pick the plan that fits your fitness routine. Upgrade or cancel anytime.
+          </p>
         </div>
 
-        <div className="monthly-plans-grid" aria-label="Monthly subscription plans">
-          {(loadingCatalog ? DEFAULT_MONTHLY_PLANS : catalogPlans).map((plan) => (
-            <article className="monthly-plan-card" key={plan.id}>
-              <div className="monthly-plan-head">
-                <span className="monthly-plan-emoji">{plan.emoji}</span>
-                <span className="monthly-plan-qty">{plan.quantity}</span>
+        <div className="mp-plans-grid" aria-label="Monthly subscription plans">
+          {displayPlans.map((plan, i) => (
+            <article
+              className={`mp-plan-card ${plan.tag ? "mp-plan-featured" : ""}`}
+              key={plan.id}
+              style={{ animationDelay: `${i * 0.08}s` }}
+            >
+              {plan.tag && <div className="mp-plan-tag">{plan.tag}</div>}
+
+              <div className="mp-plan-header">
+                <div className="mp-plan-emoji">{plan.emoji}</div>
+                <div className="mp-plan-qty-pill">{plan.quantity}</div>
                 <h3>{plan.name}</h3>
-                <p>{plan.bestFor}</p>
+                <p className="mp-plan-for">{plan.bestFor}</p>
               </div>
 
-              <ul className="monthly-plan-benefits">
+              <ul className="mp-plan-benefits">
                 {plan.benefits.map((benefit) => (
-                  <li key={benefit}>{benefit}</li>
+                  <li key={benefit}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" opacity="0.12" />
+                      <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {benefit}
+                  </li>
                 ))}
               </ul>
 
-              <div className="monthly-plan-price">
-                <span>Suggested Price</span>
-                <strong>{plan.price}</strong>
+              <div className="mp-plan-price-block">
+                <span className="mp-plan-price-label">Monthly Price</span>
+                <strong className="mp-plan-price">{plan.price}</strong>
               </div>
 
-              <div className="monthly-plan-actions">
-                <button type="button" onClick={() => addToCart(plan)}>
+              <div className="mp-plan-actions">
+                <button
+                  type="button"
+                  className="mp-btn-cart"
+                  onClick={() => addToCart(plan)}
+                >
                   Add to Cart
                 </button>
-                <button type="button" onClick={() => addToCart(plan, true)}>
-                  Subscribe Now
+                <button
+                  type="button"
+                  className="mp-btn-subscribe"
+                  onClick={() => addToCart(plan, true)}
+                >
+                  Subscribe Now →
                 </button>
               </div>
             </article>
@@ -374,20 +439,25 @@ export default function MonthlyPlans({ setPage }) {
         </div>
       </section>
 
-      {/* ── Trust section ─────────────────────────────────────── */}
-      <section className="monthly-plans-trust">
-        {[
-          { icon: "🚴", label: "Daily Delivery", desc: "Fresh to your door every morning" },
-          { icon: "🔄", label: "Flexible Cancellation", desc: "Cancel anytime from My Subscriptions" },
-          { icon: "🥛", label: "Fresh Ingredients", desc: "No preservatives, made fresh daily" },
-          { icon: "📞", label: "24/7 WhatsApp Support", desc: "Help whenever you need it" },
-        ].map((item) => (
-          <div key={item.label} className="monthly-plans-trust-card">
-            <span>{item.icon}</span>
-            <strong>{item.label}</strong>
-            <p>{item.desc}</p>
-          </div>
-        ))}
+      {/* ── Trust Section ─────────────────────────────────── */}
+      <section className="mp-trust">
+        <div className="mp-trust-header">
+          <p className="mp-eyebrow">Why Subscribe?</p>
+          <h2>Built for Your Fitness Lifestyle</h2>
+        </div>
+        <div className="mp-trust-grid">
+          {trustFeatures.map((item, i) => (
+            <div
+              key={item.label}
+              className="mp-trust-card"
+              style={{ animationDelay: `${i * 0.06}s` }}
+            >
+              <div className="mp-trust-icon">{item.icon}</div>
+              <strong>{item.label}</strong>
+              <p>{item.desc}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <ConfirmModal

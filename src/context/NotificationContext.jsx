@@ -68,19 +68,16 @@ export default function NotificationProvider({ children }) {
     );
   }, []);
 
-  // ── Subscribe to realtime changes ─────────────────────────────────────
-  useEffect(() => {
-    let userId = null;
+  // ── Helper: create + subscribe a realtime channel ───────────────────
+  const subscribe = useCallback(
+    (userId) => {
+      // Tear down any previous channel first (handles StrictMode double-mount
+      // and re-subscribe on SIGNED_IN).
+      if (realtimeRef.current) {
+        supabase.removeChannel(realtimeRef.current);
+        realtimeRef.current = null;
+      }
 
-    const init = async () => {
-      const { data } = await supabase.auth.getUser();
-      userId = data?.user?.id;
-      if (!userId) return;
-
-      // Initial load
-      await fetchDbNotifications(userId);
-
-      // Realtime subscription
       const channel = supabase
         .channel(`notifications:user:${userId}`)
         .on(
@@ -118,16 +115,40 @@ export default function NotificationProvider({ children }) {
         .subscribe();
 
       realtimeRef.current = channel;
+    },
+    // notify is stable (useState setter pattern) so no dep needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // ── Subscribe to realtime changes ─────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid || cancelled) return;
+
+      // Initial load
+      await fetchDbNotifications(uid);
+      if (cancelled) return;
+
+      // Realtime subscription
+      subscribe(uid);
     };
 
     init();
 
     // Auth state changes (login/logout)
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "INITIAL_SESSION") return; // already handled by init()
+
       if (event === "SIGNED_IN") {
-        const { data } = await supabase.auth.getUser();
-        if (data?.user?.id) {
-          await fetchDbNotifications(data.user.id);
+        const uid = session?.user?.id;
+        if (uid && !cancelled) {
+          await fetchDbNotifications(uid);
+          if (!cancelled) subscribe(uid);
         }
       } else if (event === "SIGNED_OUT") {
         setDbNotifications([]);
@@ -139,13 +160,14 @@ export default function NotificationProvider({ children }) {
     });
 
     return () => {
+      cancelled = true;
       authListener?.subscription?.unsubscribe();
       if (realtimeRef.current) {
         supabase.removeChannel(realtimeRef.current);
         realtimeRef.current = null;
       }
     };
-  }, [fetchDbNotifications]);
+  }, [fetchDbNotifications, subscribe]);
 
   const unreadCount = dbNotifications.filter((n) => !n.is_read).length;
 

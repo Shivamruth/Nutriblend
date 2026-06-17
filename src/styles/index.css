@@ -49,6 +49,42 @@
 }
 
 /* ═══════════════════════════════════════════════
+   DARK MODE
+   ═══════════════════════════════════════════════ */
+
+[data-theme="dark"] {
+  --bg: #121417;
+  --surface: #1A1D23;
+  --surface-2: #22262E;
+  --primary: #7B9E7D;
+  --primary-dark: #5F7A61;
+  --accent: #E08A5E;
+  --accent-dark: #C96F4A;
+  --text: #E8E2D6;
+  --muted: #9A9083;
+  --border: #2E3238;
+  --success: #5FAF6B;
+  --danger: #E06060;
+  --bg-deep: #0E1014;
+  --surface-strong: #1E2228;
+  --surface-soft: #252930;
+  --glass: #1A1D23;
+  --glass-border: #2E3238;
+  --line: #2E3238;
+  --line-strong: var(--accent);
+  --primary-deep: #5F7A61;
+  --primary-glow: rgba(123, 158, 125, 0.15);
+  --secondary: var(--primary);
+  --secondary-glow: rgba(123, 158, 125, 0.10);
+  --brand-gold: var(--accent);
+  --brand-gold-soft: var(--primary);
+  --brand-olive: var(--primary);
+  --brand-olive-deep: var(--primary-dark);
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════
    RESETS
    ═══════════════════════════════════════════════ */
 
@@ -65,6 +101,7 @@ body {
   line-height: 1.6;
   width: 100%;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 img, video { display: block; max-width: 100%; height: auto; }

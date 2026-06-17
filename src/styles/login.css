@@ -481,3 +481,20 @@
     font-size: 1.9rem;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   DARK MODE OVERRIDES
+   ═══════════════════════════════════════════════ */
+
+[data-theme="dark"] .login-wrapper {
+  --auth-bg: #121417;
+  --auth-panel: #1A1D23;
+  --auth-panel-soft: #1E2228;
+  --auth-text: #E8E2D6;
+  --auth-muted: #9A9083;
+  --auth-primary: #7B9E7D;
+  --auth-primary-dark: #5F7A61;
+  --auth-accent: #E08A5E;
+  --auth-border: #2E3238;
+  --auth-input: #151820;
+}

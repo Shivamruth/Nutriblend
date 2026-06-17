@@ -37,6 +37,20 @@ const GOAL_OPTIONS = [
   "Competition Prep",
 ];
 
+const WORKOUT_TYPES = [
+  "Weight Training",
+  "Cardio",
+  "CrossFit",
+  "Calisthenics",
+  "Mixed",
+];
+
+const DIET_OPTIONS = ["Veg", "Non-Veg", "Egg Only", "Vegan"];
+
+const ALLERGY_OPTIONS = ["Lactose", "Nuts", "Gluten", "Soy", "None"];
+
+const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
+
 const getInitials = (name, email) => {
   if (name) {
     return name
@@ -69,6 +83,13 @@ export default function Profile({ setPage }) {
     address: "",
     fitness_goal: "",
     fitness_level: "",
+    workout_type: "",
+    dietary_preference: "",
+    allergies: [],
+    age: "",
+    gender: "",
+    weight: "",
+    height: "",
   });
 
   useEffect(() => {
@@ -104,6 +125,13 @@ export default function Profile({ setPage }) {
           address: profileData.address || "",
           fitness_goal: profileData.fitness_goal || "",
           fitness_level: profileData.fitness_level || "",
+          workout_type: profileData.workout_type || "",
+          dietary_preference: profileData.dietary_preference || "",
+          allergies: profileData.allergies || [],
+          age: profileData.age || "",
+          gender: profileData.gender || "",
+          weight: profileData.weight || "",
+          height: profileData.height || "",
         });
       }
 
@@ -289,6 +317,13 @@ export default function Profile({ setPage }) {
         address: form.address.trim(),
         fitness_goal: form.fitness_goal,
         fitness_level: form.fitness_level,
+        workout_type: form.workout_type || null,
+        dietary_preference: form.dietary_preference || null,
+        allergies: form.allergies.length > 0 ? form.allergies : [],
+        age: form.age ? Number(form.age) : null,
+        gender: form.gender || null,
+        weight: form.weight ? Number(form.weight) : null,
+        height: form.height ? Number(form.height) : null,
       };
 
       const { data, error } = await supabase
@@ -314,6 +349,21 @@ export default function Profile({ setPage }) {
     }
   };
 
+  const toggleAllergy = (allergy) => {
+    setForm((prev) => {
+      let next;
+      if (allergy === "None") {
+        next = prev.allergies.includes("None") ? [] : ["None"];
+      } else {
+        const withoutNone = prev.allergies.filter((a) => a !== "None");
+        next = withoutNone.includes(allergy)
+          ? withoutNone.filter((a) => a !== allergy)
+          : [...withoutNone, allergy];
+      }
+      return { ...prev, allergies: next };
+    });
+  };
+
   const cancelEdit = () => {
     setForm({
       full_name: profile?.full_name || "",
@@ -321,6 +371,13 @@ export default function Profile({ setPage }) {
       address: profile?.address || "",
       fitness_goal: profile?.fitness_goal || "",
       fitness_level: profile?.fitness_level || "",
+      workout_type: profile?.workout_type || "",
+      dietary_preference: profile?.dietary_preference || "",
+      allergies: profile?.allergies || [],
+      age: profile?.age || "",
+      gender: profile?.gender || "",
+      weight: profile?.weight || "",
+      height: profile?.height || "",
     });
     setEditing(false);
   };
@@ -416,6 +473,111 @@ export default function Profile({ setPage }) {
               ))}
             </select>
           </label>
+
+          <label>
+            Workout Type
+            <select
+              name="workout_type"
+              value={form.workout_type}
+              onChange={handleChange}
+            >
+              <option value="">Select workout type</option>
+              {WORKOUT_TYPES.map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+            </select>
+          </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label>
+              Age
+              <input
+                name="age"
+                type="number"
+                value={form.age}
+                onChange={handleChange}
+                placeholder="25"
+                min="13"
+                max="100"
+              />
+            </label>
+            <label>
+              Gender
+              <select name="gender" value={form.gender} onChange={handleChange}>
+                <option value="">Select</option>
+                {GENDER_OPTIONS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label>
+              Weight (kg)
+              <input
+                name="weight"
+                type="number"
+                value={form.weight}
+                onChange={handleChange}
+                placeholder="70"
+                min="20"
+                max="300"
+              />
+            </label>
+            <label>
+              Height (cm)
+              <input
+                name="height"
+                type="number"
+                value={form.height}
+                onChange={handleChange}
+                placeholder="175"
+                min="100"
+                max="250"
+              />
+            </label>
+          </div>
+
+          <label>
+            Dietary Preference
+            <select
+              name="dietary_preference"
+              value={form.dietary_preference}
+              onChange={handleChange}
+            >
+              <option value="">Select your diet</option>
+              {DIET_OPTIONS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </label>
+
+          <div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted, #94a3b8)", display: "block", marginBottom: 8 }}>Allergies</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {ALLERGY_OPTIONS.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => toggleAllergy(a)}
+                  style={{
+                    padding: "7px 14px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    borderRadius: 999,
+                    border: `1px solid ${form.allergies.includes(a) ? "var(--accent, #06b6d4)" : "rgba(255,255,255,0.1)"}`,
+                    background: form.allergies.includes(a) ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.05)",
+                    color: form.allergies.includes(a) ? "var(--accent, #06b6d4)" : "var(--text-muted, #94a3b8)",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <label>
             Basic Address

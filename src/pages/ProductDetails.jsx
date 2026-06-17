@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import { fallbackProductImage, getProductImage } from "../utils/productImages";
+import { fallbackProductImage, getProductImage, withProductImage } from "../utils/productImages";
 import "../styles/product-details.css";
 
 const splitTextList = (value) => {
@@ -45,15 +46,95 @@ const parseIngredients = (value) => {
     });
 };
 
-export default function ProductDetails({ product, setPage }) {
+export default function ProductDetails({ product: initialProduct, productId, setPage }) {
+  const [product, setProduct] = useState(initialProduct || null);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const { notify } = useNotification();
 
+  // Fetch product from Supabase if not passed via in-memory state
+  const fetchProduct = useCallback(async (id) => {
+    if (!id) return;
+    setFetchLoading(true);
+    setFetchError(false);
+
+    try {
+      // Try products table first
+      const { data: productData } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (productData) {
+        setProduct(withProductImage({
+          ...productData,
+          is_active: productData.is_active !== false,
+          stock_status: productData.stock_status || "In Stock",
+        }));
+        setFetchLoading(false);
+        return;
+      }
+
+      // Fallback: try plans table
+      const { data: planData } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (planData) {
+        setProduct({
+          id: planData.id,
+          name: planData.name,
+          category: "Plans",
+          price: planData.price,
+          protein: planData.protein,
+          duration: planData.duration,
+          tag: planData.tag,
+          image: planData.image || "📅",
+          description: planData.description,
+          bestFor: planData.best_for,
+          includes: String(planData.includes || "")
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+          isPlan: true,
+          stock_status: "In Stock",
+        });
+        setFetchLoading(false);
+        return;
+      }
+
+      // Not found in either table
+      setFetchError(true);
+    } catch (err) {
+      console.error("Product fetch error:", err);
+      setFetchError(true);
+    } finally {
+      setFetchLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Use in-memory product if available (same-session navigation = instant)
+    if (initialProduct) {
+      setProduct(initialProduct);
+      return;
+    }
+
+    // Otherwise fetch by ID from URL
+    if (productId) {
+      fetchProduct(productId);
+    }
+  }, [initialProduct, productId, fetchProduct]);
+
   const isPlan = product?.isPlan;
   const stockStatus = product?.stock_status || "In Stock";
-const normalizedStock = stockStatus.toLowerCase().replaceAll("_", " ");
-const isOutOfStock = !isPlan && normalizedStock === "out of stock";
+  const normalizedStock = stockStatus.toLowerCase().replaceAll("_", " ");
+  const isOutOfStock = !isPlan && normalizedStock === "out of stock";
 
   const ingredients = useMemo(() => {
     if (isPlan) return [];
@@ -65,12 +146,26 @@ const isOutOfStock = !isPlan && normalizedStock === "out of stock";
     return splitTextList(product?.benefits);
   }, [product, isPlan]);
 
-  if (!product) {
+  // Loading state (fetching from Supabase)
+  if (fetchLoading) {
+    return (
+      <div className="product-details-page">
+        <div className="product-not-found">
+          <div className="admin-login-spinner" style={{ width: 32, height: 32, border: "3px solid var(--border)", borderTopColor: "var(--primary)", borderRadius: "50%", animation: "al-spin 0.65s linear infinite" }} />
+          <h2>Loading product...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!product || fetchError) {
     return (
       <div className="product-details-page">
         <div className="product-not-found">
           <span className="home-empty-icon">🔍</span>
           <h2>Product not found</h2>
+          <p>This product may have been removed or the link is invalid.</p>
 
           <button className="buy-btn" onClick={() => setPage("home")}>
             ← Back to Store

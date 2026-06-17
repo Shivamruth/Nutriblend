@@ -1,0 +1,50 @@
+/* ═══════════════════════════════════════════
+   Admin Analytics — Chart Cards
+═══════════════════════════════════════════ */
+
+.analytics-chart-card {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.analytics-chart-card h4 {
+  margin: 0 0 16px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.analytics-chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.analytics-chart-row .analytics-chart-card {
+  margin-top: 16px;
+}
+
+/* Recharts overrides for dark theme */
+.analytics-chart-card .recharts-cartesian-grid-horizontal line,
+.analytics-chart-card .recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.05);
+}
+
+.analytics-chart-card .recharts-legend-item-text {
+  color: var(--muted) !important;
+}
+
+.analytics-chart-card .recharts-pie-sector {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+@media (max-width: 768px) {
+  .analytics-chart-row {
+    grid-template-columns: 1fr;
+  }
+}

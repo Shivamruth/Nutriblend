@@ -1,5 +1,5 @@
 export const KITCHEN_LOCATION = {
-  name: "NutriBlend Kitchen",
-  lat: 17.3850,
-  lng: 78.4867,
+  name: "NutriBlend Kitchen — Gandimaisamma, Hyderabad",
+  lat: 17.5180,
+  lng: 78.4468,
 };

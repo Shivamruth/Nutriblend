@@ -7,6 +7,8 @@ import {
   Home,
   LogOut,
   Menu,
+  Moon,
+  Sun,
   Handshake,
   Search,
   Shield,
@@ -32,6 +34,24 @@ export default function Navbar({
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
   const { unreadCount } = useNotification();
+
+  // Dark mode
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("nutriblend-theme");
+      if (stored) return stored === "dark";
+      return window.matchMedia?.("(prefers-color-scheme: dark)").matches || false;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const theme = darkMode ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("nutriblend-theme", theme);
+  }, [darkMode]);
+
+  const toggleTheme = () => setDarkMode((prev) => !prev);
 
   useEffect(() => {
     if (searchOpen) {
@@ -248,6 +268,10 @@ export default function Navbar({
               <button type="button" onClick={() => navigateTo("profile")}>
                 <User size={18} />
                 <span>Profile</span>
+              </button>
+              <button type="button" onClick={toggleTheme}>
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
               </button>
               <button type="button" onClick={handleLogout}>
                 <LogOut size={18} />

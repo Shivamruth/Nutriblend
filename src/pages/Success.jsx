@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { whatsappLink } from "../config/business";
 import "../styles/success.css";
 
 const formatMoney = (value) => {
@@ -80,10 +81,11 @@ export default function Success({ setPage }) {
     const orderLabel = orderInfo.orderId
       ? `order ${formatOrderId(orderInfo.orderId)}`
       : "my recent order";
-    const message = encodeURIComponent(
-      `Hi NutriBlend, I need help with ${orderLabel}.`
+    window.open(
+      whatsappLink(`Hi NutriBlend, I need help with ${orderLabel}.`),
+      "_blank",
+      "noopener,noreferrer"
     );
-    window.open(`https://wa.me/?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   return (

@@ -206,6 +206,45 @@
 }
 
 /* ═══════════════════════════════════════════════
+   SERVICE AREA BANNER
+   ═══════════════════════════════════════════════ */
+
+.home-service-area-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(95, 122, 97, 0.08), rgba(201, 111, 74, 0.06));
+  border: 1px solid rgba(95, 122, 97, 0.2);
+  animation: fade-in-up 0.5s var(--ease) 0.3s both;
+}
+
+.home-service-pin {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.home-service-area-banner div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-service-area-banner strong {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.home-service-area-banner span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════
    CATEGORY CHIPS
    ═══════════════════════════════════════════════ */
 

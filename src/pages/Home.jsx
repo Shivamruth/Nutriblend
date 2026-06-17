@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import { BUSINESS } from "../config/business";
 import { fallbackProductImage, withProductImage } from "../utils/productImages";
 import "../styles/home.css";
 
@@ -185,7 +186,7 @@ export default function Home({ search, setPage, setSelectedProduct }) {
 
   const handleProductClick = (product) => {
     setSelectedProduct(product);
-    setPage("product");
+    setPage(`product/${product.id}`);
   };
 
   const normalize = (value) => String(value || "").toLowerCase();
@@ -392,6 +393,14 @@ export default function Home({ search, setPage, setSelectedProduct }) {
               <path d="M8 12H3" />
             </svg>
           </button>
+        </div>
+      </div>
+
+      <div className="home-service-area-banner">
+        <span className="home-service-pin">📍</span>
+        <div>
+          <strong>Delivering in {BUSINESS.serviceArea}</strong>
+          <span>Expanding across Hyderabad soon — stay tuned!</span>
         </div>
       </div>
 

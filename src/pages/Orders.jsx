@@ -3,6 +3,8 @@ import { SlidersHorizontal } from "lucide-react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import { fallbackProductImage, getProductImage } from "../utils/productImages";
+import { whatsappLink } from "../config/business";
+import { downloadInvoice } from "../utils/invoice";
 import "../styles/orders-page.css";
 
 const ORDER_STEPS = [
@@ -151,15 +153,17 @@ export default function Orders({ setPage }) {
 
       try {
         const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        if (userError || !user) {
+        if (sessionError || !session?.user) {
           setOrders([]);
           setErrorMessage("Please login again to view your orders.");
           return;
         }
+
+        const user = session.user;
 
         const { data, error } = await supabase
           .from("orders")
@@ -232,14 +236,52 @@ export default function Orders({ setPage }) {
     setPage?.("track-order", { orderId: order.id });
   };
 
-  const handleOrderAgain = (order) => {
+  const handleOrderAgain = async (order) => {
     const items = getOrderItems(order);
     const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
     const nextCart = [...existingCart];
 
+    // Check current stock status from Supabase
+    const productIds = items
+      .map((item) => item.id || item.product_id)
+      .filter(Boolean);
+
+    let stockMap = {};
+
+    if (productIds.length > 0) {
+      try {
+        const { data: stockData } = await supabase
+          .from("products")
+          .select("id, stock_status, is_active")
+          .in("id", productIds);
+
+        if (stockData) {
+          stockData.forEach((p) => {
+            stockMap[p.id] = p;
+          });
+        }
+      } catch (err) {
+        console.warn("Stock check failed, proceeding anyway:", err);
+      }
+    }
+
+    const skipped = [];
+    let addedCount = 0;
+
     items.forEach((item) => {
       const itemName = getItemName(item);
       const itemId = item.id || item.product_id || itemName;
+      const stockInfo = stockMap[itemId];
+
+      // Skip out-of-stock or inactive items
+      if (stockInfo) {
+        const status = String(stockInfo.stock_status || "In Stock").toLowerCase().replaceAll("_", " ");
+        if (status === "out of stock" || stockInfo.is_active === false) {
+          skipped.push(itemName);
+          return;
+        }
+      }
+
       const existing = nextCart.find(
         (cartItem) =>
           cartItem.id === itemId ||
@@ -259,20 +301,32 @@ export default function Orders({ setPage }) {
           price: getItemPrice(item),
         });
       }
+
+      addedCount++;
     });
 
     localStorage.setItem("cart", JSON.stringify(nextCart));
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("cartUpdated"));
-    notify("Order items added to cart", "success");
+
+    if (skipped.length > 0 && addedCount > 0) {
+      notify(`${addedCount} item${addedCount > 1 ? "s" : ""} added. Skipped (out of stock): ${skipped.join(", ")}`, "info");
+    } else if (skipped.length > 0 && addedCount === 0) {
+      notify(`All items are currently out of stock: ${skipped.join(", ")}`, "error");
+      return;
+    } else {
+      notify(`${addedCount} item${addedCount > 1 ? "s" : ""} added to cart`, "success");
+    }
+
     setPage?.("cart");
   };
 
   const handleContactSupport = (order) => {
-    const message = encodeURIComponent(
-      `Hi NutriBlend, I need help with order ${formatOrderId(order.id)}.`
+    window.open(
+      whatsappLink(`Hi NutriBlend, I need help with order ${formatOrderId(order.id)}.`),
+      "_blank",
+      "noopener,noreferrer"
     );
-    window.open(`https://wa.me/?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -578,6 +632,7 @@ function OrderDetailsView({
       <div className="order-detail-actions">
         <button type="button" onClick={onTrack}>Track Order</button>
         <button type="button" onClick={onOrderAgain}>Order Again</button>
+        <button type="button" onClick={() => downloadInvoice(order)}>Download Invoice</button>
         <button type="button" onClick={onContinueShopping}>Shop More</button>
       </div>
     </section>

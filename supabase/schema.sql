@@ -51,6 +51,13 @@ create table if not exists public.profiles (
   role text not null default 'customer',
   fitness_goal text,
   fitness_level text,
+  age integer,
+  gender text,
+  weight numeric,
+  height numeric,
+  workout_type text,
+  dietary_preference text,
+  allergies text[] default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

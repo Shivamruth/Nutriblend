@@ -1,16 +1,8 @@
 import { useState } from "react";
-import { FaApple, FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNotification } from "../context/NotificationContext";
 
 import { supabase } from "../supabase/Client";
-
-const oauthProviders = [
-  { label: "Google", provider: "google", icon: <FcGoogle size={21} /> },
-  { label: "Microsoft", provider: "azure", icon: <span className="login-ms-mark" /> },
-  { label: "Apple", provider: "apple", icon: <FaApple size={22} /> },
-  { label: "Facebook", provider: "facebook", icon: <FaFacebookF size={18} /> },
-];
 
 const features = [
   { icon: "01", label: "Protein products" },
@@ -207,20 +199,23 @@ export default function Login() {
               <span>or continue with</span>
             </div>
 
-            <div className="login-social-grid">
-              {oauthProviders.map((item) => (
-                <button
-                  type="button"
-                  className="login-social-btn"
-                  key={item.provider}
-                  onClick={() => handleOAuthLogin(item.provider, item.label)}
-                  disabled={loading}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              className="login-social-btn login-google-btn"
+              onClick={() => handleOAuthLogin("google", "Google")}
+              disabled={loading}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                padding: "13px 20px",
+              }}
+            >
+              <FcGoogle size={21} />
+              <span>Continue with Google</span>
+            </button>
           </div>
 
           <p className="login-switch">

@@ -3,6 +3,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { countries } from "../data/countries";
 import { indiaStatesDistricts } from "../data/indiaStatesDistricts";
 import { useNotification } from "../context/NotificationContext";
+import { checkServiceArea } from "../config/business";
 import { supabase } from "../supabase/Client";
 import "../styles/address.css";
 
@@ -164,8 +165,8 @@ export default function Addresses({ setPage, setAddress }) {
   }, [notify, setAddress]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data?.user?.id;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const uid = session?.user?.id;
       if (uid) {
         setUserId(uid);
         loadAddresses(uid);
@@ -244,6 +245,17 @@ export default function Addresses({ setPage, setAddress }) {
       return { valid: false, message: "Enter a custom delivery time" };
     return { valid: true, message: "Address ready ✓" };
   }, [form, pinStatus]);
+
+  // Service area check
+  const serviceCheck = useMemo(() => {
+    if (!form.city && !form.pincode && !form.district) return null;
+    return checkServiceArea({
+      city: form.city,
+      district: form.district,
+      pincode: form.pincode,
+      state: form.state,
+    });
+  }, [form.city, form.district, form.pincode, form.state]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handleChange = (e) => {
@@ -520,6 +532,13 @@ export default function Addresses({ setPage, setAddress }) {
             )}
 
             <label className="address-note-label">Order Note <span>Optional</span><textarea name="orderNote" value={form.orderNote} onChange={handleChange} placeholder="Any delivery instruction" /></label>
+
+            {serviceCheck && !serviceCheck.inArea && (
+              <div className="address-service-area-warn">
+                <span>⚠️</span>
+                <p>{serviceCheck.message}</p>
+              </div>
+            )}
 
             <div className="address-form-actions">
               <button type="button" className="address-primary-btn" onClick={saveAddress} disabled={!validation.valid || checkingPin || saving}>

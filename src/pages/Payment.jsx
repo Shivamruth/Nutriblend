@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import { KITCHEN_LOCATION } from "../config/location";
@@ -90,6 +90,7 @@ export default function Payment({ setPage, setPayment }) {
   const [addressLoading, setAddressLoading] = useState(true);
   const [paymentStage, setPaymentStage] = useState("");
   const [paymentError, setPaymentError] = useState("");
+  const orderCompletingRef = useRef(false);
 
   const { notify } = useNotification();
 
@@ -183,7 +184,7 @@ export default function Payment({ setPage, setPayment }) {
   const totalItems = getTotalItems(cart);
 
   useEffect(() => {
-    if (cart.length === 0) {
+    if (cart.length === 0 && !orderCompletingRef.current) {
       notify("Cart is empty. Please add items before payment.", "error");
       setPage("cart");
     }
@@ -433,6 +434,7 @@ export default function Payment({ setPage, setPayment }) {
   };
 
   const clearCartAndGoSuccess = (paymentMethod, orderId = "", orderTotal = 0) => {
+    orderCompletingRef.current = true;
     localStorage.setItem(
       "lastPaymentMethod",
       paymentMethod === "COD"

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import { whatsappLink } from "../config/business";
 import DeliveryMap from "../components/DeliveryMap";
 import "../styles/track-order.css";
 
@@ -123,6 +124,8 @@ export default function TrackOrder({ orderId, setPage }) {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [realtimeStatus, setRealtimeStatus] = useState("Connecting live updates...");
+  const [livePartnerLocation, setLivePartnerLocation] = useState(null);
+  const [dynamicEta, setDynamicEta] = useState(null);
 
   const resolvedOrderId = orderId || localStorage.getItem("trackOrderId") || "";
 
@@ -142,14 +145,16 @@ export default function TrackOrder({ orderId, setPage }) {
 
     try {
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      if (userError || !user) {
+      if (sessionError || !session?.user) {
         setErrorMessage("Please login again to track this order.");
         return;
       }
+
+      const user = session.user;
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -228,6 +233,108 @@ export default function TrackOrder({ orderId, setPage }) {
     };
   }, [resolvedOrderId]);
 
+  // --- Live delivery tracking: poll delivery_tracking table ---
+  useEffect(() => {
+    if (!resolvedOrderId || !order) return undefined;
+
+    const status = normalizeStatus(order.delivery_status || order.status);
+    if (status !== "Out for Delivery") return undefined;
+
+    const fetchTracking = async () => {
+      try {
+        const { data } = await supabase
+          .from("delivery_tracking")
+          .select("latitude, longitude, updated_at")
+          .eq("order_id", resolvedOrderId)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.latitude && data?.longitude) {
+          setLivePartnerLocation({
+            lat: Number(data.latitude),
+            lng: Number(data.longitude),
+          });
+        }
+      } catch {
+        // Silent — don't interrupt tracking UI
+      }
+    };
+
+    fetchTracking();
+    const interval = setInterval(fetchTracking, 10000);
+
+    return () => clearInterval(interval);
+  }, [resolvedOrderId, order]);
+
+  // --- Realtime delivery_tracking subscription ---
+  useEffect(() => {
+    if (!resolvedOrderId) return undefined;
+
+    const channel = supabase
+      .channel(`delivery-tracking-${resolvedOrderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_tracking",
+          filter: `order_id=eq.${resolvedOrderId}`,
+        },
+        (payload) => {
+          const row = payload.new;
+          if (row?.latitude && row?.longitude) {
+            setLivePartnerLocation({
+              lat: Number(row.latitude),
+              lng: Number(row.longitude),
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [resolvedOrderId]);
+
+  // --- Calculate dynamic ETA from partner GPS to customer ---
+  useEffect(() => {
+    if (!livePartnerLocation || !order) {
+      setDynamicEta(null);
+      return;
+    }
+
+    const address = safeObject(order.address);
+    const custLat = toCoordinate(order.customer_lat ?? address.customer_lat ?? address.lat);
+    const custLng = toCoordinate(order.customer_lng ?? address.customer_lng ?? address.lng);
+
+    if (custLat == null || custLng == null) {
+      setDynamicEta(null);
+      return;
+    }
+
+    // Haversine distance in km
+    const R = 6371;
+    const dLat = ((custLat - livePartnerLocation.lat) * Math.PI) / 180;
+    const dLng = ((custLng - livePartnerLocation.lng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((livePartnerLocation.lat * Math.PI) / 180) *
+        Math.cos((custLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    // Estimate: avg 20 km/h in city traffic
+    const minutes = Math.max(2, Math.round((dist / 20) * 60));
+
+    if (minutes <= 2) {
+      setDynamicEta("Arriving now!");
+    } else {
+      setDynamicEta(`~${minutes} min away`);
+    }
+  }, [livePartnerLocation, order]);
+
   const details = useMemo(() => {
     if (!order) return null;
 
@@ -248,7 +355,7 @@ export default function TrackOrder({ orderId, setPage }) {
         lat: toCoordinate(order.customer_lat ?? address.customer_lat ?? address.lat),
         lng: toCoordinate(order.customer_lng ?? address.customer_lng ?? address.lng),
       },
-      deliveryLocation: {
+      deliveryLocation: livePartnerLocation || {
         lat: toCoordinate(order.delivery_lat),
         lng: toCoordinate(order.delivery_lng),
       },
@@ -257,15 +364,16 @@ export default function TrackOrder({ orderId, setPage }) {
       deliveryStatus,
       status,
       total: money(order.total || order.price),
-      eta: getEstimatedDelivery(order),
+      eta: dynamicEta || getEstimatedDelivery(order),
     };
-  }, [order]);
+  }, [order, livePartnerLocation, dynamicEta]);
 
   const contactSupport = () => {
-    const message = encodeURIComponent(
-      `Hi NutriBlend, I need help tracking order ${formatOrderId(resolvedOrderId)}.`
+    window.open(
+      whatsappLink(`Hi NutriBlend, I need help tracking order ${formatOrderId(resolvedOrderId)}.`),
+      "_blank",
+      "noopener,noreferrer"
     );
-    window.open(`https://wa.me/?text=${message}`, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -339,10 +447,34 @@ export default function TrackOrder({ orderId, setPage }) {
 
         <div className="track-details-grid">
           <InfoPanel label="Delivery Partner" value={details.partner.name} />
-          <InfoPanel label="Partner Phone" value={details.partner.phone} />
+          <InfoPanel
+            label="Partner Phone"
+            value={
+              details.partner.phone && details.partner.phone !== "Not assigned yet" ? (
+                <a
+                  href={`tel:${details.partner.phone}`}
+                  style={{
+                    color: "var(--accent, #06b6d4)",
+                    textDecoration: "none",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  📞 {details.partner.phone}
+                </a>
+              ) : (
+                details.partner.phone
+              )
+            }
+          />
           <InfoPanel label="Delivery Status" value={details.deliveryStatus} />
           <InfoPanel label="Payment Method" value={details.paymentMethod} />
           <InfoPanel label="Total Amount" value={details.total} highlight />
+          {dynamicEta && (
+            <InfoPanel label="Live ETA" value={dynamicEta} highlight />
+          )}
         </div>
 
         <section className="track-address-panel">
@@ -354,6 +486,7 @@ export default function TrackOrder({ orderId, setPage }) {
         <DeliveryMap
           customerLocation={details.customerLocation}
           deliveryLocation={details.deliveryLocation}
+          partnerName={details.partner.name}
         />
 
         <div className="track-actions">

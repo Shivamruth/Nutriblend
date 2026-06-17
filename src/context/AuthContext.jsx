@@ -15,56 +15,69 @@ export function AuthProvider({ children }) {
   const [role, setRole] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const getUser = useCallback(async () => {
+  // Fetch role from profiles table given a user object
+  const fetchRole = useCallback(async (user) => {
+    if (!user) {
+      setAuthUser(null);
+      setRole(null);
+      return;
+    }
+
+    setAuthUser(user);
+
     try {
-      setAuthLoading(true);
-
-      const { data, error } = await supabase.auth.getUser();
-
-      if (error || !data?.user) {
-        setAuthUser(null);
-        setRole(null);
-        return;
-      }
-
-      const user = data.user;
-      setAuthUser(user);
-
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (profileError) {
-        console.error("Role fetch error:", profileError.message);
-        setRole(null);
-        return;
+      if (error) {
+        console.error("Role fetch error:", error.message);
       }
-
       setRole(profile?.role || "customer");
     } catch (error) {
-      console.error("AuthContext getUser error:", error);
-      setAuthUser(null);
-      setRole(null);
-    } finally {
-      setAuthLoading(false);
+      console.error("AuthContext role fetch error:", error);
+      setRole("customer");
     }
   }, []);
 
   useEffect(() => {
-    getUser();
+    let mounted = true;
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      getUser();
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      if (event === "SIGNED_OUT") {
+        setAuthUser(null);
+        setRole(null);
+        setAuthLoading(false);
+        return;
+      }
+
+      // TOKEN_REFRESHED doesn't need a role re-fetch
+      if (event === "TOKEN_REFRESHED") {
+        if (session?.user) setAuthUser(session.user);
+        return;
+      }
+
+      // INITIAL_SESSION, SIGNED_IN
+      if (session?.user) {
+        await fetchRole(session.user);
+      } else {
+        setAuthUser(null);
+        setRole(null);
+      }
+      if (mounted) setAuthLoading(false);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, [getUser]);
+  }, [fetchRole]);
 
   return (
     <AuthContext.Provider
@@ -72,7 +85,7 @@ export function AuthProvider({ children }) {
         user: authUser,
         role,
         authLoading,
-        refreshUser: getUser,
+        refreshUser: () => fetchRole(authUser),
       }}
     >
       {children}

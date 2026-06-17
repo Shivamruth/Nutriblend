@@ -3,8 +3,9 @@ import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
 import AdminProducts from "../components/AdminProducts";
 import AdminPlans from "../components/AdminPlans";
+import AdminAnalytics from "../components/AdminAnalytics";
 import "../styles/admin.css";
-import "../styles/admin-page.css";
+import "../styles/admin-analytics.css";
 
 const ORDER_STATUSES = [
   "Pending",
@@ -232,28 +233,29 @@ export default function Admin({ setPage }) {
     setLoading(true);
 
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      // getSession is cached (instant) — avoids a network round-trip vs getUser
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
 
-      if (userError || !userData.user) {
+      if (sessionError || !user) {
         notify("Login required", "error");
         setPage?.("admin-login");
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userData.user.id)
-        .single();
+      // Run profile check and orders fetch in parallel
+      const [profileResult] = await Promise.all([
+        supabase.from("profiles").select("role").eq("id", user.id).single(),
+        fetchOrders(),
+      ]);
 
-      if (profileError || profile?.role !== "admin") {
+      if (profileResult.error || profileResult.data?.role !== "admin") {
         notify("Access denied. Admin only.", "error");
         setPage?.("home");
         return;
       }
 
       setAdminReady(true);
-      await fetchOrders();
     } catch (error) {
       console.error("Admin check error:", error);
       notify("Admin access check failed", "error");
@@ -474,7 +476,7 @@ export default function Admin({ setPage }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setPage?.("home");
+    setPage?.("admin-login");
   };
 
   if (loading && !adminReady) {
@@ -699,81 +701,7 @@ export default function Admin({ setPage }) {
       )}
 
       {activeTab === "analytics" && (
-        <section className="admin-section">
-          <div className="admin-section-head"><h3>Revenue & Order Analytics</h3></div>
-          <div className="admin-metrics-bar" style={{ marginBottom: 24 }}>
-            <MetricCard label="Total Revenue" value={money(dashboard.totalRevenue)} />
-            <MetricCard label="Today Revenue" value={money(dashboard.todayRevenue)} />
-            <MetricCard label="Total Orders" value={dashboard.totalOrders} />
-            <MetricCard label="Delivered" value={dashboard.deliveredOrders} />
-            <MetricCard label="Pending" value={dashboard.pendingOrders} />
-            <MetricCard label="Out for Delivery" value={dashboard.outForDeliveryOrders} />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p style={{ fontWeight: 700, marginBottom: 16 }}>Orders by Status</p>
-              {["Pending", "Preparing", "Ready for Pickup", "Out for Delivery", "Delivered", "Cancelled"].map((s) => {
-                const count = orders.filter((o) => normalizeStatus(o.status) === s).length;
-                const pct = dashboard.totalOrders > 0 ? Math.round((count / dashboard.totalOrders) * 100) : 0;
-                return (
-                  <div key={s} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-                      <span>{s}</span><span style={{ fontWeight: 600 }}>{count} ({pct}%)</span>
-                    </div>
-                    <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: s === "Delivered" ? "#22c55e" : s === "Cancelled" ? "#ef4444" : s === "Out for Delivery" ? "#06b6d4" : "#84cc16", borderRadius: 999 }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p style={{ fontWeight: 700, marginBottom: 16 }}>Payment Methods</p>
-              {["COD", "Razorpay", "UPI", "Online"].map((m) => {
-                const count = orders.filter((o) => normalizePaymentMethod(o.payment_method).toLowerCase().includes(m.toLowerCase())).length;
-                const pct = dashboard.totalOrders > 0 ? Math.round((count / dashboard.totalOrders) * 100) : 0;
-                return (
-                  <div key={m} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-                      <span>{m}</span><span style={{ fontWeight: 600 }}>{count} ({pct}%)</span>
-                    </div>
-                    <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: "#3b82f6", borderRadius: 999 }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16, padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p style={{ fontWeight: 700, marginBottom: 16 }}>Revenue Breakdown (last 7 days)</p>
-            {(() => {
-              const days = Array.from({ length: 7 }, (_, i) => {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                return d.toDateString();
-              }).reverse();
-              const maxRev = Math.max(...days.map((d) => orders.filter((o) => new Date(o.created_at).toDateString() === d).reduce((s, o) => s + getOrderTotal(o), 0)), 1);
-              return days.map((d) => {
-                const dayOrders = orders.filter((o) => new Date(o.created_at).toDateString() === d);
-                const rev = dayOrders.reduce((s, o) => s + getOrderTotal(o), 0);
-                const pct = Math.round((rev / maxRev) * 100);
-                const label = new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-                return (
-                  <div key={d} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                    <span style={{ width: 60, fontSize: 12, color: "var(--text-muted, #94a3b8)", textAlign: "right" }}>{label}</span>
-                    <div style={{ flex: 1, height: 20, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#84cc16,#22c55e)", borderRadius: 6, transition: "width 0.5s" }} />
-                    </div>
-                    <span style={{ width: 80, fontSize: 12, fontWeight: 600 }}>{money(rev)}</span>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        </section>
+        <AdminAnalytics orders={orders} dashboard={dashboard} />
       )}
     </main>
   );

@@ -6,18 +6,66 @@ import "../styles/gym-partner.css";
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 const benefits = [
-  "Daily fresh protein shakes",
-  "Pre and post-workout combos",
-  "Bulk member pricing",
-  "Custom gym-branded plans",
-  "Direct delivery to gym",
+  {
+    icon: "🥤",
+    title: "Daily Fresh Protein Shakes",
+    desc: "Cold-pressed, made fresh every morning for maximum nutrition",
+  },
+  {
+    icon: "💪",
+    title: "Pre & Post-Workout Combos",
+    desc: "Timed nutrition packs designed around training schedules",
+  },
+  {
+    icon: "💰",
+    title: "Bulk Member Pricing",
+    desc: "Volume discounts that grow with your gym's daily orders",
+  },
+  {
+    icon: "🏷️",
+    title: "Custom Gym-Branded Plans",
+    desc: "White-label shake menus with your gym's branding",
+  },
+  {
+    icon: "🚚",
+    title: "Direct Delivery to Gym",
+    desc: "On-time daily delivery or permanent counter setup",
+  },
+  {
+    icon: "📊",
+    title: "Nutrition Analytics Dashboard",
+    desc: "Track member orders, popular flavors, and monthly consumption",
+  },
 ];
 
 const steps = [
-  "Submit your gym details below",
-  "Our team understands your daily demand",
-  "We set customized pricing and plans",
-  "Daily delivery or on-site counter setup",
+  {
+    num: "01",
+    title: "Submit Your Details",
+    desc: "Fill out the form below with your gym info and requirements",
+  },
+  {
+    num: "02",
+    title: "We Understand Your Demand",
+    desc: "Our team reviews member count, timing, and daily volume",
+  },
+  {
+    num: "03",
+    title: "Custom Pricing & Plans",
+    desc: "We design pricing tiers and menus for your gym specifically",
+  },
+  {
+    num: "04",
+    title: "Go Live & Deliver",
+    desc: "Daily delivery starts or we set up an on-site counter",
+  },
+];
+
+const stats = [
+  { value: "50+", label: "Gym Partners" },
+  { value: "2,000+", label: "Daily Shakes" },
+  { value: "98%", label: "Retention Rate" },
+  { value: "24hr", label: "Setup Time" },
 ];
 
 const initialForm = {
@@ -99,16 +147,30 @@ export default function GymPartner() {
   if (submitted) {
     return (
       <main className="gym-partner-page">
-        <section className="gym-partner-hero" style={{ textAlign: "center", padding: "80px 20px" }}>
+        <section className="gym-success-screen">
+          <div className="gym-success-glow" />
+          <div className="gym-success-icon">
+            <svg viewBox="0 0 52 52" fill="none">
+              <circle cx="26" cy="26" r="25" stroke="currentColor" strokeWidth="2" opacity="0.2" />
+              <path
+                d="M14 27l8 8 16-16"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="gym-check-path"
+              />
+            </svg>
+          </div>
           <p className="gym-partner-eyebrow">Request Received</p>
           <h2>Thank You for Partnering! 🤝</h2>
-          <p style={{ maxWidth: 480, margin: "16px auto" }}>
-            We received your gym partner request. Our team will reach out within 24–48 hours to
-            discuss your requirements and customized plan.
+          <p className="gym-success-desc">
+            We received your gym partner request. Our team will reach out within
+            <strong> 24–48 hours</strong> to discuss your requirements and set up a customized plan.
           </p>
           <button
             type="button"
-            style={{ marginTop: 24 }}
+            className="gym-cta-btn gym-cta-secondary"
             onClick={() => setSubmitted(false)}
           >
             Submit Another Request
@@ -120,86 +182,183 @@ export default function GymPartner() {
 
   return (
     <main className="gym-partner-page">
+      {/* ── Hero ──────────────────────────────────────────── */}
       <section className="gym-partner-hero">
-        <p className="gym-partner-eyebrow">Gym Collaboration</p>
-        <h2>Partner With NutriBlend</h2>
-        <p>Fresh Protein Shakes for Your Gym Members</p>
+        <div className="gym-hero-glow" />
+        <div className="gym-hero-badge">
+          <span>🏋️</span>
+          <span>Gym Collaboration</span>
+        </div>
+        <h1>
+          Partner With <span className="gym-hero-accent">NutriBlend</span>
+        </h1>
+        <p className="gym-hero-subtitle">
+          Fresh protein shakes delivered daily to your gym — bulk pricing,
+          custom plans, and hassle-free setup.
+        </p>
+        <a href="#gym-form-section" className="gym-cta-btn">
+          Become a Partner →
+        </a>
       </section>
 
-      <div className="gym-partner-layout">
-        <section className="gym-partner-panel">
-          <div className="gym-partner-section-head">
-            <p className="gym-partner-eyebrow">Benefits</p>
-            <h3>Built for fitness businesses</h3>
+      {/* ── Stats Bar ─────────────────────────────────────── */}
+      <section className="gym-stats-bar">
+        {stats.map((stat, i) => (
+          <div className="gym-stat" key={stat.label} style={{ animationDelay: `${i * 0.08}s` }}>
+            <strong>{stat.value}</strong>
+            <span>{stat.label}</span>
           </div>
+        ))}
+      </section>
 
-          <div className="gym-benefits-grid">
-            {benefits.map((benefit) => (
-              <div className="gym-benefit-card" key={benefit}>
-                {benefit}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="gym-partner-panel">
-          <div className="gym-partner-section-head">
-            <p className="gym-partner-eyebrow">How it works</p>
-            <h3>Simple setup flow</h3>
-          </div>
-
-          <div className="gym-steps-list">
-            {steps.map((step, index) => (
-              <div className="gym-step" key={step}>
-                <span>Step {index + 1}</span>
-                <strong>{step}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <section className="gym-partner-form-card">
-        <div className="gym-partner-section-head">
-          <p className="gym-partner-eyebrow">Partner Request</p>
-          <h3>Tell us about your gym</h3>
+      {/* ── Benefits ──────────────────────────────────────── */}
+      <section className="gym-section">
+        <div className="gym-section-head">
+          <p className="gym-partner-eyebrow">Why Partner?</p>
+          <h2>Built for Fitness Businesses</h2>
+          <p className="gym-section-desc">
+            Everything your gym needs to offer premium nutrition to members
+          </p>
         </div>
 
-        <form className="gym-partner-form" onSubmit={saveRequest}>
-          <label>
-            Gym Name
-            <input name="gymName" value={form.gymName} onChange={handleChange} placeholder="Your gym name" />
-          </label>
+        <div className="gym-benefits-grid">
+          {benefits.map((b, i) => (
+            <div
+              className="gym-benefit-card"
+              key={b.title}
+              style={{ animationDelay: `${i * 0.06}s` }}
+            >
+              <div className="gym-benefit-icon">{b.icon}</div>
+              <h3>{b.title}</h3>
+              <p>{b.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-          <label>
-            Owner / Manager Name
-            <input name="ownerName" value={form.ownerName} onChange={handleChange} placeholder="Owner or manager name" />
-          </label>
+      {/* ── How it Works ──────────────────────────────────── */}
+      <section className="gym-section">
+        <div className="gym-section-head">
+          <p className="gym-partner-eyebrow">How It Works</p>
+          <h2>Simple 4-Step Setup</h2>
+          <p className="gym-section-desc">
+            From inquiry to daily delivery in under 48 hours
+          </p>
+        </div>
 
-          <label>
-            Mobile Number
-            <input name="mobile" value={form.mobile} onChange={handleChange} inputMode="tel" maxLength="10" placeholder="10-digit mobile number" />
-          </label>
+        <div className="gym-steps-timeline">
+          {steps.map((step, i) => (
+            <div
+              className="gym-step"
+              key={step.num}
+              style={{ animationDelay: `${i * 0.1}s` }}
+            >
+              <div className="gym-step-number">{step.num}</div>
+              <div className="gym-step-content">
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-          <label>
-            City
-            <input name="city" value={form.city} onChange={handleChange} placeholder="City" />
-          </label>
+      {/* ── Form ──────────────────────────────────────────── */}
+      <section className="gym-form-section" id="gym-form-section">
+        <div className="gym-form-card">
+          <div className="gym-form-header">
+            <div className="gym-form-header-icon">📝</div>
+            <div>
+              <p className="gym-partner-eyebrow">Partner Request</p>
+              <h2>Tell Us About Your Gym</h2>
+              <p className="gym-form-header-desc">
+                Fill in your details and we'll get back within 24–48 hours
+              </p>
+            </div>
+          </div>
 
-          <label>
-            Expected Daily Orders
-            <input name="expectedDailyOrders" value={form.expectedDailyOrders} onChange={handleChange} inputMode="numeric" placeholder="Example: 40" />
-          </label>
+          <form className="gym-partner-form" onSubmit={saveRequest}>
+            <label>
+              <span className="gym-label-text">Gym Name <span className="gym-required">*</span></span>
+              <input
+                name="gymName"
+                value={form.gymName}
+                onChange={handleChange}
+                placeholder="e.g. Iron Paradise Fitness"
+              />
+            </label>
 
-          <label className="gym-form-wide">
-            Message / Requirements <span style={{ opacity: 0.6 }}>Optional</span>
-            <textarea name="message" value={form.message} onChange={handleChange} placeholder="Timing, member count, counter setup, or custom requirements" />
-          </label>
+            <label>
+              <span className="gym-label-text">Owner / Manager <span className="gym-required">*</span></span>
+              <input
+                name="ownerName"
+                value={form.ownerName}
+                onChange={handleChange}
+                placeholder="Full name"
+              />
+            </label>
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Submitting…" : "Submit Partner Request"}
-          </button>
-        </form>
+            <label>
+              <span className="gym-label-text">Mobile Number <span className="gym-required">*</span></span>
+              <div className="gym-input-prefix-wrap">
+                <span className="gym-input-prefix">+91</span>
+                <input
+                  name="mobile"
+                  value={form.mobile}
+                  onChange={handleChange}
+                  inputMode="tel"
+                  maxLength="10"
+                  placeholder="10-digit number"
+                  className="gym-input-with-prefix"
+                />
+              </div>
+            </label>
+
+            <label>
+              <span className="gym-label-text">City <span className="gym-required">*</span></span>
+              <input
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+                placeholder="e.g. Hyderabad"
+              />
+            </label>
+
+            <label>
+              <span className="gym-label-text">Expected Daily Orders <span className="gym-required">*</span></span>
+              <input
+                name="expectedDailyOrders"
+                value={form.expectedDailyOrders}
+                onChange={handleChange}
+                inputMode="numeric"
+                placeholder="e.g. 40"
+              />
+            </label>
+
+            <label className="gym-form-wide">
+              <span className="gym-label-text">
+                Message / Requirements <span className="gym-optional">Optional</span>
+              </span>
+              <textarea
+                name="message"
+                value={form.message}
+                onChange={handleChange}
+                placeholder="Tell us about timing, member count, counter setup, custom flavors, or any other requirements…"
+              />
+            </label>
+
+            <button type="submit" className="gym-cta-btn gym-submit-btn" disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="gym-spinner" />
+                  Submitting…
+                </>
+              ) : (
+                "Submit Partner Request →"
+              )}
+            </button>
+          </form>
+        </div>
       </section>
     </main>
   );

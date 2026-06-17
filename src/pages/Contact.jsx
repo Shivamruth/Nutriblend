@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
+import { BUSINESS, whatsappLink } from "../config/business";
 import "../styles/gym-partner.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
-
-const WHATSAPP_NUMBER = "919999999999"; // Replace with actual WhatsApp business number
 
 const FAQ = [
   {
@@ -61,13 +59,9 @@ export default function Contact() {
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API_BASE}/inquiries/contact`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token || ""}`,
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(form),
       });
@@ -90,7 +84,7 @@ export default function Contact() {
 
   const openWhatsApp = () => {
     window.open(
-      `https://wa.me/${WHATSAPP_NUMBER}?text=Hi%20NutriBlend%20team%2C%20I%20need%20help%20with%20my%20order.`,
+      whatsappLink("Hi NutriBlend team, I need help with my order."),
       "_blank",
       "noopener,noreferrer"
     );

@@ -57,50 +57,72 @@ export default function ReviewOrder({ cart: _cart, address, payment, setPage }) 
     try {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
+      const userId = session?.user?.id;
 
-      const res = await fetch("/api/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          amount: total,
-          items: localCart,
-          address,
-          userId,
-          paymentMethod: payment,
-        }),
-      });
-
-      const json = await res.json();
-
-      if (json.success) {
-        const orderId = json.orderId || json.data?.id;
-
-        // Create subscription rows for any plan items
-        if (hasPlanItems && userId) {
-          await createSubscriptionsForPlans(orderId, localCart, userId);
-        }
-
-        // Store order info for Success page
-        if (orderId) {
-          localStorage.setItem("lastOrderId", String(orderId));
-        }
-        localStorage.setItem("lastPaymentMethod", payment);
-        localStorage.setItem("lastOrderTotal", String(total));
-
-        localStorage.removeItem("cart");
-        window.dispatchEvent(new Event("storage"));
-        notify("Order placed successfully ✅", "success");
-        setPage("success");
-      } else {
-        notify(json.message || "Error placing order ❌", "error");
+      if (!userId) {
+        notify("Session expired — please login again", "error");
+        return;
       }
+
+      // Build the order row matching the DB schema
+      const firstItem = localCart[0] || {};
+      const orderPayload = {
+        user_id: userId,
+        email: session.user.email || null,
+        product_name: firstItem.name || firstItem.product_name || "NutriBlend Order",
+        price: Number(firstItem.price || 0),
+        qty: localCart.reduce((sum, item) => sum + Number(item.qty || 1), 0),
+        subtotal: total,
+        total: total,
+        delivery_fee: 0,
+        delivery_option: null,
+        delivery_status: "Pending",
+        payment_method: payment,
+        payment_status: payment === "COD" ? "Pending" : "Pending",
+        status: "Placed",
+        address: address,
+        items: localCart.map((item) => ({
+          id: item.id,
+          name: item.name || item.product_name,
+          price: Number(item.price || 0),
+          qty: Number(item.qty || 1),
+          image: item.image || null,
+          isPlan: item.isPlan || false,
+        })),
+      };
+
+      const { data, error } = await supabase
+        .from("orders")
+        .insert([orderPayload])
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("Order insert error:", error);
+        notify(error.message || "Error placing order ❌", "error");
+        return;
+      }
+
+      const orderId = data?.id;
+
+      // Create subscription rows for any plan items
+      if (hasPlanItems && userId) {
+        await createSubscriptionsForPlans(orderId, localCart, userId);
+      }
+
+      // Store order info for Success page
+      if (orderId) {
+        localStorage.setItem("lastOrderId", String(orderId));
+      }
+      localStorage.setItem("lastPaymentMethod", payment);
+      localStorage.setItem("lastOrderTotal", String(total));
+
+      localStorage.removeItem("cart");
+      window.dispatchEvent(new Event("storage"));
+      notify("Order placed successfully ✅", "success");
+      setPage("success");
     } catch (err) {
-      console.error(err);
+      console.error("Place order error:", err);
       notify("Something went wrong ❌", "error");
     } finally {
       setLoading(false);

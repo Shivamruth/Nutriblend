@@ -1,35 +1,49 @@
+/* ============================================================
+   Track Order page – src/pages/TrackOrder.jsx
+   Warm earthy theme with olive & terracotta accents,
+   smooth animations, and premium card design.
+   ============================================================ */
+
+/* ── Page shell ─────────────────────────────────────────────── */
+
 .track-order-page {
   width: min(100%, 1120px);
   margin: 0 auto;
   color: var(--text);
-  animation: rise-up 0.45s ease;
+  animation: rise-up 0.5s var(--ease-spring) both;
 }
+
+/* ── Card base ──────────────────────────────────────────────── */
 
 .track-order-hero,
 .track-order-shell,
 .track-order-state {
-  border: 1px solid rgba(201, 111, 74, 0.28);
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at top left, rgba(172, 191, 105, 0.13), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
-    var(--surface-2);
-  box-shadow: 0 22px 54px rgba(47, 42, 36, 0.34);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 2px 8px rgba(47, 42, 36, 0.06),
+    0 12px 40px rgba(47, 42, 36, 0.08);
 }
+
+/* ── Hero section ───────────────────────────────────────────── */
 
 .track-order-hero {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  gap: 18px;
-  padding: 24px;
+  gap: 20px;
+  padding: 28px 26px;
+  background:
+    radial-gradient(ellipse at top left, rgba(95, 122, 97, 0.06), transparent 50%),
+    var(--surface);
 }
 
 .track-eyebrow {
   margin: 0 0 8px;
   color: var(--accent);
   font-size: 0.74rem;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -38,18 +52,18 @@
 .track-order-state h2 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  line-height: 1;
-  font-weight: 950;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.05;
+  font-weight: 900;
 }
 
 .track-order-hero p,
 .track-order-state p,
 .track-address-panel p,
 .track-step p {
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--muted);
   line-height: 1.55;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .track-order-hero p {
@@ -57,101 +71,136 @@
 }
 
 .track-order-hero p strong {
-  color: #acbf69;
+  color: var(--primary);
 }
+
+/* ── Live status badge ──────────────────────────────────────── */
 
 .track-live-status {
   display: inline-flex;
-  margin-top: 12px;
-  padding: 8px 11px;
-  border-radius: 999px;
-  background: rgba(172, 191, 105, 0.12);
-  border: 1px solid rgba(172, 191, 105, 0.28);
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(95, 122, 97, 0.08);
+  border: 1px solid rgba(95, 122, 97, 0.18);
   color: var(--primary-dark);
-  font-size: 0.78rem;
-  font-weight: 900;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
+
+.track-live-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(79, 138, 91, 0.5);
+  animation: trk-pulse 1.8s ease infinite;
+}
+
+@keyframes trk-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.75); }
+}
+
+/* ── ETA status card ────────────────────────────────────────── */
 
 .track-status-card {
   min-width: 260px;
   display: grid;
   align-content: center;
-  gap: 8px;
-  padding: 18px;
-  border: 1px solid rgba(172, 191, 105, 0.32);
-  border-radius: 8px;
-  background: var(--surface-2);
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse at bottom right, rgba(201, 111, 74, 0.05), transparent 60%),
+    var(--surface-2);
 }
 
 .track-status-card span,
 .track-info-panel span {
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 0.74rem;
-  font-weight: 950;
-  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .track-status-card strong {
   color: var(--accent);
-  font-size: 1.08rem;
-  font-weight: 950;
+  font-size: 1.15rem;
+  font-weight: 900;
 }
 
 .track-status-card button {
-  min-height: 40px;
-  margin-top: 6px;
-  padding: 10px 13px;
-  border-radius: 8px;
-  border: 1px solid rgba(201, 111, 74, 0.34);
-  background: rgba(201, 111, 74, 0.12);
+  min-height: 42px;
+  margin-top: 4px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 111, 74, 0.25);
+  background: rgba(201, 111, 74, 0.08);
   color: var(--accent);
-  font-weight: 950;
+  font-weight: 800;
+  font-size: 0.86rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all var(--speed) var(--ease-spring);
 }
 
 .track-status-card button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(172, 191, 105, 0.18);
+  background: rgba(201, 111, 74, 0.14);
+  box-shadow: 0 6px 20px rgba(201, 111, 74, 0.12);
 }
 
 .track-status-card button:disabled {
-  opacity: 0.62;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
+/* ── Main shell ─────────────────────────────────────────────── */
+
 .track-order-shell {
   margin-top: 18px;
-  padding: 22px;
+  padding: 26px;
 }
+
+/* ── Timeline ───────────────────────────────────────────────── */
 
 .track-timeline {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  gap: 0;
 }
 
 .track-step {
   position: relative;
-  min-height: 138px;
-  padding: 16px;
+  padding: 20px 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: all 0.3s var(--ease-spring);
 }
 
+/* Connector line */
 .track-step::after {
   content: "";
   position: absolute;
-  top: 34px;
-  left: calc(100% - 8px);
-  width: 28px;
+  top: 38px;
+  left: calc(100% + 1px);
+  width: calc(100% - 32px);
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--border);
+  transform: scaleX(0.3);
+  transform-origin: left;
+  transition: all 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .track-step:last-child::after {
@@ -159,140 +208,178 @@
 }
 
 .track-step.active::after {
-  background: #acbf69;
+  background: linear-gradient(90deg, var(--primary), rgba(95, 122, 97, 0.3));
+  transform: scaleX(1);
 }
 
+/* Step number circle */
 .track-step span {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
-  background: #171714;
-  color: rgba(255, 255, 255, 0.68);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
   border: 2px solid var(--border);
-  font-weight: 950;
+  font-weight: 900;
+  font-size: 0.92rem;
+  transition: all 0.3s var(--ease-spring);
 }
 
 .track-step strong {
   display: block;
   margin-top: 14px;
   color: var(--text);
-  font-weight: 950;
+  font-size: 0.92rem;
+  font-weight: 800;
 }
 
 .track-step p {
   margin: 6px 0 0;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
 }
 
+/* Active step */
 .track-step.active {
-  border-color: rgba(172, 191, 105, 0.46);
-  background: rgba(172, 191, 105, 0.08);
+  border-color: rgba(95, 122, 97, 0.3);
+  background:
+    radial-gradient(ellipse at top left, rgba(95, 122, 97, 0.06), transparent 70%),
+    var(--surface);
+  box-shadow: 0 4px 16px rgba(95, 122, 97, 0.08);
 }
 
 .track-step.active span {
-  background: #acbf69;
-  color: var(--surface-2);
-  border-color: #acbf69;
-  box-shadow: 0 0 0 6px rgba(172, 191, 105, 0.12);
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary-dark);
+  box-shadow:
+    0 0 0 5px rgba(95, 122, 97, 0.1),
+    0 4px 12px rgba(95, 122, 97, 0.2);
 }
 
 .track-step.active p {
   color: var(--primary-dark);
+  font-weight: 700;
 }
+
+/* ── Details grid ───────────────────────────────────────────── */
 
 .track-details-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 22px;
 }
 
 .track-info-panel,
 .track-address-panel {
-  padding: 16px;
+  padding: 18px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: all var(--speed) var(--ease);
+}
+
+.track-info-panel:hover {
   background: var(--surface-2);
+  box-shadow: 0 4px 14px rgba(47, 42, 36, 0.06);
 }
 
 .track-info-panel strong {
   display: block;
   margin-top: 8px;
   color: var(--text);
-  font-size: 0.98rem;
-  font-weight: 900;
+  font-size: 0.96rem;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 
 .track-info-panel strong.highlight {
   color: var(--accent);
+  font-size: 1.05rem;
 }
 
+/* ── Address panel ──────────────────────────────────────────── */
+
 .track-address-panel {
-  margin-top: 18px;
+  margin-top: 20px;
+  border-color: rgba(95, 122, 97, 0.2);
+  background:
+    radial-gradient(ellipse at top left, rgba(95, 122, 97, 0.04), transparent 50%),
+    var(--surface);
 }
 
 .track-address-panel h3 {
   margin: 0;
   color: var(--text);
   font-size: 1.1rem;
-  font-weight: 950;
+  font-weight: 900;
 }
 
 .track-address-panel p:last-child {
   margin: 8px 0 0;
 }
 
+/* ── Action buttons ─────────────────────────────────────────── */
+
 .track-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 22px;
 }
 
 .track-actions button,
 .track-order-state button {
-  min-height: 46px;
-  padding: 12px 15px;
-  border-radius: 8px;
-  font-weight: 950;
+  min-height: 48px;
+  padding: 13px 18px;
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: all var(--speed) var(--ease-spring);
 }
 
 .track-support-btn,
 .track-order-state button {
-  border: 1px solid rgba(172, 191, 105, 0.55);
-  background: #acbf69;
-  color: var(--surface-2);
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(95, 122, 97, 0.2);
 }
 
 .track-back-btn {
-  border: 1px solid rgba(201, 111, 74, 0.34);
-  background: rgba(201, 111, 74, 0.12);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .track-actions button:hover,
 .track-order-state button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(172, 191, 105, 0.18);
+  box-shadow: 0 8px 24px rgba(95, 122, 97, 0.2);
 }
 
+.track-back-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  box-shadow: 0 4px 14px rgba(95, 122, 97, 0.08);
+}
+
+/* ── Error / empty state ────────────────────────────────────── */
+
 .track-order-state {
-  padding: 54px 22px;
+  padding: 56px 24px;
   text-align: center;
 }
 
 .track-order-state p {
   max-width: 520px;
-  margin: 10px auto 0;
+  margin: 12px auto 0;
 }
 
 .track-order-state button {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .track-state-actions {
@@ -300,57 +387,58 @@
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 20px;
 }
 
 .track-state-actions button {
-  min-width: 150px;
+  min-width: 160px;
 }
 
 .track-state-actions button:first-child {
-  border-color: rgba(201, 111, 74, 0.34);
-  background: rgba(201, 111, 74, 0.12);
-  color: var(--accent);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.track-state-actions button:first-child:hover {
+  border-color: var(--primary);
+  color: var(--primary-dark);
 }
 
 .track-state-actions button:disabled {
-  opacity: 0.62;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
+/* ── Skeleton loading ───────────────────────────────────────── */
+
 .track-skeleton {
   width: 60%;
   height: 16px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--surface-2), var(--border), var(--surface-2));
-  animation: track-shimmer 1.1s ease infinite;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 37%, var(--surface-2) 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
 .track-skeleton + .track-skeleton {
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
-.track-skeleton.wide {
-  width: 86%;
-}
+.track-skeleton.wide  { width: 85%; }
+.track-skeleton.short { width: 38%; }
 
-.track-skeleton.short {
-  width: 38%;
-}
-
-@keyframes track-shimmer {
-  0%, 100% {
-    opacity: 0.45;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
+/* ── Responsive ─────────────────────────────────────────────── */
 
 @media (max-width: 980px) {
-  .track-timeline,
+  .track-timeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .track-details-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -361,22 +449,44 @@
 }
 
 @media (max-width: 720px) {
-  .track-order-hero,
-  .track-actions {
-    grid-template-columns: 1fr;
-  }
-
   .track-order-hero {
     flex-direction: column;
-    padding: 16px;
+    padding: 20px;
+    gap: 16px;
   }
 
   .track-order-shell {
-    padding: 16px;
+    padding: 18px;
   }
 
   .track-status-card {
     min-width: 0;
+  }
+
+  .track-timeline {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .track-step {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 16px;
+    min-height: auto;
+  }
+
+  .track-step strong {
+    margin-top: 0;
+  }
+
+  .track-step p {
+    margin: 3px 0 0;
+  }
+
+  .track-details-grid,
+  .track-actions {
+    grid-template-columns: 1fr;
   }
 
   .track-state-actions {
@@ -385,21 +495,5 @@
 
   .track-state-actions button {
     width: 100%;
-  }
-
-  .track-timeline,
-  .track-details-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .track-step {
-    min-height: auto;
-    display: flex;
-    gap: 14px;
-    align-items: center;
-  }
-
-  .track-step strong {
-    margin-top: 0;
   }
 }

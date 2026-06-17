@@ -1,5 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from "react-router-dom";
 import { supabase } from "./supabase/Client";
+import { useCart } from "./context/CartContext";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -49,6 +51,33 @@ const ACCOUNT_PAGE_IDS = new Set([
   "who-we-are",
 ]);
 
+/** Maps old page-state values to URL paths */
+const PAGE_TO_PATH = {
+  home: "/",
+  cart: "/cart",
+  orders: "/orders",
+  profile: "/profile",
+  plans: "/plans",
+  "monthly-plans": "/monthly-plans",
+  "gym-partner": "/gym-partner",
+  about: "/about",
+  contact: "/contact",
+  "privacy-policy": "/privacy-policy",
+  "terms-conditions": "/terms-conditions",
+  "refund-policy": "/refund-policy",
+  "delivery-policy": "/delivery-policy",
+  "nutrition-disclaimer": "/nutrition-disclaimer",
+  notifications: "/notifications",
+  "admin-login": "/admin-login",
+  admin: "/admin",
+  product: "/product",
+  address: "/address",
+  payment: "/payment",
+  review: "/review",
+  success: "/success",
+  "delivery-partner": "/delivery-partner",
+};
+
 const LoadingScreen = () => (
   <div className="app-loading">
     <div className="app-loading-content">
@@ -69,200 +98,148 @@ const LoadingScreen = () => (
   </div>
 );
 
-const getInitialRoute = () => {
-  const trackMatch = window.location.pathname.match(/^\/track-order\/([^/]+)/);
+// ---------- TrackOrder wrapper (reads :orderId from URL) ----------
+function TrackOrderRoute({ setPage }) {
+  const { orderId } = useParams();
+  return <TrackOrder orderId={orderId} setPage={setPage} />;
+}
 
-  if (trackMatch?.[1]) {
-    return {
-      page: "track-order",
-      orderId: decodeURIComponent(trackMatch[1]),
-    };
-  }
+// ---------- ProductDetails wrapper (reads :productId from URL) ----------
+function ProductRoute({ selectedProduct, setPage }) {
+  const { productId } = useParams();
+  return <ProductDetails product={selectedProduct} productId={productId} setPage={setPage} />;
+}
 
-  if (window.location.pathname === "/delivery-partner") {
-    return { page: "delivery-partner", orderId: "" };
-  }
-
-  return { page: "home", orderId: "" };
-};
+// ---------- AccountPage wrapper (reads :pageId from URL) ----------
+function AccountRoute({ setPage }) {
+  const { pageId } = useParams();
+  if (!pageId || !ACCOUNT_PAGE_IDS.has(pageId)) return <Navigate to="/" replace />;
+  return <AccountPage pageId={pageId} setPage={setPage} />;
+}
 
 export default function App() {
-  const initialRoute = getInitialRoute();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [profile, setProfile] = useState(null);
 
-  const [page, setPage] = useState(initialRoute.page);
-  const [trackOrderId, setTrackOrderId] = useState(initialRoute.orderId);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [, setAddress] = useState(null);
   const [payment, setPayment] = useState("");
-  const [cart, setCart] = useState([]);
   const [search, setSearch] = useState("");
-  const historyReadyRef = useRef(false);
 
-  const loadCart = useCallback(() => {
+  const { cartItems } = useCart();
+
+  // Fetch profile for a given user, return profile data or null
+  const fetchProfile = useCallback(async (userId) => {
     try {
-      const data = JSON.parse(localStorage.getItem("cart")) || [];
-      setCart(data);
-    } catch (error) {
-      console.error("Cart load error:", error);
-      setCart([]);
-    }
-  }, []);
-
-  const checkUser = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      // Safety timeout — never hang on loading screen longer than 6s
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Auth check timed out")), 6000)
-      );
-
-      const authCheck = async () => {
-        const { data, error } = await supabase.auth.getUser();
-
-        if (error || !data?.user) {
-          console.error("Auth user error:", error?.message);
-          setUser(null);
-          setHasProfile(false);
-          setProfile(null);
-          return;
-        }
-
-        setUser(data.user);
-
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error("Profile fetch error:", profileError.message);
-          setHasProfile(false);
-          setProfile(null);
-          return;
-        }
-
-        setHasProfile(!!profileData);
-        setProfile(profileData || null);
-      };
-
-      await Promise.race([authCheck(), timeout]);
-    } catch (err) {
-      console.error("checkUser failed:", err);
-      setUser(null);
-      setHasProfile(false);
-      setProfile(null);
-    } finally {
-      setLoading(false);
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      return data || null;
+    } catch {
+      return null;
     }
   }, []);
 
   useEffect(() => {
-    checkUser();
+    let mounted = true;
 
+    // Use onAuthStateChange as the SINGLE source of truth.
+    // INITIAL_SESSION fires immediately with the cached session — no network call.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      checkUser();
-    });
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [checkUser]);
-
-  useEffect(() => {
-    loadCart();
-
-    window.addEventListener("cartUpdated", loadCart);
-    window.addEventListener("storage", loadCart);
-
-    return () => {
-      window.removeEventListener("cartUpdated", loadCart);
-      window.removeEventListener("storage", loadCart);
-    };
-  }, [loadCart]);
-
-  const navigatePage = useCallback((nextPage, options = {}) => {
-    const routeMatch = String(nextPage || "").match(/^track-order\/(.+)/);
-    const targetPage = routeMatch ? "track-order" : nextPage === "login" ? "home" : nextPage;
-    const nextOrderId = options.orderId || routeMatch?.[1] || "";
-
-    setPage(targetPage);
-    setTrackOrderId(targetPage === "track-order" ? String(nextOrderId) : "");
-
-    if (!historyReadyRef.current || !window.history?.pushState) return;
-
-    const state = {
-      nutriblendPage: targetPage,
-      orderId: targetPage === "track-order" ? String(nextOrderId) : "",
-    };
-    const url =
-      targetPage === "track-order" && nextOrderId
-        ? `/track-order/${encodeURIComponent(nextOrderId)}`
-        : targetPage === "delivery-partner"
-          ? "/delivery-partner"
-        : "/";
-
-    if (options.replace) {
-      window.history.replaceState(state, "", url);
-      return;
-    }
-
-    window.history.pushState(state, "", url);
-  }, []);
-
-  useEffect(() => {
-    if (loading || !user || !hasProfile) {
-      historyReadyRef.current = false;
-      return undefined;
-    }
-
-    historyReadyRef.current = true;
-    const currentUrl =
-      page === "track-order" && trackOrderId
-        ? `/track-order/${encodeURIComponent(trackOrderId)}`
-        : page === "delivery-partner"
-          ? "/delivery-partner"
-        : window.location.pathname;
-
-    window.history.replaceState(
-      { nutriblendPage: page, orderId: trackOrderId },
-      "",
-      currentUrl
-    );
-
-    const handlePopState = (event) => {
-      const previousPage = event.state?.nutriblendPage;
-
-      if (previousPage) {
-        setPage(previousPage);
-        setTrackOrderId(
-          previousPage === "track-order" ? String(event.state?.orderId || "") : ""
-        );
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setHasProfile(false);
+        setProfile(null);
+        setLoading(false);
         return;
       }
 
-      setPage("home");
-      setTrackOrderId("");
-      window.history.replaceState(
-        { nutriblendPage: "home", orderId: "" },
-        "",
-        "/"
-      );
-    };
+      // TOKEN_REFRESHED doesn't need a profile re-fetch — just update the user object
+      if (event === "TOKEN_REFRESHED") {
+        if (session?.user) setUser(session.user);
+        return;
+      }
 
-    window.addEventListener("popstate", handlePopState);
+      // INITIAL_SESSION, SIGNED_IN
+      if (!session?.user) {
+        setUser(null);
+        setHasProfile(false);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      const sessionUser = session.user;
+      setUser(sessionUser);
+
+      // Fetch profile (only network call needed)
+      const profileData = await fetchProfile(sessionUser.id);
+      if (!mounted) return;
+      setHasProfile(!!profileData);
+      setProfile(profileData);
+      setLoading(false);
+    });
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      mounted = false;
+      subscription.unsubscribe();
     };
-  }, [hasProfile, loading, page, trackOrderId, user]);
+  }, [fetchProfile]);
+
+  /**
+   * navigatePage — backward-compatible wrapper.
+   * Pages still call setPage("cart") — this converts to navigate("/cart").
+   * Supports the old track-order/xxx pattern too.
+   */
+  const navigatePage = useCallback(
+    (nextPage, options = {}) => {
+      // Handle "track-order/<id>" pattern
+      const trackMatch = String(nextPage || "").match(/^track-order\/(.+)/);
+      if (trackMatch) {
+        navigate(`/track-order/${encodeURIComponent(trackMatch[1])}`, { replace: !!options.replace });
+        return;
+      }
+
+      // Handle "track-order" with orderId in options or localStorage
+      if (nextPage === "track-order") {
+        const trackId = options.orderId || localStorage.getItem("trackOrderId");
+        if (trackId) {
+          navigate(`/track-order/${encodeURIComponent(trackId)}`, { replace: !!options.replace });
+        } else {
+          navigate("/orders", { replace: true });
+        }
+        return;
+      }
+
+      // Map page name to path
+      const path = PAGE_TO_PATH[nextPage];
+      if (path) {
+        navigate(path, { replace: !!options.replace });
+        return;
+      }
+
+      // Account pages
+      if (ACCOUNT_PAGE_IDS.has(nextPage)) {
+        navigate(`/account/${nextPage}`, { replace: !!options.replace });
+        return;
+      }
+
+      // Fallback: treat as path segment
+      navigate(`/${nextPage}`, { replace: !!options.replace });
+    },
+    [navigate]
+  );
 
   const logout = async () => {
     try {
@@ -273,7 +250,7 @@ export default function App() {
       setUser(null);
       setHasProfile(false);
       setProfile(null);
-      navigatePage("home", { replace: true });
+      navigate("/", { replace: true });
     }
   };
 
@@ -282,6 +259,15 @@ export default function App() {
   }
 
   if (!user) {
+    // Allow admin-login route even when not authenticated
+    if (location.pathname === "/admin-login") {
+      return (
+        <Suspense fallback={<LoadingScreen />}>
+          <AdminLogin setPage={navigatePage} />
+        </Suspense>
+      );
+    }
+
     return (
       <Suspense fallback={<LoadingScreen />}>
         <Login />
@@ -297,16 +283,18 @@ export default function App() {
     );
   }
 
-  const cartItemCount = cart.reduce(
+  const cartItemCount = cartItems.reduce(
     (sum, item) => sum + Number(item.qty || 1),
     0
   );
-  const isAccountPage = ACCOUNT_PAGE_IDS.has(page);
+
+  const currentPath = location.pathname;
+  const isHome = currentPath === "/";
 
   return (
     <div className="app">
       <Navbar
-        page={page}
+        page={currentPath}
         setPage={navigatePage}
         cartItemCount={cartItemCount}
         logout={logout}
@@ -315,69 +303,93 @@ export default function App() {
         profile={profile}
       />
 
-      <ErrorBoundary key={page}>
+      <ErrorBoundary key={currentPath}>
         <Suspense fallback={<LoadingScreen />}>
-          <div className="page-container" key={page}>
-            {page === "home" && (
-              <Home
-                search={search}
-                setPage={navigatePage}
-                setSelectedProduct={setSelectedProduct}
+          <div className="page-container">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <Home
+                    search={search}
+                    setPage={navigatePage}
+                    setSelectedProduct={setSelectedProduct}
+                  />
+                }
               />
-            )}
-
-            {page === "cart" && <Cart setPage={navigatePage} />}
-            {page === "orders" && <Orders setPage={navigatePage} />}
-            {page === "track-order" && (
-              <TrackOrder orderId={trackOrderId} setPage={navigatePage} />
-            )}
-            {page === "delivery-partner" && <DeliveryPartner setPage={navigatePage} />}
-            {page === "profile" && <Profile setPage={navigatePage} />}
-            {page === "plans" && <Plans setPage={navigatePage} />}
-            {page === "monthly-plans" && <MonthlyPlans setPage={navigatePage} />}
-            {page === "gym-partner" && <GymPartner />}
-            {page === "about" && <About />}
-            {page === "contact" && <Contact />}
-            {page === "privacy-policy" && <PrivacyPolicy />}
-            {page === "terms-conditions" && <TermsConditions />}
-            {page === "refund-policy" && <RefundPolicy />}
-            {page === "delivery-policy" && <DeliveryPolicy />}
-            {page === "nutrition-disclaimer" && <NutritionDisclaimer />}
-            {page === "notifications" && <NotificationCenter setPage={navigatePage} />}
-
-            {page === "admin-login" && <AdminLogin setPage={navigatePage} />}
-            {page === "admin" && <Admin setPage={navigatePage} />}
-
-            {page === "product" && (
-              <ProductDetails product={selectedProduct} setPage={navigatePage} />
-            )}
-
-            {page === "address" && (
-              <Address setPage={navigatePage} setAddress={setAddress} />
-            )}
-
-            {page === "payment" && (
-              <Payment setPage={navigatePage} setPayment={setPayment} />
-            )}
-
-            {page === "review" && (
-              <ReviewOrder
-                cart={cart}
-                address={JSON.parse(localStorage.getItem("selectedAddress"))}
-                payment={payment}
-                setPage={navigatePage}
+              <Route path="/cart" element={<Cart setPage={navigatePage} />} />
+              <Route path="/orders" element={<Orders setPage={navigatePage} />} />
+              <Route
+                path="/track-order/:orderId"
+                element={<TrackOrderRoute setPage={navigatePage} />}
               />
-            )}
-
-            {page === "success" && <Success setPage={navigatePage} />}
-            {isAccountPage && page !== "notifications" && (
-              <AccountPage pageId={page} setPage={navigatePage} />
-            )}
+              <Route
+                path="/delivery-partner"
+                element={<DeliveryPartner setPage={navigatePage} />}
+              />
+              <Route path="/profile" element={<Profile setPage={navigatePage} />} />
+              <Route path="/plans" element={<Plans setPage={navigatePage} />} />
+              <Route
+                path="/monthly-plans"
+                element={<MonthlyPlans setPage={navigatePage} />}
+              />
+              <Route path="/gym-partner" element={<GymPartner />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-conditions" element={<TermsConditions />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/delivery-policy" element={<DeliveryPolicy />} />
+              <Route path="/nutrition-disclaimer" element={<NutritionDisclaimer />} />
+              <Route
+                path="/notifications"
+                element={<NotificationCenter setPage={navigatePage} />}
+              />
+              <Route
+                path="/admin-login"
+                element={<AdminLogin setPage={navigatePage} />}
+              />
+              <Route path="/admin" element={<Admin setPage={navigatePage} />} />
+              <Route
+                path="/product/:productId"
+                element={
+                  <ProductRoute selectedProduct={selectedProduct} setPage={navigatePage} />
+                }
+              />
+              {/* Legacy /product route redirects to home */}
+              <Route path="/product" element={<Navigate to="/" replace />} />
+              <Route
+                path="/address"
+                element={<Address setPage={navigatePage} setAddress={setAddress} />}
+              />
+              <Route
+                path="/payment"
+                element={<Payment setPage={navigatePage} setPayment={setPayment} />}
+              />
+              <Route
+                path="/review"
+                element={
+                  <ReviewOrder
+                    cart={cartItems}
+                    address={JSON.parse(localStorage.getItem("selectedAddress"))}
+                    payment={payment}
+                    setPage={navigatePage}
+                  />
+                }
+              />
+              <Route path="/success" element={<Success setPage={navigatePage} />} />
+              <Route
+                path="/account/:pageId"
+                element={<AccountRoute setPage={navigatePage} />}
+              />
+              {/* Catch-all — redirect to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </div>
         </Suspense>
       </ErrorBoundary>
 
-      {page === "home" && <Footer setPage={navigatePage} />}
+      {isHome && <Footer setPage={navigatePage} />}
     </div>
   );
 }
