@@ -10,27 +10,53 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
 
-          if (id.includes("react-dom") || id.includes("react-router-dom")) {
+          const normalizedId = id.replaceAll("\\", "/");
+          const inPackage = (name) => normalizedId.includes(`/node_modules/${name}`);
+
+          if (
+            inPackage("react") ||
+            inPackage("react-dom") ||
+            inPackage("react-router") ||
+            inPackage("react-router-dom") ||
+            inPackage("scheduler")
+          ) {
             return "vendor-react";
           }
 
-          if (id.includes("@supabase")) {
+          if (inPackage("@supabase")) {
             return "vendor-supabase";
           }
 
-          if (id.includes("recharts")) {
+          if (inPackage("recharts") || inPackage("d3-") || inPackage("victory-vendor")) {
             return "vendor-charts";
           }
 
-          if (id.includes("jspdf")) {
+          if (inPackage("core-js") || inPackage("@babel/runtime")) {
+            return "vendor-pdf-polyfills";
+          }
+
+          if (
+            inPackage("canvg") ||
+            inPackage("dompurify") ||
+            inPackage("html2canvas") ||
+            inPackage("performance-now") ||
+            inPackage("raf") ||
+            inPackage("rgbcolor") ||
+            inPackage("stackblur-canvas") ||
+            inPackage("svg-pathdata")
+          ) {
+            return "vendor-pdf-render";
+          }
+
+          if (inPackage("jspdf") || inPackage("fflate")) {
             return "vendor-pdf";
           }
 
-          if (id.includes("leaflet") || id.includes("react-leaflet")) {
+          if (inPackage("leaflet") || inPackage("react-leaflet")) {
             return "vendor-maps";
           }
 
-          if (id.includes("lucide-react") || id.includes("react-icons")) {
+          if (inPackage("lucide-react") || inPackage("react-icons")) {
             return "vendor-icons";
           }
 

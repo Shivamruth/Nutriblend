@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase/Client";
 import { useNotification } from "../context/NotificationContext";
-import AdminProducts from "../components/AdminProducts";
-import AdminPlans from "../components/AdminPlans";
-import AdminAnalytics from "../components/AdminAnalytics";
 import "../styles/admin.css";
 import "../styles/admin-analytics.css";
+
+const AdminProducts = lazy(() => import("../components/AdminProducts"));
+const AdminPlans    = lazy(() => import("../components/AdminPlans"));
+const AdminAnalytics = lazy(() => import("../components/AdminAnalytics"));
+
+const AdminTabLoader = () => (
+  <div style={{ padding: "40px", textAlign: "center", color: "var(--muted)" }}>
+    Loading...
+  </div>
+);
 
 const ORDER_STATUSES = [
   "Pending",
@@ -199,7 +206,7 @@ export default function Admin({ setPage }) {
   const [assigningPartner, setAssigningPartner] = useState("");
 
   const fetchOrders = useCallback(
-    async ({ silent = false } = {}) => {
+    async ({ silent = false, limit = 100 } = {}) => {
       if (silent) {
         setRefreshing(true);
       } else {
@@ -212,7 +219,8 @@ export default function Admin({ setPage }) {
         const { data, error } = await supabase
           .from("orders")
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .limit(limit);
 
         if (error) throw error;
 
@@ -233,29 +241,30 @@ export default function Admin({ setPage }) {
     setLoading(true);
 
     try {
-      // getSession is cached (instant) — avoids a network round-trip vs getUser
+      // getSession is instant (cached), then verify the role for direct visits.
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
+      const session = sessionData?.session;
 
-      if (sessionError || !user) {
+      if (sessionError || !session?.user) {
         notify("Login required", "error");
         setPage?.("admin-login");
         return;
       }
 
-      // Run profile check and orders fetch in parallel
-      const [profileResult] = await Promise.all([
-        supabase.from("profiles").select("role").eq("id", user.id).single(),
-        fetchOrders(),
-      ]);
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
 
-      if (profileResult.error || profileResult.data?.role !== "admin") {
+      if (profileError || profile?.role !== "admin") {
         notify("Access denied. Admin only.", "error");
         setPage?.("home");
         return;
       }
 
       setAdminReady(true);
+      await fetchOrders();
     } catch (error) {
       console.error("Admin check error:", error);
       notify("Admin access check failed", "error");
@@ -638,9 +647,17 @@ export default function Admin({ setPage }) {
       </section>
       )}
 
-      {activeTab === "products" && <AdminProducts notify={notify} />}
+      {activeTab === "products" && (
+        <Suspense fallback={<AdminTabLoader />}>
+          <AdminProducts notify={notify} />
+        </Suspense>
+      )}
 
-      {activeTab === "plans" && <AdminPlans notify={notify} />}
+      {activeTab === "plans" && (
+        <Suspense fallback={<AdminTabLoader />}>
+          <AdminPlans notify={notify} />
+        </Suspense>
+      )}
 
       {activeTab === "inquiries" && (
         <section className="admin-section">
@@ -701,7 +718,9 @@ export default function Admin({ setPage }) {
       )}
 
       {activeTab === "analytics" && (
-        <AdminAnalytics orders={orders} dashboard={dashboard} />
+        <Suspense fallback={<AdminTabLoader />}>
+          <AdminAnalytics orders={orders} dashboard={dashboard} />
+        </Suspense>
       )}
     </main>
   );

@@ -14,6 +14,8 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  CORS_ALLOWED_ORIGINS: z.string().optional(),
+  VERCEL_PROJECT_NAME: z.string().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

@@ -2,8 +2,6 @@
  * NutriBlend — Premium PDF Invoice Generator
  * Uses jsPDF to create clean, branded invoices.
  */
-import { jsPDF } from "jspdf";
-
 // ── Brand palette ────────────────────────────────────────────────────
 const C = {
   primary:    [95, 122, 97],
@@ -95,7 +93,8 @@ function line(doc, x1, y, x2, color = C.divider) {
  * Generate and download a PDF invoice for an order.
  * @param {object} order — the full order object from Supabase
  */
-export function downloadInvoice(order) {
+export async function downloadInvoice(order) {
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = 210;
   const margin = 16;

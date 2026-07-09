@@ -13,12 +13,31 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 
-// Allow CORS from the configured frontend URL and any Vercel preview URLs
-const allowedOrigins = [env.FRONTEND_URL];
+// Allow CORS from configured frontend URLs and this project's Vercel previews.
+const allowedOrigins = new Set(
+  [env.FRONTEND_URL, process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null]
+    .concat((env.CORS_ALLOWED_ORIGINS || "").split(","))
+    .map((origin) => origin?.trim())
+    .filter(Boolean)
+);
 
-if (process.env.VERCEL_URL) {
-  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
-}
+const getHostname = (origin) => {
+  try {
+    return new URL(origin).hostname;
+  } catch {
+    return "";
+  }
+};
+
+const isAllowedVercelPreview = (origin) => {
+  if (!env.VERCEL_PROJECT_NAME) return false;
+
+  const hostname = getHostname(origin);
+  return (
+    hostname === `${env.VERCEL_PROJECT_NAME}.vercel.app` ||
+    (hostname.startsWith(`${env.VERCEL_PROJECT_NAME}-`) && hostname.endsWith(".vercel.app"))
+  );
+};
 
 app.use(
   cors({
@@ -26,8 +45,8 @@ app.use(
       // Allow requests with no origin: mobile apps, Postman, curl, etc.
       if (!origin) return cb(null, true);
 
-      // Allow configured origins and any *.vercel.app preview URLs
-      if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      // Allow configured origins and previews for the configured Vercel project only.
+      if (allowedOrigins.has(origin) || isAllowedVercelPreview(origin)) {
         return cb(null, true);
       }
 

@@ -13,7 +13,7 @@ export default function NotificationProvider({ children }) {
   const [dbNotifications, setDbNotifications] = useState([]);
   const realtimeRef = useRef(null);
 
-  const notify = (message, type = "success") => {
+  const notify = useCallback((message, type = "success") => {
     const newNotification = {
       id: Date.now(),
       message,
@@ -22,7 +22,7 @@ export default function NotificationProvider({ children }) {
       time: new Date().toLocaleTimeString(),
     };
     setNotifications((prev) => [newNotification, ...prev]);
-  };
+  }, []);
 
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -116,9 +116,7 @@ export default function NotificationProvider({ children }) {
 
       realtimeRef.current = channel;
     },
-    // notify is stable (useState setter pattern) so no dep needed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [notify]
   );
 
   // ── Subscribe to realtime changes ─────────────────────────────────────
